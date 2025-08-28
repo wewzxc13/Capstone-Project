@@ -1,0 +1,2635 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+import { format, parse, startOfWeek, getDay } from "date-fns";
+import enUS from "date-fns/locale/en-US";
+import ProtectedRoute from "../../Context/ProtectedRoute";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { FaCalendarAlt, FaChevronDown, FaSearch } from "react-icons/fa";
+import CalendarMonthCellIcons from '../../../components/ui/CalendarMonthCellIcons';
+
+const locales = {
+  "en-US": enUS,
+};
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+  getDay,
+  locales,
+});
+
+// Helper to convert event to react-big-calendar format
+function toCalendarEvent(event) {
+  // event: { day, month, year, title, time, color }
+  // time: "9:00 - 10:00 AM"
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const monthIndex = monthNames.indexOf(event.month);
+  const [startTime, endTime] = event.time.split(" - ");
+  const [startHour, startMinute] = startTime.split(":");
+  const [endHour, endMinute] = endTime.split(":");
+  // Assume AM/PM is in endTime
+  const startDate = new Date(event.year, monthIndex, event.day, parseInt(startHour), parseInt(startMinute));
+  const endDate = new Date(event.year, monthIndex, event.day, parseInt(endHour), parseInt(endMinute));
+  return {
+    ...event,
+    title: event.title,
+    start: startDate,
+    end: endDate,
+    allDay: false,
+  };
+}
+
+const monthNames = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+// Helper functions for capitalization
+function toTitleCase(str) {
+  return str.replace(/\w\S*/g, (txt) =>
+    txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+  );
+}
+function capitalizeFirst(str) {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Helper function to format time to AM/PM
+function formatTimeToAMPM(timeStr) {
+  // timeStr: "09:00" or "13:30"
+  const [hour, minute] = timeStr.split(":").map(Number);
+  const date = new Date();
+  date.setHours(hour, minute);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+// Helper function to format names as "Last Name, First Name Middle Name"
+function formatName(firstName, middleName, lastName) {
+  const parts = [lastName, firstName];
+  if (middleName && middleName.trim()) {
+    // Add middle name to the firstName part, not as a separate part
+    parts[1] = firstName + ' ' + middleName.trim();
+  }
+  return parts.join(', ');
+}
+
+const meetingColorMap = [
+  { name: "purple", hex: "#a78bfa" },
+  { name: "pink", hex: "#f472b6" },
+  { name: "green", hex: "#34d399" },
+  { name: "yellow", hex: "#facc15" },
+  { name: "orange", hex: "#fb923c" },
+  { name: "teal", hex: "#2dd4bf" },
+  { name: "indigo", hex: "#818cf8" }
+];
+
+function getColorForMeeting(meetingId) {
+  const idx = Math.abs(
+    String(meetingId)
+      .split('')
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  ) % meetingColorMap.length;
+  return meetingColorMap[idx].hex;
+}
+
+// Move fetchMeetings outside useEffect so it can be reused
+async function fetchMeetings(setEvents) {
+  try {
+    const res = await fetch("http://localhost/capstone-project/backend/Meeting/get_meetings_details.php");
+    const data = await res.json();
+    if (data.status === "success" && Array.isArray(data.meetings)) {
+      // Map backend meetings to event format
+      const mapped = data.meetings.map((m) => {
+        const start = new Date(m.meeting_start);
+        const end = new Date(m.meeting_end);
+        const color = getColorForMeeting(m.meeting_id);
+        return {
+          id: m.meeting_id,
+          title: m.meeting_title,
+          agenda: m.meeting_agenda,
+          day: start.getDate(),
+          month: monthNames[start.getMonth()],
+          year: start.getFullYear(),
+          time: `${start.toTimeString().slice(0,5)} - ${end.toTimeString().slice(0,5)}`,
+          color,
+          status: m.meeting_status,
+          start,
+          end,
+          created_by: m.created_by,
+          parent_id: m.parent_id,
+          student_id: m.student_id,
+          advisory_id: m.advisory_id
+        };
+      });
+      setEvents(mapped);
+    } else {
+      toast.error("Failed to load meetings");
+    }
+  } catch (err) {
+    toast.error("Error loading meetings");
+  }
+}
+
+export default function SuperAdminCalendarPage() {
+  const [events, setEvents] = useState([]);
+  const [modalDay, setModalDay] = useState(null);
+  const [modalMonth, setModalMonth] = useState(null);
+  const [modalYear, setModalYear] = useState(null);
+  const [showInputModal, setShowInputModal] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState("");
+  const [newEventStartTime, setNewEventStartTime] = useState("");
+  const [newEventEndTime, setNewEventEndTime] = useState("");
+  const [newEventColor, setNewEventColor] = useState("bg-blue-400");
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showInviteSelectModal, setShowInviteSelectModal] = useState(false);
+  const [showInviteViewModal, setShowInviteViewModal] = useState(false);
+  const [inviteSelectSearch, setInviteSelectSearch] = useState("");
+  const [inviteViewSearch, setInviteViewSearch] = useState("");
+  const [inviteSelectTab, setInviteSelectTab] = useState("teacher");
+  const [teachers, setTeachers] = useState([]);
+  const [parents, setParents] = useState([]);
+
+  const [newEventAgenda, setNewEventAgenda] = useState("");
+  const [validation, setValidation] = useState({ date: "", time: "", invite: "" });
+  const [editMode, setEditMode] = useState(false);
+  const [editEventData, setEditEventData] = useState(null);
+  const [invitedList, setInvitedList] = useState({ teachers: [], parents: [], loading: false, error: null });
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('Scheduled');
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [meetingCreator, setMeetingCreator] = useState(null);
+  // Add state for current view date
+  const [currentViewDate, setCurrentViewDate] = useState(new Date());
+  // Add state for calendar view
+  const [calendarView, setCalendarView] = useState('month');
+  // Ref to track if day number was clicked
+  const dayNumberClickedRef = useRef(false);
+
+  // Function to close all dropdowns
+  const closeAllDropdowns = () => {
+    setIsStatusDropdownOpen(false);
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is outside of dropdown containers
+      const isOutsideDropdowns = !event.target.closest('.dropdown-container');
+      if (isOutsideDropdowns) {
+        closeAllDropdowns();
+      }
+    };
+
+    // Add event listener if any dropdown is open
+    if (isStatusDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isStatusDropdownOpen]);
+  // Add state to track if invite list has been loaded for the current meeting
+  const [inviteListLoaded, setInviteListLoaded] = useState(false);
+  // Add userId state for SSR safety
+  const [userId, setUserId] = useState(null);
+  // Add state for class advisory functionality
+  const [studentLevels, setStudentLevels] = useState([
+    { level_id: 1, level_name: "Discoverer" },
+    { level_id: 2, level_name: "Explorer" },
+    { level_id: 3, level_name: "Adventurer" }
+  ]);
+  const [advisoryData, setAdvisoryData] = useState([]);
+  const [selectedLevels, setSelectedLevels] = useState([]);
+  const [allChecked, setAllChecked] = useState(false);
+  // Add state for advisory parents and students for one-on-one meetings
+  const [advisoryParents, setAdvisoryParents] = useState([]);
+  const [advisoryStudents, setAdvisoryStudents] = useState([]);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setUserId(localStorage.getItem('userId'));
+    }
+  }, []);
+
+  // Convert events to react-big-calendar format
+  const calendarEvents = events.map(toCalendarEvent);
+
+  // Fetch all users (teachers/parents) on mount
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const res = await fetch("http://localhost/capstone-project/backend/Users/get_all_users.php");
+        const data = await res.json();
+        if (data.status === "success") {
+          console.log("Users data response:", data);
+          
+          // Teachers
+          const teacherData = data.users.Teacher.map(u => ({ 
+            id: u.id, 
+            name: u.name, 
+            firstName: u.firstName,
+            middleName: u.middleName,
+            lastName: u.lastName,
+            checked: false 
+          }));
+          setTeachers(teacherData);
+          console.log("Set teachers:", teacherData);
+
+          // Parents with linked students only
+          const parents = data.users.Parent || [];
+          const students = data.users.Student || [];
+
+          // Map students by parentId
+          const studentsByParentId = {};
+          students.forEach(student => {
+            if (student.parentId) {
+              if (!studentsByParentId[student.parentId]) {
+                studentsByParentId[student.parentId] = [];
+              }
+              studentsByParentId[student.parentId].push(student);
+            }
+          });
+
+          // Only parents with at least one linked student
+          const parentsWithStudents = parents
+            .filter(parent => studentsByParentId[parent.id])
+            .map(parent => ({
+              id: parent.id,
+              name: parent.name,
+              firstName: parent.firstName,
+              middleName: parent.middleName,
+              lastName: parent.lastName,
+              checked: false,
+              linkedStudents: studentsByParentId[parent.id]
+            }));
+
+          setParents(parentsWithStudents);
+          console.log("Set parents:", parentsWithStudents);
+        } else {
+          toast.error("Failed to load users data");
+        }
+      } catch (err) {
+        toast.error("Error loading users data");
+      }
+    }
+    fetchUsers();
+  }, []);
+
+  // Fetch student levels and advisory data
+  useEffect(() => {
+    async function fetchLevelsAndAdvisory() {
+      try {
+        // Fetch student levels
+        const levelsRes = await fetch("http://localhost/capstone-project/backend/Advisory/get_student_levels.php");
+        const levelsData = await levelsRes.json();
+        console.log("Student levels response:", levelsData);
+        if (levelsData.status === "success") {
+          setStudentLevels(levelsData.levels || []);
+          console.log("Set student levels:", levelsData.levels);
+        } else {
+          toast.error("Failed to load student levels");
+        }
+
+        // Fetch advisory data
+        const advisoryRes = await fetch("http://localhost/capstone-project/backend/Advisory/get_all_advisory_details.php");
+        const advisoryData = await advisoryRes.json();
+        console.log("Advisory data response:", advisoryData);
+        if (advisoryData.status === "success") {
+          setAdvisoryData(advisoryData.advisories || []);
+          console.log("Set advisory data:", advisoryData.advisories);
+          
+          // Extract students from advisory data
+          const allStudents = [];
+          
+          advisoryData.advisories?.forEach(advisory => {
+            // Add students from this advisory
+            if (advisory.students) {
+              advisory.students.forEach(student => {
+                // Avoid duplicates
+                if (!allStudents.find(s => s.student_id === student.student_id)) {
+                  allStudents.push(student);
+                }
+              });
+            }
+          });
+          
+          setAdvisoryStudents(allStudents);
+          console.log("Extracted students:", allStudents);
+        } else {
+          toast.error("Failed to load advisory data");
+        }
+      } catch (err) {
+        console.error("Error fetching levels and advisory data:", err);
+        toast.error("Error loading advisory data");
+      }
+    }
+    fetchLevelsAndAdvisory();
+  }, []);
+
+  // Fetch meetings from backend on mount
+  useEffect(() => {
+    fetchMeetings(setEvents);
+  }, []);
+
+  // Move fetchInvitedList here so it can access setInvitedList
+  // Function to fetch meeting creator details
+  async function fetchMeetingCreator(createdBy) {
+    if (!createdBy) return null;
+    
+    try {
+      const response = await fetch('http://localhost/capstone-project/backend/Users/get_user_details.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: createdBy }),
+      });
+      
+      const data = await response.json();
+      if (data.status === 'success') {
+        return data.user;
+      }
+    } catch (error) {
+      console.error('Error fetching meeting creator details:', error);
+    }
+    return null;
+  }
+
+  async function fetchInvitedList(meetingId) {
+    setInvitedList({ teachers: [], parents: [], students: [], loading: true, error: null });
+    
+    // Fetch meeting creator details if available
+    let creator = null;
+    if (selectedEvent?.created_by) {
+      creator = await fetchMeetingCreator(selectedEvent.created_by);
+      setMeetingCreator(creator);
+    }
+    
+    // Check if this is a one-on-one meeting (has parent_id and student_id)
+    const isOneOnOne = selectedEvent?.parent_id && selectedEvent?.student_id;
+    
+    console.log('fetchInvitedList called with meetingId:', meetingId);
+    console.log('selectedEvent:', selectedEvent);
+    console.log('isOneOnOne:', isOneOnOne);
+    console.log('parents length:', parents.length);
+    console.log('advisoryStudents length:', advisoryStudents.length);
+    
+    try {
+      if (isOneOnOne) {
+        // For one-on-one meetings: get parent and student details from advisory data
+        console.log('Processing one-on-one meeting from selectedEvent:', selectedEvent);
+        console.log('Looking for parent_id:', selectedEvent.parent_id);
+        console.log('Looking for student_id:', selectedEvent.student_id);
+        
+        // Get parent and student details from the available data
+        const parent = parents.find(p => String(p.id) === String(selectedEvent.parent_id));
+        const student = advisoryStudents.find(s => String(s.student_id) === String(selectedEvent.student_id));
+        
+        console.log('Found parent:', parent);
+        console.log('Found student:', student);
+        console.log('Available parents:', parents.map(p => ({ id: p.id, name: p.name })));
+        console.log('Available students:', advisoryStudents.map(s => ({ student_id: s.student_id, name: `${s.stud_firstname} ${s.stud_lastname}` })));
+        
+        setInvitedList({
+          teachers: [], // No teachers for one-on-one meetings
+          parents: parent ? [parent] : [],
+          students: student ? [student] : [],
+          loading: false,
+          error: null
+        });
+      } else {
+        // For group meetings: get teachers and parents from tbl_notification_recipients
+        const res = await fetch(`http://localhost/capstone-project/backend/Meeting/get_notification_recipients.php?meeting_id=${meetingId}`);
+        const data = await res.json();
+        if (data.status === 'success') {
+          console.log('Fetched invited teachers:', data.teachers);
+          console.log('Fetched invited parents:', data.parents);
+          
+          // If meeting was created by a teacher, also get student data for the parents
+          let students = [];
+          if (creator?.role === 'Teacher' && data.parents && data.parents.length > 0) {
+            // Get student data for the invited parents
+            const parentIds = data.parents.map(p => p.user_id);
+            students = advisoryStudents.filter(s => parentIds.includes(s.parent_id));
+          }
+          
+          setInvitedList({
+            teachers: data.teachers || [],
+            parents: data.parents || [],
+            students: students,
+            loading: false,
+            error: null
+          });
+        } else {
+          console.log('Fetch invited list error:', data.message);
+          setInvitedList({ teachers: [], parents: [], students: [], loading: false, error: data.message || 'Failed to fetch invitees' });
+        }
+      }
+    } catch (err) {
+      console.log('Fetch invited list error:', err);
+      setInvitedList({ teachers: [], parents: [], students: [], loading: false, error: err.message });
+    }
+  }
+
+  // When a slot is selected in the calendar
+  const handleSelectSlot = (slotInfo) => {
+    // Only open modal if day number was clicked
+    if (!dayNumberClickedRef.current) return;
+    dayNumberClickedRef.current = false;
+    const date = slotInfo.start;
+    setModalDay(date.getDate());
+    setModalMonth(monthNames[date.getMonth()]);
+    setModalYear(date.getFullYear());
+    setShowInputModal(true);
+    setNewEventTitle("");
+    setNewEventStartTime("09:00");
+    setNewEventEndTime("10:00");
+    setNewEventColor("bg-blue-400");
+    setSelectedEvent(null);
+  };
+
+  // When an event is clicked in the calendar
+  const handleSelectEvent = (event) => {
+    setSelectedEvent(event);
+    setShowInputModal(false);
+    setMeetingCreator(null); // Reset meeting creator when selecting a new event
+  };
+
+  // Add new event from modal
+  const handleAddEvent = async () => {
+    if (!newEventTitle || !newEventStartTime || !newEventEndTime) return;
+
+    // Compose start/end datetime strings
+    const monthIndex = monthNames.indexOf(modalMonth) + 1;
+    const startDate = `${modalYear}-${monthIndex.toString().padStart(2, "0")}-${modalDay.toString().padStart(2, "0")} ${newEventStartTime}:00`;
+    const endDate = `${modalYear}-${monthIndex.toString().padStart(2, "0")}-${modalDay.toString().padStart(2, "0")} ${newEventEndTime}:00`;
+
+    // Gather recipients from checked teachers/parents
+    const selectedTeachers = teachers.filter(t => t.checked).map(t => ({ user_id: t.id, recipient_type: "Teacher" }));
+    const selectedParents = parents.filter(p => p.checked).map(p => ({ user_id: p.id, recipient_type: "Parent" }));
+    const recipients = [...selectedTeachers, ...selectedParents];
+
+    // Get the current user's ID from localStorage
+    const created_by = userId ? parseInt(userId, 10) : 1;
+
+    // Compose notification message for system logs
+    const notif_message = `[MEETING] Created the Meeting`;
+
+    // Prepare payload
+    const payload = {
+      meeting_title: newEventTitle,
+      meeting_agenda: newEventAgenda,
+      meeting_start: startDate,
+      meeting_end: endDate,
+      created_by,
+      recipients,
+      parent_id: null, // or set if 1-on-1
+      student_id: null, // or set if 1-on-1
+      advisory_id: null, // or set if needed
+      notif_message
+    };
+
+    try {
+      const res = await fetch("http://localhost/capstone-project/backend/Meeting/create_meeting.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        await fetchMeetings(setEvents);
+        setShowInputModal(false);
+        setModalDay(null);
+        setModalMonth(null);
+        setModalYear(null);
+        setNewEventAgenda("");
+        toast.success("Meeting created and notifications sent!");
+      } else {
+        toast.error("Failed to create meeting: " + (data.message || "Unknown error") + (data.error ? ("\n" + data.error) : ""));
+      }
+    } catch (err) {
+      toast.error("Error connecting to server: " + err.message);
+    }
+  };
+
+  // Before rendering the Invite modal, add debug logs
+  if (showInviteSelectModal) {
+    console.log("Teachers:", teachers);
+    console.log("Parents:", parents);
+  }
+
+
+
+  function validateFields() {
+    let valid = true;
+    const newValidation = { date: "", time: "", invite: "" };
+
+    // Date validation
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const selectedDate = modalDay && modalMonth && modalYear
+      ? new Date(`${modalYear}-${(monthNames.indexOf(modalMonth)+1).toString().padStart(2, "0")}-${modalDay.toString().padStart(2, "0")}`)
+      : null;
+    if (!selectedDate || selectedDate < today) {
+      newValidation.date = "Date must be today or in the future.";
+      valid = false;
+    }
+
+    // Time validation (fix logic)
+    if (!newEventStartTime || !newEventEndTime) {
+      newValidation.time = "Please select both start and end time.";
+      valid = false;
+    } else {
+      const [startHour, startMin] = newEventStartTime.split(":").map(Number);
+      const [endHour, endMin] = newEventEndTime.split(":").map(Number);
+      const startTotal = startHour * 60 + startMin;
+      const endTotal = endHour * 60 + endMin;
+      if (startHour < 8 || startHour > 17 || endHour < 8 || endHour > 17) {
+        newValidation.time = "Time must be between 8:00 AM and 5:00 PM.";
+        valid = false;
+      } else if (endTotal <= startTotal) {
+        newValidation.time = "End time must be after start time.";
+        valid = false;
+      }
+    }
+
+    // Invite validation
+    const hasInvite = teachers.some(t => t.checked) || parents.some(p => p.checked);
+    if (!hasInvite) {
+      newValidation.invite = "  Please select at least one invitee.";
+      valid = false;
+    }
+
+    setValidation(newValidation);
+    return valid;
+  }
+
+  useEffect(() => {
+    validateFields();
+    // eslint-disable-next-line
+  }, [newEventTitle, newEventAgenda, modalDay, modalMonth, modalYear, newEventStartTime, newEventEndTime, teachers, parents]);
+
+  useEffect(() => {
+    if (showInviteViewModal && selectedEvent && !editMode) {
+      console.log('Fetching invited list for meeting_id:', selectedEvent.id);
+      fetchInvitedList(selectedEvent.id);
+      
+      // Set default tab based on meeting type
+      const isOneOnOne = selectedEvent?.parent_id && selectedEvent?.student_id;
+      if (isOneOnOne) {
+        // For one-on-one meetings: default to Parent tab
+        setInviteSelectTab("parent");
+      } else {
+        // For group meetings: default to Teacher tab
+        setInviteSelectTab("teacher");
+      }
+    }
+    // eslint-disable-next-line
+  }, [showInviteViewModal, selectedEvent, editMode]);
+
+  // Add validation for edit mode
+  function validateEditFields() {
+    let valid = true;
+    const newValidation = { date: '', time: '', invite: '' };
+    // Date validation
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const year = editEventData?.year || selectedEvent?.year;
+    const month = editEventData?.month || selectedEvent?.month;
+    const day = editEventData?.day || selectedEvent?.day;
+    const selectedDate = year && month && day
+      ? new Date(`${year}-${(monthNames.indexOf(month)+1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`)
+      : null;
+    if (!selectedDate || selectedDate < today) {
+      newValidation.date = 'Date must be today or in the future.';
+      valid = false;
+    }
+    // Time validation
+    const startTime = editEventData?.startTime || (selectedEvent?.time?.split(' - ')[0] || '');
+    const endTime = editEventData?.endTime || (selectedEvent?.time?.split(' - ')[1] || '');
+    if (!startTime || !endTime) {
+      newValidation.time = 'Please select both start and end time.';
+      valid = false;
+    } else {
+      const [startHour, startMin] = startTime.split(':').map(Number);
+      const [endHour, endMin] = endTime.split(':').map(Number);
+      const startTotal = startHour * 60 + startMin;
+      const endTotal = endHour * 60 + endMin;
+      if (startHour < 8 || startHour > 17 || endHour < 8 || endHour > 17) {
+        newValidation.time = 'Time must be between 8:00 AM and 5:00 PM.';
+        valid = false;
+      } else if (endTotal <= startTotal) {
+        newValidation.time = 'End time must be after start time.';
+        valid = false;
+      }
+    }
+    // Invite validation
+    const hasInvite = teachers.some(t => t.checked) || parents.some(p => p.checked);
+    if (!hasInvite) {
+      newValidation.invite = '  Please select at least one invitee.';
+      valid = false;
+    }
+    setValidation(newValidation);
+    return valid;
+  }
+
+  // Add useEffect for edit mode validation
+  useEffect(() => {
+    if (editMode) validateEditFields();
+    // eslint-disable-next-line
+  }, [editEventData, teachers, parents, editMode]);
+
+  // Function to handle class level selection and auto-fill teachers/parents
+  const handleClassLevelSelection = (levelId) => {
+    console.log("handleClassLevelSelection called with levelId:", levelId);
+    console.log("Current advisoryData:", advisoryData);
+    console.log("Current teachers:", teachers);
+    console.log("Current parents:", parents);
+    
+    let newSelectedLevels;
+    if (selectedLevels.includes(levelId)) {
+      // Remove level if already selected
+      newSelectedLevels = selectedLevels.filter(id => id !== levelId);
+    } else {
+      // Add level if not selected
+      newSelectedLevels = [...selectedLevels, levelId];
+    }
+    
+    setSelectedLevels(newSelectedLevels);
+    setAllChecked(false); // Reset all checkbox when selecting specific levels
+    
+    if (newSelectedLevels.length === 0) {
+      // If no levels selected, uncheck all
+      setTeachers(teachers.map(t => ({ ...t, checked: false })));
+      setParents(parents.map(p => ({ ...p, checked: false })));
+      return;
+    }
+
+    // Collect all teacher IDs and parent IDs from all selected levels
+    const allAdvisorTeacherIds = [];
+    const allParentIdsWithChildrenInAdvisory = [];
+    
+    newSelectedLevels.forEach(levelId => {
+      // Find all advisories for this level
+      const levelAdvisories = advisoryData.filter(adv => adv.level_id === levelId);
+      console.log(`Found levelAdvisories for level ${levelId}:`, levelAdvisories);
+      
+      levelAdvisories.forEach(advisory => {
+        // Add lead teacher
+        if (advisory.lead_teacher_id) {
+          allAdvisorTeacherIds.push(advisory.lead_teacher_id);
+        }
+        // Add assistant teacher
+        if (advisory.assistant_teacher_id) {
+          allAdvisorTeacherIds.push(advisory.assistant_teacher_id);
+        }
+        
+        // Add students' parent IDs
+        const studentsInAdvisory = advisory.students || [];
+        studentsInAdvisory.forEach(student => {
+          if (student.parent_id && !allParentIdsWithChildrenInAdvisory.includes(student.parent_id)) {
+            allParentIdsWithChildrenInAdvisory.push(student.parent_id);
+          }
+        });
+      });
+    });
+    
+    console.log("All advisor teacher IDs:", allAdvisorTeacherIds);
+    console.log("All parent IDs with children in advisory:", allParentIdsWithChildrenInAdvisory);
+
+    // Update teachers - check those who are advisors for any selected level
+    setTeachers(teachers.map(teacher => ({
+      ...teacher,
+      checked: allAdvisorTeacherIds.includes(parseInt(teacher.id))
+    })));
+
+    // Update parents - check those whose children are in any selected level's advisories
+    setParents(parents.map(parent => ({
+      ...parent,
+      checked: allParentIdsWithChildrenInAdvisory.includes(parseInt(parent.id))
+    })));
+  };
+
+  // Function to handle "All" checkbox toggle
+  const handleAllToggle = () => {
+    const newAllChecked = !allChecked;
+    setAllChecked(newAllChecked);
+    
+    if (newAllChecked) {
+      // Check all class level checkboxes
+      const allLevelIds = studentLevels.map(level => level.level_id);
+      setSelectedLevels(allLevelIds);
+      
+      // Check all teachers and parents
+      setTeachers(teachers.map(t => ({ ...t, checked: true })));
+      setParents(parents.map(p => ({ ...p, checked: true })));
+    } else {
+      // Uncheck all class level checkboxes
+      setSelectedLevels([]);
+      
+      // Uncheck all teachers and parents
+      setTeachers(teachers.map(t => ({ ...t, checked: false })));
+      setParents(parents.map(p => ({ ...p, checked: false })));
+    }
+  };
+
+  return (
+    <ProtectedRoute role="Super Admin">
+      <div className="flex-1 p-6">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+          <div className="flex-1">
+            <div className="bg-white p-2 sm:p-6 rounded-xl shadow-md w-full">
+              <Calendar
+                localizer={localizer}
+                events={calendarEvents.filter(e => e.status !== 'Cancelled')}
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: 450 }}
+                selectable={false}
+                date={currentViewDate}
+                onNavigate={date => setCurrentViewDate(date)}
+                onSelectEvent={handleSelectEvent}
+                popup={false}
+                eventPropGetter={event => ({
+                  style: {
+                    backgroundColor: "transparent",
+                    color: event.color,
+                    borderRadius: "6px",
+                    border: "none",
+                    boxShadow: "none",
+                    padding: 0,
+                  }
+                })}
+                view={calendarView}
+                onView={setCalendarView}
+                components={{
+                  month: {
+                    dateCellWrapper: ({ value }) => {
+                      const displayedMonth = currentViewDate.getMonth();
+                      const displayedYear = currentViewDate.getFullYear();
+                      // Filter out cancelled events for the cell
+                      const cellEvents = calendarEvents.filter(e =>
+                        e.start.getFullYear() === value.getFullYear() &&
+                        e.start.getMonth() === value.getMonth() &&
+                        e.start.getDate() === value.getDate() &&
+                        e.status !== 'Cancelled'
+                      );
+                      // Use only year, month, day for comparison
+                      const now = new Date();
+                      const todayY = now.getFullYear();
+                      const todayM = now.getMonth();
+                      const todayD = now.getDate();
+                      const cellY = value.getFullYear();
+                      const cellM = value.getMonth();
+                      const cellD = value.getDate();
+                      const isToday = cellY === todayY && cellM === todayM && cellD === todayD;
+                      const isCurrentMonth = value.getMonth() === displayedMonth && value.getFullYear() === displayedYear;
+                      // Only allow add modal for today or future
+                      const isFutureOrToday =
+                        cellY > todayY ||
+                        (cellY === todayY && cellM > todayM) ||
+                        (cellY === todayY && cellM === todayM && cellD >= todayD);
+                      let dayNumberStyle = {
+                        fontWeight: 600,
+                        fontSize: 16,
+                        borderRadius: 4,
+                        padding: '1px 6px',
+                        zIndex: 2,
+                        marginBottom: 4,
+                        marginTop: 1,
+                        marginLeft: 1,
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                        cursor: isFutureOrToday ? 'pointer' : 'default',
+                        userSelect: 'none',
+                        alignSelf: 'flex-end',
+                        transition: 'background 0.2s, color 0.2s',
+                      };
+                      let cellBg = 'white';
+                      if (!isCurrentMonth) {
+                        cellBg = '#f5f5f5';
+                        dayNumberStyle.background = 'transparent';
+                        dayNumberStyle.color = '#b0b0b0';
+                        dayNumberStyle.boxShadow = 'none';
+                      } else if (isToday) {
+                        cellBg = '#1976d2';
+                        dayNumberStyle.background = 'transparent';
+                        dayNumberStyle.color = '#fff';
+                        dayNumberStyle.boxShadow = 'none';
+                      } else {
+                        cellBg = 'white';
+                        dayNumberStyle.background = 'white';
+                        dayNumberStyle.color = '#232c67';
+                      }
+                      return (
+                        <div
+                          style={{
+                            position: 'relative',
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            justifyContent: 'flex-start',
+                            padding: '4px 4px 0 6px',
+                            minHeight: 0,
+                            background: cellBg,
+                            borderRadius: 8,
+                            border: '1px solid #e0e7ef',
+                            boxShadow: '0 1px 3px rgba(60,60,100,0.06)',
+                            margin: 1,
+                            transition: 'background 0.2s',
+                            cursor: 'default',
+                          }}
+                        >
+                          <div
+                            style={{
+                              ...dayNumberStyle,
+                              pointerEvents: 'auto',
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              zIndex: 20, // Lowered from 1000 to 20
+                              margin: 0,
+                              alignSelf: undefined,
+                            }}
+                            title={isFutureOrToday ? "Add Meeting" : ""}
+                            onClick={e => {
+                              if (!isFutureOrToday) return;
+                              e.stopPropagation();
+                              dayNumberClickedRef.current = true;
+                              setModalDay(value.getDate());
+                              setModalMonth(monthNames[value.getMonth()]);
+                              setModalYear(value.getFullYear());
+                              setShowInputModal(true);
+                              setNewEventTitle("");
+                              setNewEventStartTime("09:00");
+                              setNewEventEndTime("10:00");
+                              setNewEventColor("bg-blue-400");
+                              setSelectedEvent(null);
+                            }}
+                          >
+                            {value.getDate()}
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 28, pointerEvents: 'auto' }}>
+                            <CalendarMonthCellIcons
+                              date={value}
+                              events={cellEvents}
+                              onEventClick={(event, e) => {
+                                e.stopPropagation();
+                                setSelectedEvent(event);
+                                setShowInputModal(false);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    },
+                    dateHeader: () => null
+                  },
+                  event: ({ event, view }) => (view === 'agenda' ? (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 28,
+                          height: 28,
+                          minWidth: 28,
+                          minHeight: 28,
+                          borderRadius: '50%',
+                          backgroundColor: event.color,
+                          color: '#fff',
+                          marginRight: 8,
+                          marginTop: 2,
+                          flexShrink: 0
+                        }}
+                      >
+                        <FaCalendarAlt style={{ color: '#fff', fontSize: 16 }} />
+                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 500, wordBreak: 'break-word' }}>{event.title}</span>
+                        {event.agenda && (
+                          <span style={{ color: '#555', fontWeight: 400, wordBreak: 'break-word' }}>
+                            - {event.agenda}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : null),
+                  agenda: {
+                    event: ({ event }) => (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 28,
+                            height: 28,
+                            minWidth: 28,
+                            minHeight: 28,
+                            borderRadius: '50%',
+                            backgroundColor: event.color,
+                            color: '#fff',
+                            marginRight: 8,
+                            marginTop: 2,
+                            flexShrink: 0
+                          }}
+                        >
+                          <FaCalendarAlt style={{ color: '#fff', fontSize: 16 }} />
+                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: 500, wordBreak: 'break-word' }}>{event.title}</span>
+                          {event.agenda && (
+                            <span style={{ color: '#555', fontWeight: 400, wordBreak: 'break-word' }}>
+                              - {event.agenda}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ),
+                    header: ({ label }) => (
+                      label === 'Event' ? <span>Meeting Details</span> : <span>{label}</span>
+                    )
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <aside className="w-full lg:w-80 mt-4 lg:mt-0">
+            <div className="bg-white p-2 sm:p-6 rounded-xl shadow-md">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <h2 className="text-base sm:text-xl font-semibold text-gray-700">
+                  Schedule Details
+                </h2>
+                <div className="relative dropdown-container">
+                  <button
+                    className="flex items-center gap-2 px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    onClick={() => setIsStatusDropdownOpen(prev => !prev)}
+                  >
+                    <span>{statusFilter}</span>
+                    <FaChevronDown className={`text-sm transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isStatusDropdownOpen && (
+                    <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                      <div className="py-1">
+                        {['Scheduled', 'Completed', 'Cancelled'].map((option) => (
+                          <button
+                            key={option}
+                            onClick={() => {
+                              setStatusFilter(option);
+                              setIsStatusDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm font-medium hover:bg-gray-100 transition-colors ${
+                              statusFilter === option ? "bg-blue-50 text-blue-900" : "text-gray-900"
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div
+                className="space-y-2 sm:space-y-3 max-h-[350px] overflow-y-auto"
+                style={{ minHeight: "100px" }}
+              >
+                {events
+                  .filter(event => {
+                    if (statusFilter === 'Scheduled') {
+                      return event.status === 'Scheduled' || event.status === 'Rescheduled';
+                    }
+                    return event.status === statusFilter;
+                  })
+                  .sort((a, b) => new Date(a.start) - new Date(b.start))
+                  .slice(0, 100)
+                  .length === 0 ? (
+                  <div className="text-gray-400 italic text-center py-8">
+                    No meetings scheduled.
+                  </div>
+                ) : (
+                  events
+                    .filter(event => {
+                      if (statusFilter === 'Scheduled') {
+                        return event.status === 'Scheduled' || event.status === 'Rescheduled';
+                      }
+                      return event.status === statusFilter;
+                    })
+                    .sort((a, b) => new Date(a.start) - new Date(b.start))
+                    .slice(0, 100)
+                    .map((event, i) => (
+                      <div
+                        key={i}
+                        className="bg-white p-3 rounded-lg shadow-sm flex items-center gap-2 border border-gray-200 hover:shadow-md transition cursor-pointer"
+                        style={{
+                          borderLeft: `${String(event.created_by) === String(userId) ? '6px solid #1976d2' : '4px solid ' + event.color}`,
+                          boxShadow: '0 1px 3px rgba(60,60,100,0.06)',
+                          marginBottom: 6,
+                          background: '#fff',
+                        }}
+                        onClick={() => { setSelectedEvent(event); setShowInputModal(false); }}
+                      >
+                        <div className="text-xl" style={{ color: event.color }}>
+                          <FaCalendarAlt />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-800 text-xs" style={{ fontWeight: String(event.created_by) === String(userId) ? 700 : 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {event.title}
+                            {String(event.created_by) === String(userId) && (
+                              <span style={{
+                                background: '#1976d2',
+                                color: '#fff',
+                                borderRadius: '6px',
+                                fontSize: '10px',
+                                padding: '1px 6px',
+                                marginLeft: '3px',
+                                fontWeight: 600,
+                                letterSpacing: '0.5px',
+                                display: 'inline-block',
+                              }}>You</span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {event.month} {event.day}, {event.year} |
+                            {event.time && (() => {
+                              const [start, end] = event.time.split(" - ");
+                              return ` ${formatTimeToAMPM(start)} - ${formatTimeToAMPM(end)}`;
+                            })()}
+                          </div>
+                          <span
+                            className={`mt-1 inline-block px-1.5 py-0.5 rounded-full text-xs font-semibold ${
+                              event.status === "Completed"
+                                ? "bg-green-100 text-green-700"
+                                : event.status === "Cancelled"
+                                ? "bg-red-100 text-red-700"
+                                : event.status === "Scheduled" || event.status === "Rescheduled"
+                                ? "bg-blue-100 text-blue-700"
+                                : ""
+                            }`}
+                          >
+                            {event.status || "Scheduled"}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+      {/* Modal for adding event */}
+      {showInputModal && !selectedEvent && !showInviteSelectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-[100]">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-0 relative">
+                <div className="bg-[#232c67] text-white px-6 py-3 rounded-t-xl font-semibold text-lg flex justify-between items-center">
+                  <span>Add Meeting</span>
+                  <button
+                    onClick={() => { setShowInputModal(false); setModalDay(null); setModalMonth(null); setModalYear(null); setNewEventAgenda(""); }}
+                    className="ml-4 px-4 py-1 border border-white text-white rounded-full text-sm font-semibold bg-[#232c67] hover:bg-[#1a204d] focus:outline-none"
+                    aria-label="Close"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="p-6 grid grid-cols-2 gap-6 text-sm">
+                  <div>
+                    <p className="font-bold mb-1">Title</p>
+                    <input
+                      type="text"
+                      className="border rounded px-2 py-1 w-full mb-2"
+                      placeholder="Event Title"
+                      value={newEventTitle}
+                      onChange={e => setNewEventTitle(toTitleCase(e.target.value))}
+                    />
+                    <p className="font-bold mb-1 mt-4">Agenda</p>
+                    <textarea
+                      className="border rounded px-2 py-1 w-full mb-2"
+                      placeholder="Meeting Agenda"
+                      value={newEventAgenda}
+                      onChange={e => setNewEventAgenda(capitalizeFirst(e.target.value))}
+                      rows={2}
+                    />
+                    <p className="font-bold mb-1 mt-4">When:</p>
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="date"
+                        className="border rounded px-2 py-1 w-full"
+                        value={
+                      modalDay && modalMonth && modalYear
+                        ? `${modalYear}-${(monthNames.indexOf(modalMonth)+1).toString().padStart(2, "0")}-${modalDay.toString().padStart(2, "0")}`
+                            : ""
+                        }
+                        onChange={e => {
+                          const [year, month, day] = e.target.value.split("-");
+                      setModalYear(Number(year));
+                      setModalMonth(monthNames[Number(month)-1]);
+                          setModalDay(Number(day));
+                        }}
+                      />
+                      {validation.date && <div className="text-red-500 text-xs mt-1">{validation.date}</div>}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="time"
+                          className="border rounded px-2 py-1 w-full"
+                          value={newEventStartTime || ""}
+                          onChange={e => setNewEventStartTime(e.target.value)}
+                        />
+                        <span className="mx-1">-</span>
+                        <input
+                          type="time"
+                          className="border rounded px-2 py-1 w-full"
+                          value={newEventEndTime || ""}
+                          onChange={e => setNewEventEndTime(e.target.value)}
+                        />
+                      </div>
+                      {validation.time && <div className="text-red-500 text-xs mt-1">{validation.time}</div>}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-bold mb-1">Invite:</p>
+                    <button
+                      className="bg-[#232c67] text-white px-4 py-2 rounded-full text-xs font-semibold w-full mb-6"
+                      style={{minWidth: '120px'}}
+                      type="button"
+                      onClick={() => setShowInviteSelectModal(true)}
+                    >
+                      Click to Invite
+                    </button>
+                  </div>
+                </div>
+                {validation.invite && <div className="text-red-500 text-xs mt-1 ml-6">{validation.invite}</div>}
+                <div className="flex justify-end gap-2 px-6 pb-4">
+                  <button
+                    onClick={handleAddEvent}
+                    className="px-4 py-1 bg-[#232c67] text-white rounded-full text-sm font-semibold hover:bg-[#1a204d]"
+                    disabled={
+                      !newEventTitle ||
+                      !newEventAgenda ||
+                      !modalDay || !modalMonth || !modalYear ||
+                      !newEventStartTime || !newEventEndTime ||
+                      !!validation.date || !!validation.time || !!validation.invite
+                    }
+                  >
+                    Set
+                  </button>
+                </div>
+              </div>
+            </div>
+      )}
+      {/* Modal for viewing event details */}
+      {selectedEvent && !showInviteViewModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-[100]">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-0 relative">
+            <div className="bg-[#232c67] text-white px-6 py-3 rounded-t-xl font-semibold text-lg flex justify-between items-center">
+              <span>{editMode ? 'Edit Meeting Details' : 'View Meeting Details'}</span>
+              <button
+                onClick={() => { setSelectedEvent(null); setEditMode(false); setEditEventData(null); }}
+                className="ml-4 px-4 py-1 border border-white text-white rounded-full text-sm font-semibold bg-[#232c67] hover:bg-[#1a204d] focus:outline-none"
+                aria-label="Close"
+              >
+                Close
+              </button>
+            </div>
+            {/* Wrap editMode/viewMode in a fragment to fix linter error */}
+            <>
+              {editMode ? (
+                <>
+                  <div className="p-6 grid grid-cols-2 gap-6 text-sm">
+                    <div>
+                      <p className="font-bold mb-1">Title</p>
+                      <input
+                        type="text"
+                        className="border rounded px-2 py-1 w-full mb-2"
+                        value={editEventData?.title || ''}
+                        onChange={e => setEditEventData({ ...editEventData, title: toTitleCase(e.target.value) })}
+                      />
+                      {selectedEvent.agenda && (
+                        <>
+                          <p className="font-bold mb-1 mt-4">Agenda</p>
+                          <textarea
+                            className="border rounded px-2 py-1 w-full mb-2"
+                            value={editEventData?.agenda || ''}
+                            onChange={e => setEditEventData({ ...editEventData, agenda: capitalizeFirst(e.target.value) })}
+                            rows={2}
+                          />
+                        </>
+                      )}
+                      <p className="font-bold mb-1 mt-4">When:</p>
+                      <div className="flex flex-col gap-2">
+                        <input
+                          type="date"
+                          className="border rounded px-2 py-1 w-full"
+                          value={
+                            editEventData?.year && editEventData?.month && editEventData?.day
+                              ? `${editEventData.year}-${(monthNames.indexOf(editEventData.month)+1).toString().padStart(2, "0")}-${editEventData.day.toString().padStart(2, "0")}`
+                              : ''
+                          }
+                          onChange={e => {
+                            const [year, month, day] = e.target.value.split("-");
+                            setEditEventData({
+                              ...editEventData,
+                              year: Number(year),
+                              month: monthNames[Number(month)-1],
+                              day: Number(day)
+                            });
+                          }}
+                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="time"
+                            className="border rounded px-2 py-1 w-full"
+                            value={editEventData?.startTime || ''}
+                            onChange={e => setEditEventData({ ...editEventData, startTime: e.target.value })}
+                          />
+                          <span className="mx-1">-</span>
+                          <input
+                            type="time"
+                            className="border rounded px-2 py-1 w-full"
+                            value={editEventData?.endTime || ''}
+                            onChange={e => setEditEventData({ ...editEventData, endTime: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      {(validation.date || validation.time || validation.invite) && (
+                        <div className="pt-2">
+                          {validation.date && <div className="text-red-500 text-xs mt-1">{validation.date}</div>}
+                          {validation.time && <div className="text-red-500 text-xs mt-1">{validation.time}</div>}
+                          {validation.invite && <div className="text-red-500 text-xs mt-1">{validation.invite}</div>}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-bold mb-1 mt-4">Invite:</p>
+                      <button
+                        className="bg-[#232c67] text-white px-4 py-2 rounded-full text-xs font-semibold w-full mb-6"
+                        style={{minWidth: '120px'}} type="button"
+                        onClick={async () => {
+                          if (selectedEvent && !inviteListLoaded) {
+                            await fetchInvitedList(selectedEvent.id);
+                            // After fetching, update teachers and parents checked state
+                            setTeachers(prevTeachers => prevTeachers.map(t => ({
+                              ...t,
+                              checked: (invitedList.teachers || []).some(inv => String(inv.user_id) === String(t.id))
+                            })));
+                            setParents(prevParents => prevParents.map(p => ({
+                              ...p,
+                              checked: (invitedList.parents || []).some(inv => String(inv.user_id) === String(p.id))
+                            })));
+                            setInviteListLoaded(true);
+                          }
+                          setShowInviteSelectModal(true);
+                        }}
+                      >
+                        Edit Invite List
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 px-6 pb-4">
+                    <button
+                      onClick={() => { 
+                        setEditMode(false); 
+                        setEditEventData(null); 
+                        toast.info("Edit mode cancelled");
+                      }}
+                      className="px-4 py-1 border border-[#232c67] text-[#232c67] rounded-full text-sm font-semibold bg-white hover:bg-gray-100"
+                    >
+                      Cancel Changes
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!selectedEvent) return;
+                        // Compose start/end datetime strings
+                        const monthIndex = monthNames.indexOf(editEventData.month) + 1;
+                        const startDate = `${editEventData.year}-${monthIndex.toString().padStart(2, "0")}-${editEventData.day.toString().padStart(2, "0")} ${editEventData.startTime}:00`;
+                        const endDate = `${editEventData.year}-${monthIndex.toString().padStart(2, "0")}-${editEventData.day.toString().padStart(2, "0")} ${editEventData.endTime}:00`;
+
+                        // Gather recipients from checked teachers/parents
+                        const selectedTeachers = teachers.filter(t => t.checked).map(t => ({ user_id: t.id, recipient_type: "Teacher" }));
+                        const selectedParents = parents.filter(p => p.checked).map(p => ({ user_id: p.id, recipient_type: "Parent" }));
+                        const recipients = [...selectedTeachers, ...selectedParents];
+
+                        // Get the current user's ID from localStorage
+                        const created_by = userId ? parseInt(userId, 10) : 1;
+
+                        // Determine what was changed to set the correct notification message
+                        const originalStart = selectedEvent.start;
+                        const originalEnd = selectedEvent.end;
+                        const newStart = new Date(startDate);
+                        const newEnd = new Date(endDate);
+                        
+                        // Check what was changed
+                        const dateTimeChanged = originalStart.getTime() !== newStart.getTime() || originalEnd.getTime() !== newEnd.getTime();
+                        const titleChanged = selectedEvent.title !== editEventData.title;
+                        const agendaChanged = selectedEvent.agenda !== editEventData.agenda;
+                        // For Super Admin, we don't track individual invitee changes since we use the recipients array
+                        const inviteesChanged = false; // Super Admin uses recipients array, not individual parent/student tracking
+                        
+                        let notif_message;
+                        if (dateTimeChanged) {
+                          // Date/time was changed
+                          if (titleChanged || agendaChanged || inviteesChanged) {
+                            // Both date/time and other details were changed
+                            notif_message = "[MEETING] Updated and rescheduled the meeting";
+                          } else {
+                            // Only date/time was changed
+                            notif_message = "[MEETING] Rescheduled the meeting";
+                          }
+                        } else {
+                          // Only title, agenda, or invitees were changed
+                          notif_message = "[MEETING] Updated the meeting";
+                        }
+
+                        // Prepare payload
+                        const payload = {
+                          meeting_id: selectedEvent.id,
+                          meeting_title: editEventData.title,
+                          meeting_agenda: editEventData.agenda,
+                          meeting_start: startDate,
+                          meeting_end: endDate,
+                          created_by,
+                          recipients,
+                          notif_message
+                        };
+
+                        try {
+                          const res = await fetch("http://localhost/capstone-project/backend/Meeting/update_meeting.php", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                          });
+                          const data = await res.json();
+                          if (data.status === "success") {
+                            await fetchMeetings(setEvents);
+                            setSelectedEvent(null);
+                            setEditMode(false);
+                            setEditEventData(null);
+                            
+                            // Show appropriate message based on what was actually changed
+                            if (dateTimeChanged) {
+                              // Date/time was changed
+                              if (titleChanged || agendaChanged || inviteesChanged) {
+                                // Both date/time and other details were changed
+                                toast.success("Meeting updated and rescheduled successfully! All invitees have been notified.");
+                              } else {
+                                // Only date/time was changed
+                                toast.success("Meeting rescheduled successfully! All invitees have been notified.");
+                              }
+                            } else {
+                              // Only title, agenda, or invitees were changed
+                              toast.success("Meeting updated successfully! All invitees have been notified.");
+                            }
+                          } else {
+                            toast.error("Failed to update meeting: " + (data.message || "Unknown error"));
+                          }
+                        } catch (err) {
+                          toast.error("Error connecting to server: " + err.message);
+                        }
+                      }}
+                      className="px-4 py-1 bg-[#232c67] text-white rounded-full text-sm font-semibold hover:bg-[#1a204d]"
+                      disabled={!!validation.date || !!validation.time || !!validation.invite}
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="p-6">
+                  <div className="grid grid-cols-2 gap-6 text-sm items-start">
+                    <div className="flex flex-col gap-2">
+                      <div>
+                        <p className="font-bold mb-1">Title</p>
+                        <div className="mb-2">{selectedEvent.title}</div>
+                      </div>
+                      {selectedEvent.agenda && (
+                        <div>
+                          <p className="font-bold mb-1 mt-2">Agenda</p>
+                          <div className="mb-2 whitespace-pre-line">{selectedEvent.agenda}</div>
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-bold mb-1 mt-2">When:</p>
+                        <div>{selectedEvent.month} {selectedEvent.day}, {selectedEvent.year}</div>
+                        <div>
+                          {selectedEvent.time && (() => {
+                            const [start, end] = selectedEvent.time.split(" - ");
+                            return `${formatTimeToAMPM(start)} - ${formatTimeToAMPM(end)}`;
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-start gap-2">
+                      <p className="font-bold mb-1">Invite:</p>
+                      <button
+                        className="bg-[#232c67] text-white px-4 py-2 rounded-full text-xs font-semibold w-full max-w-[180px] mb-6"
+                        style={{minWidth: '120px'}} type="button"
+                        onClick={() => setShowInviteViewModal(true)}
+                      >
+                        View Invited List
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-8">
+                    {selectedEvent.status === 'Completed' ? (
+                      <button
+                        className="px-4 py-1 bg-green-200 text-green-700 rounded-full text-sm font-semibold cursor-default opacity-80"
+                        disabled
+                        style={{ pointerEvents: 'none' }}
+                      >
+                        Completed
+                      </button>
+                    ) : selectedEvent.status === 'Cancelled' ? (
+                      <button
+                        className="px-4 py-1 bg-red-200 text-red-700 rounded-full text-sm font-semibold cursor-default opacity-80"
+                        disabled
+                        style={{ pointerEvents: 'none' }}
+                      >
+                        Cancelled
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => {
+                            setShowCancelModal(true);
+                            toast.info("Cancel meeting confirmation required");
+                          }}
+                          className="px-4 py-1 border border-[#232c67] text-[#232c67] rounded-full text-sm font-semibold bg-white hover:bg-gray-100"
+                        >
+                          Cancel Meeting
+                        </button>
+                        {/* Only show Edit button if the meeting was created by the current Super Admin */}
+                        {String(selectedEvent.created_by) === String(userId) && (
+                          <button
+                            onClick={async () => {
+                              setEditMode(true);
+                              toast.info("Edit mode activated");
+                              setEditEventData({
+                                title: selectedEvent.title,
+                                agenda: selectedEvent.agenda,
+                                year: selectedEvent.year,
+                                month: selectedEvent.month,
+                                day: selectedEvent.day,
+                                startTime: selectedEvent.time?.split(' - ')[0] || '',
+                                endTime: selectedEvent.time?.split(' - ')[1] || '',
+                              });
+                            
+                            // Fetch and auto-fill the invited list
+                            try {
+                              const res = await fetch(`http://localhost/capstone-project/backend/Meeting/get_notification_recipients.php?meeting_id=${selectedEvent.id}`);
+                              const data = await res.json();
+                              if (data.status === 'success') {
+                                // Get the invited user IDs
+                                const invitedTeacherIds = (data.teachers || []).map(t => t.user_id);
+                                const invitedParentIds = (data.parents || []).map(p => p.user_id);
+                                
+                                // Update teachers checkboxes
+                                setTeachers(prevTeachers => 
+                                  prevTeachers.map(teacher => ({
+                                    ...teacher,
+                                    checked: invitedTeacherIds.includes(teacher.id)
+                                  }))
+                                );
+                                
+                                // Update parents checkboxes
+                                setParents(prevParents => 
+                                  prevParents.map(parent => ({
+                                    ...parent,
+                                    checked: invitedParentIds.includes(parent.id)
+                                  }))
+                                );
+                                
+                                // Reset class level selections and "All" checkbox
+                                setSelectedLevels([]);
+                                setAllChecked(false);
+                                
+                                // Auto-fill class level checkboxes based on invited teachers/parents
+                                const invitedTeacherIdsSet = new Set(invitedTeacherIds);
+                                const invitedParentIdsSet = new Set(invitedParentIds);
+                                
+                                // Check which class levels have invited teachers
+                                const levelsWithInvitedTeachers = new Set();
+                                const levelsWithInvitedParents = new Set();
+                                
+                                // Check teachers by advisory class
+                                advisoryData.forEach(advisory => {
+                                  if (invitedTeacherIdsSet.has(advisory.lead_teacher_id) || 
+                                      invitedTeacherIdsSet.has(advisory.assistant_teacher_id)) {
+                                    levelsWithInvitedTeachers.add(advisory.level_id);
+                                  }
+                                });
+                                
+                                // Check parents by their children's advisory class
+                                advisoryData.forEach(advisory => {
+                                  if (advisory.students) {
+                                    advisory.students.forEach(student => {
+                                      if (invitedParentIdsSet.has(student.parent_id)) {
+                                        levelsWithInvitedParents.add(advisory.level_id);
+                                      }
+                                    });
+                                  }
+                                });
+                                
+                                // Set class level checkboxes based on who was invited
+                                const levelsToSelect = new Set([...levelsWithInvitedTeachers, ...levelsWithInvitedParents]);
+                                setSelectedLevels(Array.from(levelsToSelect));
+                                
+                                // Set "All" checkbox if all levels are selected
+                                if (levelsToSelect.size === studentLevels.length) {
+                                  setAllChecked(true);
+                                }
+                                
+                                console.log('Auto-filled invited list for edit mode');
+
+                              } else {
+                                console.log('Failed to fetch invited list for auto-fill:', data.message);
+
+                              }
+                            } catch (err) {
+                              console.log('Error fetching invited list for auto-fill:', err);
+                              
+                            }
+                          }}
+                          className="px-4 py-1 bg-[#232c67] text-white rounded-full text-sm font-semibold hover:bg-[#1a204d]"
+                        >
+                          Edit
+                        </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          </div>
+        </div>
+      )}
+      {/* Invite modal for add/edit mode */}
+      {showInviteSelectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-[200]">
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-lg">
+            <div className="bg-[#232c67] text-white px-6 py-3 rounded-t-xl font-semibold text-lg">
+              <span>Select to Invite</span>
+            </div>
+            <div className="p-6">
+
+              
+              {/* Tabs */}
+              <div className="flex mb-6">
+                <button
+                  className={`flex-1 py-2 rounded-l-full font-semibold ${inviteSelectTab === "teacher" ? "bg-[#1E2A79] text-white" : "bg-blue-100 text-gray-700"}`}
+                  onClick={() => setInviteSelectTab("teacher")}
+                >
+                  Teacher
+                </button>
+                <button
+                  className={`flex-1 py-2 rounded-r-full font-semibold ${inviteSelectTab === "parent" ? "bg-[#1E2A79] text-white" : "bg-blue-100 text-gray-700"}`}
+                  onClick={() => setInviteSelectTab("parent")}
+                >
+                  Parent
+                </button>
+              </div>
+              {/* Search Bar */}
+              <div className="relative mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <div className="relative">
+                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+                  <input
+                    type="text"
+                    placeholder="Search by name..."
+                    value={inviteSelectSearch}
+                    onChange={e => setInviteSelectSearch(e.target.value)}
+                    className="pl-10 pr-8 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full"
+                    style={{ minHeight: '2rem' }}
+                  />
+                  {inviteSelectSearch && (
+                    <button
+                      onClick={() => setInviteSelectSearch("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      aria-label="Clear search"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+                                {/* Teacher List */}
+                  {inviteSelectTab === "teacher" && (
+                    <div className="mb-6 flex flex-col">
+                      {/* Checkboxes Row */}
+                      <div className="flex items-center gap-4 mb-6">
+                        <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                            checked={allChecked}
+                            onChange={handleAllToggle}
+                          />
+                          <span className="text-sm font-medium">All</span>
+                        </label>
+                        {studentLevels
+                          .sort((a, b) => a.level_name.localeCompare(b.level_name))
+                          .map((level) => (
+                            <label key={level.level_id} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedLevels.includes(level.level_id)}
+                                onChange={() => handleClassLevelSelection(level.level_id)}
+                              />
+                              <span className="text-sm font-medium">{level.level_name}</span>
+                            </label>
+                          ))}
+                      </div>
+
+                      {/* Teacher List Organized by Advisory */}
+                      <div className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between sticky top-0 bg-white py-2 mb-4">
+                          <h3 className="font-semibold text-gray-800 text-lg">Teacher List</h3>
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={teachers.some(t => t.checked)}
+                              onChange={(e) => {
+                            const checked = e.target.checked;
+                            setTeachers(teachers.map(t => ({ ...t, checked })));
+                                // If checking teachers, uncheck all parents
+                                if (checked) {
+                                  setParents(parents.map(p => ({ ...p, checked: false })));
+                                }
+                          }}
+                        />
+                            <span>Only Teachers</span>
+                      </label>
+                        </div>
+                        
+                        {(() => {
+                          // Check if any teachers match the search
+                          const allFilteredTeachers = teachers.filter(t => 
+                            t.name.toLowerCase().includes(inviteSelectSearch.toLowerCase())
+                          );
+                          
+                          if (allFilteredTeachers.length === 0) {
+                            return (
+                              <div className="text-center py-8 text-gray-500">
+                                <div className="text-lg font-medium mb-2">No Teachers Found</div>
+                                <div className="text-sm">No teachers match your search "{inviteSelectSearch}".</div>
+                              </div>
+                            );
+                          }
+                          
+                          return (
+                            <div className="space-y-4 max-h-48 overflow-y-auto border rounded p-3 bg-gray-50">
+                              {/* Discoverer Teachers */}
+                              {(() => {
+                                const discovererTeachers = teachers.filter(t => {
+                                  const isDiscovererAdvisor = advisoryData.some(adv => 
+                                    adv.level_id === 1 && 
+                                    (adv.lead_teacher_id === parseInt(t.id) || adv.assistant_teacher_id === parseInt(t.id))
+                                  );
+                                  return isDiscovererAdvisor && t.name.toLowerCase().includes(inviteSelectSearch.toLowerCase());
+                                });
+                                
+                                if (discovererTeachers.length === 0) return null;
+                                
+                                return (
+                                  <div>
+                                    <h4 className="font-medium text-gray-700 mb-2">Discoverer</h4>
+                                    <div className="ml-4 space-y-1">
+                                      {discovererTeachers.map((teacher, idx) => (
+                                        <label key={teacher.id} className="flex items-center gap-2">
+                                          <input
+                                            type="checkbox"
+                                            checked={teacher.checked}
+                                            onChange={e => {
+                                              const checked = e.target.checked;
+                                              setTeachers(teachers.map((t, i) =>
+                                                t.id === teacher.id ? { ...t, checked } : t
+                                              ));
+                                            }}
+                                          />
+                                          <span>{formatName(teacher.firstName, teacher.middleName, teacher.lastName)}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Explorer Teachers */}
+                              {(() => {
+                                const explorerTeachers = teachers.filter(t => {
+                                  const isExplorerAdvisor = advisoryData.some(adv => 
+                                    adv.level_id === 2 && 
+                                    (adv.lead_teacher_id === parseInt(t.id) || adv.assistant_teacher_id === parseInt(t.id))
+                                  );
+                                  return isExplorerAdvisor && t.name.toLowerCase().includes(inviteSelectSearch.toLowerCase());
+                                });
+                                
+                                if (explorerTeachers.length === 0) return null;
+                                
+                                return (
+                                  <div>
+                                    <h4 className="font-medium text-gray-700 mb-2">Explorer</h4>
+                                    <div className="ml-4 space-y-1">
+                                      {explorerTeachers.map((teacher, idx) => (
+                                        <label key={teacher.id} className="flex items-center gap-2">
+                                          <input
+                                            type="checkbox"
+                                            checked={teacher.checked}
+                                            onChange={e => {
+                                              const checked = e.target.checked;
+                                              setTeachers(teachers.map((t, i) =>
+                                                t.id === teacher.id ? { ...t, checked } : t
+                                              ));
+                                            }}
+                                          />
+                                          <span>{formatName(teacher.firstName, teacher.middleName, teacher.lastName)}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Adventurer Teachers */}
+                              {(() => {
+                                const adventurerTeachers = teachers.filter(t => {
+                                  const isAdventurerAdvisor = advisoryData.some(adv => 
+                                    adv.level_id === 3 && 
+                                    (adv.lead_teacher_id === parseInt(t.id) || adv.assistant_teacher_id === parseInt(t.id))
+                                  );
+                                  return isAdventurerAdvisor && t.name.toLowerCase().includes(inviteSelectSearch.toLowerCase());
+                                });
+                                
+                                if (adventurerTeachers.length === 0) return null;
+                                
+                                return (
+                                  <div>
+                                    <h4 className="font-medium text-gray-700 mb-2">Adventurer</h4>
+                                    <div className="ml-4 space-y-1">
+                                      {adventurerTeachers.map((teacher, idx) => (
+                                        <label key={teacher.id} className="flex items-center gap-2">
+                                          <input
+                                            type="checkbox"
+                                            checked={teacher.checked}
+                                            onChange={e => {
+                                              const checked = e.target.checked;
+                                              setTeachers(teachers.map((t, i) =>
+                                                t.id === teacher.id ? { ...t, checked } : t
+                                              ));
+                                            }}
+                                          />
+                                          <span>{formatName(teacher.firstName, teacher.middleName, teacher.lastName)}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Non Advisory Teachers */}
+                              {(() => {
+                                const nonAdvisoryTeachers = teachers.filter(t => {
+                                  const isAnyAdvisor = advisoryData.some(adv => 
+                                    (adv.lead_teacher_id === parseInt(t.id) || adv.assistant_teacher_id === parseInt(t.id))
+                                  );
+                                  return !isAnyAdvisor && t.name.toLowerCase().includes(inviteSelectSearch.toLowerCase());
+                                });
+                                
+                                if (nonAdvisoryTeachers.length === 0) return null;
+                                
+                                return (
+                                  <div>
+                                    <h4 className="font-medium text-gray-700 mb-2">Non Advisory</h4>
+                                    <div className="ml-4 space-y-1">
+                                      {nonAdvisoryTeachers.map((teacher, idx) => (
+                                        <label key={teacher.id} className="flex items-center gap-2">
+                                          <input
+                                            type="checkbox"
+                                            checked={teacher.checked}
+                                            onChange={e => {
+                                              const checked = e.target.checked;
+                                              setTeachers(teachers.map((t, i) =>
+                                                t.id === teacher.id ? { ...t, checked } : t
+                                              ));
+                                            }}
+                                          />
+                                          <span>{formatName(teacher.firstName, teacher.middleName, teacher.lastName)}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+              {/* Parent List */}
+              {inviteSelectTab === "parent" && (
+                <div className="mb-6 flex flex-col">
+                  {/* Checkboxes Row */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                        checked={allChecked}
+                        onChange={handleAllToggle}
+                      />
+                      <span className="text-sm font-medium">All</span>
+                    </label>
+                    {studentLevels
+                      .sort((a, b) => a.level_name.localeCompare(b.level_name))
+                      .map((level) => (
+                        <label key={level.level_id} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedLevels.includes(level.level_id)}
+                            onChange={() => handleClassLevelSelection(level.level_id)}
+                          />
+                          <span className="text-sm font-medium">{level.level_name}</span>
+                        </label>
+                      ))}
+                  </div>
+
+                  {/* Parent List Organized by Class */}
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between sticky top-0 bg-white py-2 mb-4">
+                      <h3 className="font-semibold text-gray-800 text-lg">Parent List</h3>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={parents.some(p => p.checked)}
+                          onChange={(e) => {
+                        const checked = e.target.checked;
+                        setParents(parents.map(p => ({ ...p, checked })));
+                            // If checking parents, uncheck all teachers
+                            if (checked) {
+                              setTeachers(teachers.map(t => ({ ...t, checked: false })));
+                            }
+                      }}
+                    />
+                        <span>Only Parents</span>
+                  </label>
+                    </div>
+                    
+                    {(() => {
+                      // Check if any parents match the search
+                      const allFilteredParents = parents.filter(p => 
+                        p.name.toLowerCase().includes(inviteSelectSearch.toLowerCase())
+                      );
+                      
+                      if (allFilteredParents.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            <div className="text-lg font-medium mb-2">No Parents Found</div>
+                            <div className="text-sm">No parents match your search "{inviteSelectSearch}".</div>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div className="space-y-4 max-h-48 overflow-y-auto border rounded p-3 bg-gray-50">
+                          {/* Discoverer Parents */}
+                          {(() => {
+                            const discovererParents = parents.filter(p => {
+                              const hasDiscovererChild = advisoryData.some(adv => 
+                                adv.level_id === 1 && 
+                                adv.students && 
+                                adv.students.some(student => student.parent_id === parseInt(p.id))
+                              );
+                              return hasDiscovererChild && p.name.toLowerCase().includes(inviteSelectSearch.toLowerCase());
+                            });
+                            
+                            if (discovererParents.length === 0) return null;
+                            
+                            return (
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-2">Discoverer</h4>
+                                <div className="ml-4 space-y-1">
+                                  {discovererParents.map((parent, idx) => (
+                                    <label key={parent.id} className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={parent.checked}
+                                        onChange={e => {
+                                          const checked = e.target.checked;
+                                          setParents(parents.map((p, i) =>
+                                            p.id === parent.id ? { ...p, checked } : p
+                                          ));
+                                        }}
+                                      />
+                                      <span>{formatName(parent.firstName, parent.middleName, parent.lastName)}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Explorer Parents */}
+                          {(() => {
+                            const explorerParents = parents.filter(p => {
+                              const hasExplorerChild = advisoryData.some(adv => 
+                                adv.level_id === 2 && 
+                                adv.students && 
+                                adv.students.some(student => student.parent_id === parseInt(p.id))
+                              );
+                              return hasExplorerChild && p.name.toLowerCase().includes(inviteSelectSearch.toLowerCase());
+                            });
+                            
+                            if (explorerParents.length === 0) return null;
+                            
+                            return (
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-2">Explorer</h4>
+                                <div className="ml-4 space-y-1">
+                                  {explorerParents.map((parent, idx) => (
+                                    <label key={parent.id} className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={parent.checked}
+                                        onChange={e => {
+                                          const checked = e.target.checked;
+                                          setParents(parents.map((p, i) =>
+                                            p.id === parent.id ? { ...p, checked } : p
+                                          ));
+                                        }}
+                                      />
+                                      <span>{formatName(parent.firstName, parent.middleName, parent.lastName)}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Adventurer Parents */}
+                          {(() => {
+                            const adventurerParents = parents.filter(p => {
+                              const hasAdventurerChild = advisoryData.some(adv => 
+                                adv.level_id === 3 && 
+                                adv.students && 
+                                adv.students.some(student => student.parent_id === parseInt(p.id))
+                              );
+                              return hasAdventurerChild && p.name.toLowerCase().includes(inviteSelectSearch.toLowerCase());
+                            });
+                            
+                            if (adventurerParents.length === 0) return null;
+                            
+                            return (
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-2">Adventurer</h4>
+                                <div className="ml-4 space-y-1">
+                                  {adventurerParents.map((parent, idx) => (
+                                    <label key={parent.id} className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={parent.checked}
+                                        onChange={e => {
+                                          const checked = e.target.checked;
+                                          setParents(parents.map((p, i) =>
+                                            p.id === parent.id ? { ...p, checked } : p
+                                          ));
+                                        }}
+                                      />
+                                      <span>{formatName(parent.firstName, parent.middleName, parent.lastName)}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-6">
+              <button
+                  onClick={() => {
+                    setShowInviteSelectModal(false);
+                    setSelectedLevels([]);
+                    setAllChecked(false);
+                    // Reset all to unchecked when closing
+                    setTeachers(teachers.map(t => ({ ...t, checked: false })));
+                    setParents(parents.map(p => ({ ...p, checked: false })));
+                  }}
+                  className="flex-1 py-3 rounded-full border-2 border-[#1E2A79] text-[#1E2A79] text-lg font-medium bg-white hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowInviteSelectModal(false);
+                    setSelectedLevels([]);
+                  }}
+                  disabled={!teachers.some(t => t.checked) && !parents.some(p => p.checked)}
+                  className={`flex-1 py-3 rounded-full text-lg font-medium transition-colors ${
+                    teachers.some(t => t.checked) || parents.some(p => p.checked)
+                      ? 'bg-[#1E2A79] text-white hover:bg-[#1a204d]'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+              >
+                Confirm
+              </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Invite modal for view mode */}
+      {showInviteViewModal && selectedEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-[200]">
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-lg">
+            <div className="bg-[#232c67] text-white px-6 py-3 rounded-t-xl font-semibold text-lg">
+              <span>Invited List</span>
+            </div>
+            <div className="p-6">
+              {/* Tabs */}
+              <div className="flex mb-6">
+                {(() => {
+                  // Check if this is a one-on-one meeting (has parent_id and student_id)
+                  const isOneOnOne = selectedEvent?.parent_id && selectedEvent?.student_id;
+                  
+                  if (isOneOnOne) {
+                    // For one-on-one meetings: show Parent and Student tabs
+                    return (
+                      <>
+                        <button
+                          className={`flex-1 py-2 rounded-l-full font-semibold ${inviteSelectTab === "parent" ? "bg-[#1E2A79] text-white" : "bg-blue-100 text-gray-700"}`}
+                          onClick={() => setInviteSelectTab("parent")}
+                        >
+                          Parent
+                        </button>
+                        <button
+                          className={`flex-1 py-2 rounded-r-full font-semibold ${inviteSelectTab === "student" ? "bg-[#1E2A79] text-white" : "bg-blue-100 text-gray-700"}`}
+                          onClick={() => setInviteSelectTab("student")}
+                        >
+                          Student
+                        </button>
+                      </>
+                    );
+                  } else {
+                    // Check if meeting was created by a teacher
+                    const isCreatedByTeacher = meetingCreator?.role === 'Teacher';
+                    
+                    if (isCreatedByTeacher) {
+                      // For meetings created by teachers: show Teacher and Parent tabs
+                      return (
+                        <>
+                          <button
+                            className={`flex-1 py-2 rounded-l-full font-semibold ${inviteSelectTab === "teacher" ? "bg-[#1E2A79] text-white" : "bg-blue-100 text-gray-700"}`}
+                            onClick={() => setInviteSelectTab("teacher")}
+                          >
+                            Teacher
+                          </button>
+                          <button
+                            className={`flex-1 py-2 rounded-r-full font-semibold ${inviteSelectTab === "parent" ? "bg-[#1E2A79] text-white" : "bg-blue-100 text-gray-700"}`}
+                            onClick={() => setInviteSelectTab("parent")}
+                          >
+                            Parent
+                          </button>
+                        </>
+                      );
+                    } else {
+                      // For meetings created by Super Admin or Admin: show Teacher and Parent tabs (no change)
+                      return (
+                        <>
+                          <button
+                            className={`flex-1 py-2 rounded-l-full font-semibold ${inviteSelectTab === "teacher" ? "bg-[#1E2A79] text-white" : "bg-blue-100 text-gray-700"}`}
+                            onClick={() => setInviteSelectTab("teacher")}
+                          >
+                            Teacher
+                          </button>
+                          <button
+                            className={`flex-1 py-2 rounded-r-full font-semibold ${inviteSelectTab === "parent" ? "bg-[#1E2A79] text-white" : "bg-blue-100 text-gray-700"}`}
+                            onClick={() => setInviteSelectTab("parent")}
+                          >
+                            Parent
+                          </button>
+                        </>
+                      );
+                    }
+                  }
+                })()}
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <div className="relative">
+                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+                  <input
+                    type="text"
+                    placeholder="Search by name..."
+                    value={inviteViewSearch}
+                    onChange={e => setInviteViewSearch(e.target.value)}
+                    className="pl-10 pr-8 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full"
+                    style={{ minHeight: '2rem' }}
+                  />
+                  {inviteViewSearch && (
+                    <button
+                      onClick={() => setInviteViewSearch("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      aria-label="Clear search"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Teacher List */}
+              {inviteSelectTab === "teacher" && (
+                <div className="border rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between sticky top-0 bg-white py-2 mb-4">
+                    <h3 className="font-semibold text-gray-800 text-lg">
+                      {meetingCreator?.role === 'Teacher' ? 'Advisor' : 'Teacher List'}
+                    </h3>
+                  </div>
+                  
+                  {(() => {
+                    // Check if meeting was created by a teacher
+                    const isCreatedByTeacher = meetingCreator?.role === 'Teacher';
+                    
+                    if (isCreatedByTeacher) {
+                      // For meetings created by teachers: show the advisor name
+                      return (
+                        <div className="space-y-4 max-h-48 overflow-y-auto border rounded p-3 bg-gray-50">
+                          <div className="text-sm">
+                            {meetingCreator ? formatName(meetingCreator.firstName, meetingCreator.middleName, meetingCreator.lastName) : 'Unknown Advisor'}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // For meetings created by Super Admin or Admin: show teacher list as before
+                      if (invitedList.teachers.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            <div className="text-lg font-medium mb-2">No Teachers Invited</div>
+                            <div className="text-sm">This meeting has no teacher invitations.</div>
+                          </div>
+                        );
+                      }
+                      
+                      return (() => {
+                    // Check if any teachers match the search
+                    const allFilteredTeachers = invitedList.teachers.filter(t => {
+                      const name = `${t.user_firstname} ${t.user_middlename} ${t.user_lastname}`.toLowerCase();
+                      return name.includes(inviteViewSearch.toLowerCase());
+                    });
+                    
+                    if (allFilteredTeachers.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          <div className="text-lg font-medium mb-2">No Teachers Found</div>
+                          <div className="text-sm">No teachers match your search "{inviteViewSearch}".</div>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="space-y-4 max-h-48 overflow-y-auto border rounded p-3 bg-gray-50">
+                        {/* Discoverer Teachers */}
+                        {(() => {
+                          const discovererTeachers = invitedList.teachers.filter(t => {
+                            const isDiscovererAdvisor = advisoryData.some(adv => 
+                              adv.level_id === 1 && 
+                              (adv.lead_teacher_id === parseInt(t.user_id) || adv.assistant_teacher_id === parseInt(t.user_id))
+                            );
+                            const name = `${t.user_firstname} ${t.user_middlename} ${t.user_lastname}`.toLowerCase();
+                            return isDiscovererAdvisor && name.includes(inviteViewSearch.toLowerCase());
+                          });
+                          
+                          if (discovererTeachers.length === 0) return null;
+                          
+                          return (
+                            <div>
+                              <h4 className="font-medium text-gray-700 mb-2">Discoverer</h4>
+                              <div className="ml-4 space-y-1">
+                                {discovererTeachers.map(t => (
+                                  <div key={t.user_id} className="text-sm">
+                                    {formatName(t.user_firstname, t.user_middlename, t.user_lastname)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Explorer Teachers */}
+                        {(() => {
+                          const explorerTeachers = invitedList.teachers.filter(t => {
+                            const isExplorerAdvisor = advisoryData.some(adv => 
+                              adv.level_id === 2 && 
+                              (adv.lead_teacher_id === parseInt(t.user_id) || adv.assistant_teacher_id === parseInt(t.user_id))
+                            );
+                            const name = `${t.user_firstname} ${t.user_middlename} ${t.user_lastname}`.toLowerCase();
+                            return isExplorerAdvisor && name.includes(inviteViewSearch.toLowerCase());
+                          });
+                          
+                          if (explorerTeachers.length === 0) return null;
+                          
+                          return (
+                            <div>
+                              <h4 className="font-medium text-gray-700 mb-2">Explorer</h4>
+                              <div className="ml-4 space-y-1">
+                                {explorerTeachers.map(t => (
+                                  <div key={t.user_id} className="text-sm">
+                                    {formatName(t.user_firstname, t.user_middlename, t.user_lastname)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Adventurer Teachers */}
+                        {(() => {
+                          const adventurerTeachers = invitedList.teachers.filter(t => {
+                            const isAdventurerAdvisor = advisoryData.some(adv => 
+                              adv.level_id === 3 && 
+                              (adv.lead_teacher_id === parseInt(t.user_id) || adv.assistant_teacher_id === parseInt(t.user_id))
+                            );
+                            const name = `${t.user_firstname} ${t.user_middlename} ${t.user_lastname}`.toLowerCase();
+                            return isAdventurerAdvisor && name.includes(inviteViewSearch.toLowerCase());
+                          });
+                          
+                          if (adventurerTeachers.length === 0) return null;
+                          
+                          return (
+                            <div>
+                              <h4 className="font-medium text-gray-700 mb-2">Adventurer</h4>
+                              <div className="ml-4 space-y-1">
+                                {adventurerTeachers.map(t => (
+                                  <div key={t.user_id} className="text-sm">
+                                    {formatName(t.user_firstname, t.user_middlename, t.user_lastname)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Non Advisory Teachers */}
+                        {(() => {
+                          const nonAdvisoryTeachers = invitedList.teachers.filter(t => {
+                            const isAnyAdvisor = advisoryData.some(adv => 
+                              (adv.lead_teacher_id === parseInt(t.user_id) || adv.assistant_teacher_id === parseInt(t.user_id))
+                            );
+                            const name = `${t.user_firstname} ${t.user_middlename} ${t.user_lastname}`.toLowerCase();
+                            return !isAnyAdvisor && name.includes(inviteViewSearch.toLowerCase());
+                          });
+                          
+                          if (nonAdvisoryTeachers.length === 0) return null;
+                          
+                          return (
+                            <div>
+                              <h4 className="font-medium text-gray-700 mb-2">Non Advisory</h4>
+                              <div className="ml-4 space-y-1">
+                                {nonAdvisoryTeachers.map(t => (
+                                  <div key={t.user_id} className="text-sm">
+                                    {formatName(t.user_firstname, t.user_middlename, t.user_lastname)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    );
+                    }
+                  })()}
+                </div>
+              )}
+
+              {/* Parent List */}
+              {inviteSelectTab === "parent" && (
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between sticky top-0 bg-white py-2 mb-4">
+                    <h3 className="font-semibold text-gray-800 text-lg">
+                      {meetingCreator?.role === 'Teacher' ? 'Parent' : 'Parent List'}
+                    </h3>
+                  </div>
+                  
+                  {(() => {
+                    // Check if meeting was created by a teacher
+                    const isCreatedByTeacher = meetingCreator?.role === 'Teacher';
+                    
+                    if (isCreatedByTeacher) {
+                      // For meetings created by teachers: show parent names and student names
+                      if (invitedList.parents.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            <div className="text-lg font-medium mb-2">No Parents Invited</div>
+                            <div className="text-sm">This meeting has no parent invitations.</div>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div className="space-y-4 max-h-48 overflow-y-auto border rounded p-3 bg-gray-50">
+                          {invitedList.parents.map(p => {
+                            // Find the corresponding student for this parent
+                            const student = invitedList.students?.find(s => 
+                              s.parent_id === parseInt(p.user_id) || s.parent_id === parseInt(p.id)
+                            );
+                            
+                            return (
+                              <div key={p.user_id || p.id} className="text-sm">
+                                <div className="font-medium">
+                                  {p.user_firstname && p.user_middlename && p.user_lastname 
+                                    ? formatName(p.user_firstname, p.user_middlename, p.user_lastname)
+                                    : p.name || 'Unknown Parent'
+                                  }
+                                </div>
+                                {student && (
+                                  <div className="text-gray-600 ml-4">
+                                    Student: {formatName(student.stud_firstname, student.stud_middlename, student.stud_lastname)}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    } else {
+                      // For meetings created by Super Admin or Admin: show parent list as before
+                      if (invitedList.parents.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            <div className="text-lg font-medium mb-2">No Parents Invited</div>
+                            <div className="text-sm">This meeting has no parent invitations.</div>
+                          </div>
+                        );
+                      }
+                      
+                      // Check if any parents match the search
+                      const allFilteredParents = invitedList.parents.filter(p => {
+                        // Handle both data structures (from get_all_users.php and from notification_recipients)
+                        const name = p.user_firstname && p.user_middlename && p.user_lastname 
+                          ? `${p.user_firstname} ${p.user_middlename} ${p.user_lastname}`.toLowerCase()
+                          : p.name ? p.name.toLowerCase() : '';
+                        return name.includes(inviteViewSearch.toLowerCase());
+                      });
+                    
+                      if (allFilteredParents.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            <div className="text-lg font-medium mb-2">No Parents Found</div>
+                            <div className="text-sm">No parents match your search "{inviteViewSearch}".</div>
+                          </div>
+                        );
+                      }
+                      
+                      // Check if this is a one-on-one meeting
+                      const isOneOnOne = selectedEvent?.parent_id && selectedEvent?.student_id;
+                      
+                      if (isOneOnOne) {
+                        // For one-on-one meetings: show simplified list
+                        return (
+                          <div className="space-y-4 max-h-48 overflow-y-auto border rounded p-3 bg-gray-50">
+                            {allFilteredParents.map(p => (
+                              <div key={p.user_id || p.id} className="text-sm">
+                                {p.user_firstname && p.user_middlename && p.user_lastname 
+                                  ? formatName(p.user_firstname, p.user_middlename, p.user_lastname)
+                                  : p.name || 'Unknown Parent'
+                                }
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div className="space-y-4 max-h-48 overflow-y-auto border rounded p-3 bg-gray-50">
+                          {/* Discoverer Parents */}
+                          {(() => {
+                            const discovererParents = invitedList.parents.filter(p => {
+                              const hasDiscovererChild = advisoryData.some(adv => 
+                                adv.level_id === 1 && 
+                                adv.students && 
+                                adv.students.some(student => student.parent_id === parseInt(p.user_id))
+                              );
+                              const name = `${p.user_firstname} ${p.user_middlename} ${p.user_lastname}`.toLowerCase();
+                              return hasDiscovererChild && name.includes(inviteViewSearch.toLowerCase());
+                            });
+                            
+                            if (discovererParents.length === 0) return null;
+                            
+                            return (
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-2">Discoverer</h4>
+                                <div className="ml-4 space-y-1">
+                                  {discovererParents.map(p => (
+                                    <div key={p.user_id} className="text-sm">
+                                      {formatName(p.user_firstname, p.user_middlename, p.user_lastname)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Explorer Parents */}
+                          {(() => {
+                            const explorerParents = invitedList.parents.filter(p => {
+                              const hasExplorerChild = advisoryData.some(adv => 
+                                adv.level_id === 2 && 
+                                adv.students && 
+                                adv.students.some(student => student.parent_id === parseInt(p.user_id))
+                              );
+                              const name = `${p.user_firstname} ${p.user_middlename} ${p.user_lastname}`.toLowerCase();
+                              return hasExplorerChild && name.includes(inviteViewSearch.toLowerCase());
+                            });
+                            
+                            if (explorerParents.length === 0) return null;
+                            
+                            return (
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-2">Explorer</h4>
+                                <div className="ml-4 space-y-1">
+                                  {explorerParents.map(p => (
+                                    <div key={p.user_id} className="text-sm">
+                                      {formatName(p.user_firstname, p.user_middlename, p.user_lastname)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Adventurer Parents */}
+                          {(() => {
+                            const adventurerParents = invitedList.parents.filter(p => {
+                              const hasAdventurerChild = advisoryData.some(adv => 
+                                adv.level_id === 3 && 
+                                adv.students && 
+                                adv.students.some(student => student.parent_id === parseInt(p.user_id))
+                              );
+                              const name = `${p.user_firstname} ${p.user_middlename} ${p.user_lastname}`.toLowerCase();
+                              return hasAdventurerChild && name.includes(inviteViewSearch.toLowerCase());
+                            });
+                            
+                            if (adventurerParents.length === 0) return null;
+                            
+                            return (
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-2">Adventurer</h4>
+                                <div className="ml-4 space-y-1">
+                                  {adventurerParents.map(p => (
+                                    <div key={p.user_id} className="text-sm">
+                                      {formatName(p.user_firstname, p.user_middlename, p.user_lastname)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      );
+                    }
+                  })()}
+                </div>
+              )}
+
+              {/* Student List - Only show for one-on-one meetings */}
+              {inviteSelectTab === "student" && selectedEvent?.parent_id && selectedEvent?.student_id && (
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between sticky top-0 bg-white py-2 mb-4">
+                    <h3 className="font-semibold text-gray-800 text-lg">Student List</h3>
+                  </div>
+                  
+                  {invitedList.students && invitedList.students.length > 0 ? (() => {
+                    // Check if any students match the search
+                    const allFilteredStudents = invitedList.students.filter(s => {
+                      const name = `${s.stud_firstname} ${s.stud_middlename} ${s.stud_lastname}`.toLowerCase();
+                      return name.includes(inviteViewSearch.toLowerCase());
+                    });
+                    
+                    if (allFilteredStudents.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          <div className="text-lg font-medium mb-2">No Students Found</div>
+                          <div className="text-sm">No students match your search "{inviteViewSearch}".</div>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="space-y-4 max-h-48 overflow-y-auto border rounded p-3 bg-gray-50">
+                        {allFilteredStudents.map(s => (
+                          <div key={s.student_id} className="text-sm">
+                            {formatName(s.stud_firstname, s.stud_middlename, s.stud_lastname)}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })() : (
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="text-lg font-medium mb-2">No Students Invited</div>
+                      <div className="text-sm">This meeting has no student invitations.</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowInviteViewModal(false);
+                    setMeetingCreator(null); // Reset meeting creator when closing modal
+                  }}
+                  className="flex-1 py-3 rounded-full border-2 border-[#1E2A79] text-[#1E2A79] text-lg font-medium bg-white hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Cancel confirmation modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-[200]">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-0 relative">
+            <div className="bg-[#232c67] text-white px-6 py-3 rounded-t-xl font-semibold text-lg flex justify-between items-center">
+              <span>Cancel Meeting</span>
+            </div>
+            <div className="p-6 text-center">
+              <p className="mb-6 text-gray-700">Are you sure you want to cancel this meeting?</p>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setShowCancelModal(false);
+                    toast.info("Meeting cancellation cancelled");
+                  }}
+                  className="px-4 py-1 border border-[#232c67] text-[#232c67] rounded-full text-sm font-semibold bg-white hover:bg-gray-100"
+                  disabled={cancelLoading}
+                >
+                  No
+                </button>
+                <button
+                  onClick={async () => {
+                    setCancelLoading(true);
+                    try {
+                      const userId = localStorage.getItem('userId');
+                      const res = await fetch('http://localhost/capstone-project/backend/Meetingupdate_meeting.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          meeting_id: selectedEvent.id, 
+                          meeting_status: 'Cancelled', 
+                          created_by: userId,
+                          notif_message: "[MEETING] Cancelled the meeting"
+                        })
+                      });
+                      const data = await res.json();
+                      if (data.status === 'success') {
+                        await fetchMeetings(setEvents);
+                        setSelectedEvent({ ...selectedEvent, status: 'Cancelled' });
+                        toast.success('Meeting cancelled successfully!');
+                        // No need to handle notification here, backend does it
+                      } else {
+                        toast.error('Failed to cancel meeting: ' + (data.message || 'Unknown error'));
+                      }
+                    } catch (err) {
+                      toast.error('Error connecting to server: ' + err.message);
+                    }
+                    setCancelLoading(false);
+                    setShowCancelModal(false);
+                  }}
+                  className="px-4 py-1 bg-red-600 text-white rounded-full text-sm font-semibold hover:bg-red-700"
+                  disabled={cancelLoading}
+                >
+                  Yes, Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+    
+    </ProtectedRoute>
+  );
+}

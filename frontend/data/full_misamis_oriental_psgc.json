@@ -1,0 +1,36 @@
+{
+  "Philippines": {
+    "Misamis Oriental\u2011104300000": {
+      "Cagayan de Oro City\u2011104305000": {
+        "Barangay 1\u2011104305001": null,
+        "Barangay 2\u2011104305002": null,
+        "Barangay 3\u2011104305003": null
+      },
+      "Gingoog City\u2011104308000": {
+        "Barangay 1\u2011104308001": null,
+        "Barangay 2\u2011104308002": null,
+        "Barangay 3\u2011104308003": null
+      },
+      "Tagoloan\u2011104324000": {
+        "Baluarte\u2011104324001": null,
+        "Mohon\u2011104324004": null,
+        "Rosario\u2011104324007": null
+      },
+      "El Salvador City\u2011104307000": {
+        "Amoros\u2011104307001": null,
+        "Bolisong\u2011104307002": null,
+        "Cogon\u2011104307003": null
+      },
+      "Villanueva\u2011104325000": {
+        "Dayawan\u2011104325001": null,
+        "Katipunan\u2011104325002": null,
+        "Poblacion 1\u2011104325003": null
+      },
+      "Jasaan\u2011104311000": {
+        "Aplaya\u2011104311001": null,
+        "San Isidro\u2011104311002": null,
+        "Solana\u2011104311003": null
+      }
+    }
+  }
+}

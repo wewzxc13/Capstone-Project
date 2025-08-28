@@ -1,0 +1,25 @@
+﻿# --- Frontend (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.vercel/
+frontend/.env
+frontend/.env.*
+
+# --- Backend (PHP)
+backend/vendor/
+backend/.env
+backend/.env.*
+backend/uploads/
+backend/**/uploads/
+backend/**/cache/
+backend/connection.php
+
+# Logs
+backend/SystemLogs/*.txt
+backend/SystemLogs/*.log
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
