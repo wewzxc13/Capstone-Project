@@ -32,7 +32,7 @@ export default function TeacherLayout({ children }) {
       '/TeacherSection/Students': 'Students',
       '/TeacherSection/Calendar': 'Calendar',
       '/TeacherSection/Attendance': 'Attendance',
-      '/TeacherSection/Assessments': 'Assessments'
+      '/TeacherSection/Assessment': 'Assessment'
     };
     return pathMap[path] || 'Dashboard';
   };

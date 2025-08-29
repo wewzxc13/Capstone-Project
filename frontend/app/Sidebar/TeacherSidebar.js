@@ -18,7 +18,7 @@ const navItems = [
   { name: "Dashboard", icon: FaHome, href: "/TeacherSection/Dashboard" },
   { name: "Students", icon: FaChild, href: "/TeacherSection/Students" },
   { name: "Attendance", icon: FaCalendarCheck, href: "/TeacherSection/Attendance" },
-  { name: "Assessments", icon: FaPuzzlePiece, href: "/TeacherSection/Assessments" },
+  { name: "Assessment", icon: FaPuzzlePiece, href: "/TeacherSection/Assessment" },
   { name: "Calendar", icon: FaCalendarAlt, href: "/TeacherSection/Calendar" },
   { name: "Message", icon: FaCommentDots, href: "/TeacherSection/Message" },
 ];

@@ -106,6 +106,8 @@ export default function SuperAdminLogsPage() {
             entity = 'Authentication';
           } else if (/changed password/.test(actionText)) {
             entity = 'Security';
+          } else if (/archived.*activities|updated.*school.*timeline|updated.*visual.*feedback/i.test(actionText)) {
+            entity = 'Configuration';
           } else if (/edited|archived|restored|created/.test(actionText)) {
             entity = 'Account Management';
           } else if (l.target_student_id) {

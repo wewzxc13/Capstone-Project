@@ -77,7 +77,6 @@ try {
             LEFT JOIN tbl_advisory adv ON a.advisory_id = adv.advisory_id
             LEFT JOIN tbl_student_levels sl ON adv.level_id = sl.level_id
             ORDER BY a.activity_date DESC, a.activity_id DESC
-            LIMIT 100
         ";
 
         $result = $conn->query($detailedQuery);

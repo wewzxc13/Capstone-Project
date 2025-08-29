@@ -6280,3 +6280,17 @@ Total=19.787, Count=13
 Average=1.522
 Shape lookup result: {"visual_feedback_id":5}
 Updated tbl_quarter_feedback with visual_feedback_id=5
+Received: student_id=, quarter_id=, subject_id=
+Error: Missing required parameters.
+Received: student_id=11, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":5},{"visual_feedback_id":null},{"visual_feedback_id":5},{"visual_feedback_id":null},{"visual_feedback_id":4},{"visual_feedback_id":null},{"visual_feedback_id":5},{"visual_feedback_id":null},{"visual_feedback_id":4},{"visual_feedback_id":null},{"visual_feedback_id":2},{"visual_feedback_id":3},{"visual_feedback_id":2},{"visual_feedback_id":4},{"visual_feedback_id":4},{"visual_feedback_id":3},{"visual_feedback_id":5},{"visual_feedback_id":5},{"visual_feedback_id":2}]
+Total=33.186, Count=14
+Average=2.37
+Shape lookup result: {"visual_feedback_id":4}
+Updated tbl_quarter_feedback with visual_feedback_id=4
+Received: student_id=11, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":5},{"visual_feedback_id":null},{"visual_feedback_id":5},{"visual_feedback_id":null},{"visual_feedback_id":4},{"visual_feedback_id":null},{"visual_feedback_id":5},{"visual_feedback_id":null},{"visual_feedback_id":4},{"visual_feedback_id":null},{"visual_feedback_id":2},{"visual_feedback_id":3},{"visual_feedback_id":2},{"visual_feedback_id":4},{"visual_feedback_id":4},{"visual_feedback_id":5},{"visual_feedback_id":5},{"visual_feedback_id":5},{"visual_feedback_id":2}]
+Total=31.586, Count=14
+Average=2.256
+Shape lookup result: {"visual_feedback_id":4}
+Updated tbl_quarter_feedback with visual_feedback_id=4

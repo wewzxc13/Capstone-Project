@@ -48,7 +48,8 @@ export default function SuperAdminLayout({ children }) {
       '/SuperAdminSection/Schedule': 'Schedule',
       '/SuperAdminSection/Message': 'Message',
       '/SuperAdminSection/Archive': 'Archive',
-      '/SuperAdminSection/Logs': 'System Logs'
+      '/SuperAdminSection/Logs': 'System Logs',
+      '/SuperAdminSection/Configuration': 'System Configuration'
     };
     return pathMap[path] || 'Dashboard';
   };
