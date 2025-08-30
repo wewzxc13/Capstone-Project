@@ -369,6 +369,50 @@ export default function SuperAdminUsersPage() {
   // Helper for teacher dropdowns (prototype)
   const teacherOptions = filteredUsers.Teacher.map(t => ({ id: t.id, name: t.name }));
 
+  // Helper function to generate smart pagination
+  const generatePaginationItems = (currentPage, totalPages, maxVisible = 7) => {
+    const items = [];
+    
+    if (totalPages <= maxVisible) {
+      // If total pages is less than max visible, show all pages
+      for (let i = 1; i <= totalPages; i++) {
+        items.push({ type: 'page', page: i });
+      }
+    } else {
+      // Always show first page
+      items.push({ type: 'page', page: 1 });
+      
+      if (currentPage <= 4) {
+        // Near the beginning: show first 5 pages + ellipsis + last page
+        for (let i = 2; i <= Math.min(5, totalPages - 1); i++) {
+          items.push({ type: 'page', page: i });
+        }
+        if (totalPages > 5) {
+          items.push({ type: 'ellipsis' });
+        }
+        if (totalPages > 1) {
+          items.push({ type: 'page', page: totalPages });
+        }
+      } else if (currentPage >= totalPages - 3) {
+        // Near the end: show first page + ellipsis + last 5 pages
+        items.push({ type: 'ellipsis' });
+        for (let i = Math.max(2, totalPages - 4); i <= totalPages; i++) {
+          items.push({ type: 'page', page: i });
+        }
+      } else {
+        // In the middle: show first + ellipsis + current±2 + ellipsis + last
+        items.push({ type: 'ellipsis' });
+        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+          items.push({ type: 'page', page: i });
+        }
+        items.push({ type: 'ellipsis' });
+        items.push({ type: 'page', page: totalPages });
+      }
+    }
+    
+    return items;
+  };
+
   if (loading) {
     return (
       <ProtectedRoute role="Super Admin">
@@ -701,24 +745,37 @@ export default function SuperAdminUsersPage() {
                     >
                       <span className="text-lg">&lt;</span>
                     </button>
-                    {Array.from({ length: totalPages }, (_, i) => {
-                      const pageNum = i + 1;
-                      const isActive = pageNum === currentPage;
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(selectedCategory, pageNum)}
-                          className={
-                            isActive
-                              ? "w-10 h-10 rounded-lg bg-[#232c67] text-white text-sm font-semibold flex items-center justify-center"
-                              : "w-10 h-10 rounded-lg border border-gray-300 text-gray-700 text-sm font-semibold flex items-center justify-center bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67]"
-                          }
-                          disabled={isActive}
-                        >
-                          {pageNum}
-                        </button>
-                      );
+                    
+                    {generatePaginationItems(currentPage, totalPages).map((item, index) => {
+                      if (item.type === 'page') {
+                        const isActive = item.page === currentPage;
+                        return (
+                          <button
+                            key={`page-${item.page}`}
+                            onClick={() => handlePageChange(selectedCategory, item.page)}
+                            className={
+                              isActive
+                                ? "w-10 h-10 rounded-lg bg-[#232c67] text-white text-sm font-semibold flex items-center justify-center"
+                                : "w-10 h-10 rounded-lg border border-gray-300 text-gray-700 text-sm font-semibold flex items-center justify-center bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67]"
+                            }
+                            disabled={isActive}
+                          >
+                            {item.page}
+                          </button>
+                        );
+                      } else if (item.type === 'ellipsis') {
+                        return (
+                          <span
+                            key={`ellipsis-${index}`}
+                            className="w-10 h-10 flex items-center justify-center text-gray-500 text-sm font-medium"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
                     })}
+                    
                     <button
                       className="w-10 h-10 rounded-lg bg-white border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67]"
                       onClick={() => handlePageChange(selectedCategory, Math.min(totalPages, currentPage + 1))}

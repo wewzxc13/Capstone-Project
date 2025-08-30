@@ -156,7 +156,7 @@ const validators = {
     return { isValid: true, message: "" };
   },
 
-  // Date of birth validation - must be 18+ years old (for Admin/Teacher/Parent)
+  // Date of birth validation - must be 18-100 years old (for Admin/Teacher/Parent)
   dob: (value) => {
     if (!value) return { isValid: false, message: "" };
     
@@ -172,11 +172,13 @@ const validators = {
       age = age - 1;
     }
     
-    // Check if person is 18 or older
-    if (age >= 18) {
+    // Check if person is between 18 and 100 years old
+    if (age >= 18 && age <= 100) {
       return { isValid: true, message: "" };
-    } else {
+    } else if (age < 18) {
       return { isValid: false, message: `Must be 18 years or older. Current age: ${age} years` };
+    } else {
+      return { isValid: false, message: `Must be 100 years or younger. Current age: ${age} years` };
     }
   },
 
@@ -813,7 +815,7 @@ export default function AddUserPage() {
                  ? 'Adventurer'
                  : result.level_id
              }`
-           : `User added successfully! Default password: ${result.default_password}`;
+           : `User added successfully!`;
          
          toast.success(successMessage);
          
@@ -987,21 +989,7 @@ function getInputClassName(fieldName, formData, validationErrors) {
       <div className="bg-[#232c67] text-white rounded-lg px-4 py-3 mb-6 font-semibold text-lg">
         {isAdmin ? "Admin Details" : isTeacher ? "Teacher Details" : "Parent Details"}
       </div>
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <div className="flex items-start gap-3">
-          <div className="text-blue-600 mt-0.5">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="text-sm text-blue-800">
-            <p className="font-medium mb-1">Age Requirement</p>
-            <p className="text-blue-700">
-              {isAdmin ? "Administrators" : isTeacher ? "Teachers" : "Parents"} must be 18 years or older to create an account.
-            </p>
-          </div>
-        </div>
-      </div>
+     
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">First Name <span className="text-red-500">*</span></label>
@@ -1082,7 +1070,7 @@ function getInputClassName(fieldName, formData, validationErrors) {
                 if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
                   age = age - 1;
                 }
-                return `${age} years old`;
+                return `${age} years old (18-100 years allowed)`;
               })()}
             </div>
           )}
@@ -1397,19 +1385,30 @@ function getInputClassName(fieldName, formData, validationErrors) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Gender <span className="text-red-500">*</span></label>
-          <CustomDropdown
-            name="gender"
-            value={formData.gender || ""}
-            onChange={handleChange}
-            options={[
-              { value: "", label: "Select" },
-              { value: "Male", label: "Male" },
-              { value: "Female", label: "Female" }
-            ]}
-            placeholder="Select"
-            error={!!validationErrors.gender}
-            className={getInputClassName('gender', formData, validationErrors).replace('w-full p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 border-2 bg-white', '')}
-          />
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="radio"
+                name="gender"
+                value="Male"
+                checked={formData.gender === "Male"}
+                onChange={handleChange}
+                className="text-[#232c67] focus:ring-[#232c67]"
+              />
+              Male
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="radio"
+                name="gender"
+                value="Female"
+                checked={formData.gender === "Female"}
+                onChange={handleChange}
+                className="text-[#232c67] focus:ring-[#232c67]"
+              />
+              Female
+            </label>
+          </div>
           {formData.gender && validationErrors.gender && (
             <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
               <FaExclamationCircle />
@@ -1503,19 +1502,30 @@ function getInputClassName(fieldName, formData, validationErrors) {
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Class Schedule <span className="text-red-500">*</span></label>
-          <CustomDropdown
-            name="class_schedule"
-            value={formData.class_schedule || ""}
-            onChange={handleChange}
-            options={[
-              { value: "", label: "Select" },
-              { value: "Morning", label: "Morning" },
-              { value: "Afternoon", label: "Afternoon" }
-            ]}
-            placeholder="Select"
-            error={!!validationErrors.class_schedule}
-            className={getInputClassName('class_schedule', formData, validationErrors).replace('w-full p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 border-2 bg-white', '')}
-          />
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="radio"
+                name="class_schedule"
+                value="Morning"
+                checked={formData.class_schedule === "Morning"}
+                onChange={handleChange}
+                className="text-[#232c67] focus:ring-[#232c67]"
+              />
+              Morning
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="radio"
+                name="class_schedule"
+                value="Afternoon"
+                checked={formData.class_schedule === "Afternoon"}
+                onChange={handleChange}
+                className="text-[#232c67] focus:ring-[#232c67]"
+              />
+              Afternoon
+            </label>
+          </div>
           {formData.class_schedule && validationErrors.class_schedule && (
             <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
               <FaExclamationCircle />

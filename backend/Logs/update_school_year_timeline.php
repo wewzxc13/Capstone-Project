@@ -216,7 +216,7 @@ try {
             ],
             'toast' => [
                 'type' => 'success',
-                'message' => "School year timeline updated successfully! {$updatedCount} quarters updated."
+                'message' => "School year timeline updated successfully!"
             ]
         ]);
         

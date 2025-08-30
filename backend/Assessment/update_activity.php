@@ -43,7 +43,7 @@ try {
     if ($quarter_id) {
         // If quarter_id changed, update activity_num
         if ($quarter_id != $old_quarter_id && $advisory_id && $subject_id) {
-            $stmt = $conn->prepare('SELECT COALESCE(MAX(activity_num), 0) + 1 AS next_activity_num FROM tbl_activities WHERE advisory_id = ? AND subject_id = ? AND quarter_id = ?');
+            $stmt = $conn->prepare('SELECT COALESCE(MAX(activity_num), 0) + 1 AS next_activity_num FROM tbl_activities WHERE advisory_id = ? AND subject_id = ? AND quarter_id = ? AND activity_status = "Active"');
             $stmt->execute([$advisory_id, $subject_id, $quarter_id]);
             $next_activity_num = $stmt->fetchColumn();
             $stmt = $conn->prepare('UPDATE tbl_activities SET activity_name = ?, activity_date = ?, quarter_id = ?, activity_num = ? WHERE activity_id = ?');

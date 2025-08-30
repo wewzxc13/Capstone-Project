@@ -32,7 +32,7 @@ $students = [];
 $tables = ['tbl_tracking_discoverer', 'tbl_tracking_explorer', 'tbl_tracking_adventurer'];
 
 foreach ($tables as $table) {
-    $s_sql = "SELECT DISTINCT student_id FROM $table WHERE activity_id IN (SELECT activity_id FROM tbl_activities WHERE advisory_id = ? AND subject_id = ?)";
+    $s_sql = "SELECT DISTINCT student_id FROM $table WHERE activity_id IN (SELECT activity_id FROM tbl_activities WHERE advisory_id = ? AND subject_id = ? AND activity_status = 'Active')";
     $s_stmt = $conn->prepare($s_sql);
     $s_stmt->bind_param('ii', $advisory_id, $subject_id);
     $s_stmt->execute();

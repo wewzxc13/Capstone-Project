@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 try {
     include_once __DIR__ . '/../connection.php';
     
-    // Get student counts by level and gender
+    // Get student counts by level and gender (only students linked to parents)
     $query = "
         SELECT 
             sl.level_name,
@@ -23,7 +23,7 @@ try {
             COUNT(*) as count
         FROM tbl_students s
         JOIN tbl_student_levels sl ON s.level_id = sl.level_id
-        WHERE s.stud_school_status = 'Active'
+        WHERE s.stud_school_status = 'Active' AND s.parent_id IS NOT NULL
         GROUP BY sl.level_name, s.stud_gender
         ORDER BY sl.level_id, s.stud_gender
     ";
@@ -58,7 +58,7 @@ try {
     if (empty($levelNames)) {
         echo json_encode([
             'status' => 'success',
-            'message' => 'No students found in the system yet.',
+            'message' => 'No active students linked to parents found in the system yet.',
             'levelData' => [],
             'levelNames' => [],
             'quarterData' => [],
@@ -69,6 +69,7 @@ try {
 
     // Get attendance data by quarter using actual quarter date ranges from tbl_quarters
     // Include all quarters that have attendance data (not just current calendar year)
+    // Only count students linked to parents
     $attendanceQuery = "
         SELECT 
             sl.level_name,
@@ -80,6 +81,7 @@ try {
         JOIN tbl_students s ON a.student_id = s.student_id
         JOIN tbl_student_levels sl ON s.level_id = sl.level_id
         JOIN tbl_quarters q ON a.attendance_date BETWEEN q.start_date AND q.end_date
+        WHERE s.parent_id IS NOT NULL
         GROUP BY sl.level_name, q.quarter_id, q.quarter_name
         ORDER BY sl.level_id, q.quarter_id
     ";
@@ -142,7 +144,7 @@ try {
     // Prepare response message
     $message = '';
     if (!$hasAttendanceData) {
-        $message = 'No attendance records found for the current year. Attendance data will appear once teachers start recording attendance.';
+        $message = 'No attendance records found for the current year. Attendance data will appear once teachers start recording attendance for students linked to parents.';
     }
 
     echo json_encode([

@@ -928,7 +928,7 @@ export default function SuperAdminConfigurationPage() {
                   <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
                   <input
                     type="text"
-                    placeholder="Search by name, subject, or description"
+                    placeholder="Search by name or description"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 pr-8 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full caret-[#232c67]"
@@ -1117,8 +1117,8 @@ export default function SuperAdminConfigurationPage() {
 
           {/* Loading State */}
           {loading && (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="flex justify-center items-center py-6">
+              <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-blue-600"></div>
               <span className="ml-2 text-gray-600">Loading data from database...</span>
             </div>
           )}
@@ -1148,7 +1148,7 @@ export default function SuperAdminConfigurationPage() {
                      </div>
                      <button
                        onClick={openBulkArchiveModal}
-                       className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                       className="flex items-center gap-2 px-4 py-2 bg-[#232c67] text-white rounded-lg hover:bg-[#1a1f4d] transition-colors text-sm font-medium"
                      >
                        <FaArchive className="text-xs" />
                        Bulk Archive
@@ -1158,14 +1158,14 @@ export default function SuperAdminConfigurationPage() {
               </div>
               
               {filteredActivities.length === 0 ? (
-                <div className="flex flex-col justify-center items-center text-center px-6 h-80">
-                  <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                <div className="flex flex-col justify-center items-center text-center px-6 h-40">
+                  <div className="w-6 h-6 bg-gray-50 rounded-full flex items-center justify-center mb-3">
                     <FaArchive className="text-4xl text-gray-400" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     {searchTerm ? 'No Activities Match Your Search' : 'No Activities Found'}
                   </h3>
-                  <p className="text-gray-600 mb-6 max-w-md">
+                  <p className="text-gray-600 mb-3 max-w-md">
                     {searchTerm 
                       ? `No activities found matching "${searchTerm}".`
                       : "There are no activities to display at the moment."
@@ -1324,7 +1324,7 @@ export default function SuperAdminConfigurationPage() {
                                      <div className="flex items-center gap-4">
                      <button 
                        onClick={openTimelineModal}
-                       className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                       className="flex items-center gap-2 px-4 py-2 bg-[#232c67] text-white rounded-lg hover:bg-[#1a1f4d] transition-colors text-sm font-medium"
                      >
                        <FaEdit className="text-xs" />
                        Edit Timeline
@@ -1764,7 +1764,7 @@ export default function SuperAdminConfigurationPage() {
                          <li>• Quarters must follow chronological order (no overlapping dates)</li>
                          <li>• School year typically spans 9-12 months</li>
                          <li>• Dates should be realistic (not too far in past/future)</li>
-                         <li>• Quarter names should be descriptive (e.g., "1st Quarter", "2nd Quarter")</li>
+                        
                        </ul>
                        
                        {/* School Year Duration Display */}
@@ -1797,33 +1797,6 @@ export default function SuperAdminConfigurationPage() {
                       </div>
                       
                       <div className="grid grid-cols-1 gap-4">
-                        {/* Quarter Name */}
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Quarter Name <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={quarter.quarter_name}
-                            onChange={(e) => handleTimelineInputChange(index, 'quarter_name', e.target.value)}
-                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 transition-colors caret-[#232c67] ${
-                              hasValidationError(quarter.quarter_id, 'quarter_name')
-                                ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                                : 'border-gray-300 focus:ring-[#232c67] focus:border-[#232c67]'
-                            }`}
-                            placeholder="e.g., 1st Quarter, 2nd Quarter"
-                            required
-                          />
-                          {hasValidationError(quarter.quarter_id, 'quarter_name') && (
-                            <div className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                              </svg>
-                              {getValidationError(quarter.quarter_id, 'quarter_name')}
-                            </div>
-                          )}
-                        </div>
-                        
                         {/* Date Range */}
                         <div className="grid grid-cols-2 gap-4">
                           <div>

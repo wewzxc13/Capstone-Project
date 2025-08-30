@@ -35,7 +35,7 @@ try {
     // 2. Get all activities for this advisory/subject
     $stmt = $conn->prepare('SELECT activity_id, activity_num, activity_name, activity_date, subject_id, quarter_id
         FROM tbl_activities
-        WHERE advisory_id = ? AND subject_id = ?
+        WHERE advisory_id = ? AND subject_id = ? AND activity_status = "Active"
         ORDER BY activity_num DESC');
     $stmt->execute([$advisory_id, $subject_id]);
     $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);

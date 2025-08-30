@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 try {
+    // Note: Student count only includes students linked to parents (consistent with Report pages)
     $response = [
         'status' => 'success',
         'counts' => [
@@ -67,11 +68,11 @@ try {
     $parentCount = $stmt->fetch(PDO::FETCH_ASSOC);
     $response['counts']['parents'] = (int)$parentCount['count'];
 
-    // Get active students count
+    // Get active students count (only students linked to parents)
     $stmt = $conn->prepare("
         SELECT COUNT(*) as count
         FROM tbl_students
-        WHERE stud_school_status = 'Active'
+        WHERE stud_school_status = 'Active' AND parent_id IS NOT NULL
     ");
     $stmt->execute();
     $studentCount = $stmt->fetch(PDO::FETCH_ASSOC);

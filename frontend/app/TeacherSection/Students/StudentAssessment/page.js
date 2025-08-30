@@ -131,11 +131,21 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
         if (data[2].status === 'success' && Array.isArray(data[2].subjects)) {
           const subjectNames = data[2].subjects.map(subject => subject.subject_name);
           setSubjects(subjectNames);
+          console.log('📚 Subjects loaded:', subjectNames);
         }
 
         // Process quarter feedback
         if (data[3].status === 'success') {
           setQuarterFeedback(data[3].feedback || []);
+          console.log('📊 Quarter feedback loaded:', data[3].feedback || []);
+          
+          // Debug: Show feedback by quarter
+          const feedbackByQuarter = {};
+          (data[3].feedback || []).forEach(fb => {
+            if (!feedbackByQuarter[fb.quarter_id]) feedbackByQuarter[fb.quarter_id] = [];
+            feedbackByQuarter[fb.quarter_id].push(fb);
+          });
+          console.log('📊 Feedback by quarter:', feedbackByQuarter);
         }
 
         // Process progress cards
@@ -260,7 +270,30 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
 
   // Helper to check if all subjects have feedback for a given quarter
   function allSubjectsHaveFeedbackForQuarter(qid) {
-    return subjects.length > 0 && quarterFeedback.filter(fb => Number(fb.quarter_id) === qid).length === subjects.length;
+    if (subjects.length === 0) return false;
+    
+    // Debug: Log what we're checking
+    console.log(`🔍 Checking quarter ${qid} for subjects:`, subjects);
+    console.log(`🔍 Available feedback:`, quarterFeedback.filter(fb => Number(fb.quarter_id) === qid));
+    
+    // Check if each subject has feedback for this quarter
+    const missingSubjects = subjects.filter(subject => {
+      const hasFeedback = quarterFeedback.some(fb => 
+        fb.subject_name === subject && Number(fb.quarter_id) === qid
+      );
+      if (!hasFeedback) {
+        console.log(`❌ Subject "${subject}" missing feedback for quarter ${qid}`);
+      }
+      return !hasFeedback;
+    });
+    
+    if (missingSubjects.length > 0) {
+      console.log(`⚠️ Quarter ${qid} missing feedback for:`, missingSubjects);
+    } else {
+      console.log(`✅ Quarter ${qid} has feedback for all subjects`);
+    }
+    
+    return missingSubjects.length === 0;
   }
 
   if (loading) {
@@ -316,6 +349,13 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                     {quarters.map(q => {
                       let icon, color, cursor, tooltip, onClickHandler;
                       if (q.id === 5) {
+                        // Debug: Log Final column logic
+                        console.log('🔍 Final Column Logic Check:');
+                        console.log('  - finalSubjectProgress:', finalSubjectProgress);
+                        console.log('  - subjects.length:', subjects.length);
+                        console.log('  - finalSubjectProgress.length:', finalSubjectProgress?.length || 0);
+                        console.log('  - overallProgress:', overallProgress);
+                        
                         if (overallProgress && overallProgress.visual_shape) {
                           icon = overallProgressLoading ? <span className="loader">⏳</span> : <FaCheckCircle />;
                           color = overallProgressLoading ? '#2563eb' : '#22c55e';
@@ -343,7 +383,8 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                             }
                             setTimeout(() => setOverallProgressLoading(false), 3000);
                           };
-                        } else if (allSubjectsHaveFeedbackForQuarter(q.id)) {
+                        } else if (finalSubjectProgress && finalSubjectProgress.length > 0 && finalSubjectProgress.length === subjects.length) {
+                          console.log('✅ Final column has all subjects - Compute button should show');
                           icon = overallProgressLoading ? <span className="loader">⏳</span> : <FaPlusCircle />;
                           color = '#2563eb';
                           cursor = overallProgressLoading ? 'wait' : 'pointer';
@@ -371,6 +412,11 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                             setOverallProgressLoading(false);
                           };
                         } else {
+                          console.log('❌ Final column missing subjects - Compute button disabled');
+                          console.log('  - Missing subjects count:', subjects.length - (finalSubjectProgress?.length || 0));
+                          console.log('  - Subjects without final grades:', subjects.filter(subject => 
+                            !finalSubjectProgress?.some(fp => fp.subject_name === subject)
+                          ));
                           icon = <FaRegClock />;
                           color = '#d1d5db';
                           cursor = 'not-allowed';
@@ -436,17 +482,39 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                                 }
                                 
                                 if (q.id === 4) {
-                                  const subjectRes = await fetch('http://localhost/capstone-project/backend/Assessment/insert_subject_overall_progress.php', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
-                                  });
+                                  // Check if subject overall progress already exists to decide between insert/update
+                                  const checkRes = await fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                  const checkData = await checkRes.json();
+                                  
+                                  let subjectRes;
+                                  if (checkData.status === 'success' && checkData.progress && checkData.progress.length > 0) {
+                                    // Records exist - use UPDATE
+                                    subjectRes = await fetch('http://localhost/capstone-project/backend/Assessment/update_subject_overall_progress.php', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
+                                    });
+                                  } else {
+                                    // No records exist - use INSERT
+                                    subjectRes = await fetch('http://localhost/capstone-project/backend/Assessment/insert_subject_overall_progress.php', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
+                                    });
+                                  }
                                   
                                   const subjectData = await subjectRes.json();
                                   
                                   if (subjectData.status === 'success') {
-                                    setFinalSubjectProgress(subjectData.inserted || []);
-                                    toast.success('Progress Card Updated And Final Subject Grades Computed');
+                                    // Refresh the subject progress data
+                                    const refreshSubjectRes = await fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                    const refreshSubjectData = await refreshSubjectRes.json();
+                                    if (refreshSubjectData.status === 'success') {
+                                      setFinalSubjectProgress(refreshSubjectData.progress || []);
+                                    }
+                                    
+                                    const action = checkData.status === 'success' && checkData.progress && checkData.progress.length > 0 ? 'Updated' : 'Computed';
+                                    toast.success(`Progress Card Updated And Final Subject Grades ${action}`);
                                     if (onRiskUpdate) onRiskUpdate();
                                   } else if (subjectData.message && subjectData.message.includes('Not all 4 quarters have progress cards')) {
                                     toast.warning('Progress card updated but cannot compute final grades yet.');
@@ -513,17 +581,39 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                                   }
                                   
                                   if (q.id === 4) {
-                                    const subjectRes = await fetch('http://localhost/capstone-project/backend/Assessment/insert_subject_overall_progress.php', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
-                                    });
+                                    // Check if subject overall progress already exists to decide between insert/update
+                                    const checkRes = await fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                    const checkData = await checkRes.json();
+                                    
+                                    let subjectRes;
+                                    if (checkData.status === 'success' && checkData.progress && checkData.progress.length > 0) {
+                                      // Records exist - use UPDATE
+                                      subjectRes = await fetch('http://localhost/capstone-project/backend/Assessment/update_subject_overall_progress.php', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
+                                      });
+                                    } else {
+                                      // No records exist - use INSERT
+                                      subjectRes = await fetch('http://localhost/capstone-project/backend/Assessment/insert_subject_overall_progress.php', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
+                                      });
+                                    }
                                     
                                     const subjectData = await subjectRes.json();
                                     
                                     if (subjectData.status === 'success') {
-                                      setFinalSubjectProgress(subjectData.inserted || []);
-                                      toast.success('Progress Card Updated And Final Subject Grades Computed');
+                                      // Refresh the subject progress data
+                                      const refreshSubjectRes = await fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                      const refreshSubjectData = await refreshSubjectRes.json();
+                                      if (refreshSubjectData.status === 'success') {
+                                        setFinalSubjectProgress(refreshSubjectData.progress || []);
+                                      }
+                                      
+                                      const action = checkData.status === 'success' && checkData.progress && checkData.progress.length > 0 ? 'Updated' : 'Computed';
+                                      toast.success(`4th quarter finalized and final subject grades ${action.toLowerCase()}`);
                                       if (onRiskUpdate) onRiskUpdate();
                                     } else if (subjectData.message && subjectData.message.includes('Not all 4 quarters have progress cards')) {
                                       toast.warning('4th quarter finalized but cannot compute final grades yet.');

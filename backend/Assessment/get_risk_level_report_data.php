@@ -14,7 +14,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 $report_type = isset($input['report_type']) ? $input['report_type'] : 'progress'; // 'progress' or 'subject'
 
 try {
-    // Get all active students with their levels
+    // Get all active students with their levels (only students linked to parents)
     $studentsStmt = $conn->prepare("
         SELECT 
             s.student_id,
@@ -25,7 +25,7 @@ try {
             sl.level_id
         FROM tbl_students s
         JOIN tbl_student_levels sl ON s.level_id = sl.level_id
-        WHERE s.stud_school_status = 'Active'
+        WHERE s.stud_school_status = 'Active' AND s.parent_id IS NOT NULL
         ORDER BY sl.level_id, s.stud_lastname, s.stud_firstname
     ");
     $studentsStmt->execute();
@@ -34,7 +34,7 @@ try {
     if (empty($students)) {
         echo json_encode([
             "status" => "success",
-            "message" => "No active students found",
+            "message" => "No active students linked to parents found",
             "hasData" => false,
             "levelData" => [],
             "levelNames" => [],

@@ -1211,18 +1211,25 @@ const StudentDetails = () => {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#2c2f6f] mb-1">Gender</label>
-                <select
-                  name="gender"
-                  value={editing ? (editStudentData?.gender ?? '') : (studentData?.gender || '')}
-                  onChange={editing ? handleStudentChange : undefined}
-                  disabled={!editing}
-                  className={`${getInputClassName('gender', validationErrors, editing ? editStudentData?.gender : studentData?.gender, editing)} ${editing ? 'cursor-pointer' : 'cursor-default'}`}
-                >
-                  <option value="">{editing ? 'Select Gender' : (studentData?.gender ? studentData.gender : 'Not specified')}</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
-                {validationErrors.gender && <div className="text-red-500 text-xs mt-1">{validationErrors.gender}</div>}
+                <div className="flex gap-6 text-sm text-[#2c2f6f]">
+                  {['Male', 'Female'].map(option => (
+                    <label key={option} className={`flex items-center gap-2 ${editing ? 'cursor-pointer' : 'cursor-default'}`}>
+                      <input
+                        type="radio"
+                        name="gender"
+                        value={option}
+                        checked={editing ? editStudentData?.gender === option : studentData?.gender === option}
+                        onChange={editing ? handleStudentChange : undefined}
+                        readOnly={!editing}
+                        disabled={!editing && !studentData?.gender}
+                        className={editing ? 'cursor-pointer' : 'cursor-default'}
+                      />
+                      {option}
+                    </label>
+                  ))}
+                  {!editing && !studentData?.gender && <span className="text-xs text-gray-400 ml-2">Not specified</span>}
+                  {validationErrors.gender && <div className="text-red-500 text-xs mt-1">{validationErrors.gender}</div>}
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#2c2f6f] mb-1">Date of Birth</label>

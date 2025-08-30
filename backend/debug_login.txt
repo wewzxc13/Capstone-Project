@@ -2968,3 +2968,15 @@ Plain Input Password: Chan@123
 Input: decenajessa03@gmail.com
 Hashed DB Password: $2y$10$CPLO02gUKBJlcRYbJePch.NDwz6DZX2ZSueECGhH6aGSBbfyrTU1e
 Plain Input Password: Decena@123
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123
+Input: decenajessa03@gmail.com
+Hashed DB Password: $2y$10$CPLO02gUKBJlcRYbJePch.NDwz6DZX2ZSueECGhH6aGSBbfyrTU1e
+Plain Input Password: Decena@123
+Input: galarpequennielyn25@gmail.com
+Hashed DB Password: $2y$10$AkyOlHaBUWUY6tA00kbtT.EG0oWIjatJwCQ1kH1z1mj7FGdKA4l9a
+Plain Input Password: Quennielyn@123
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123

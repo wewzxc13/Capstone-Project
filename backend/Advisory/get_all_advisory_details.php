@@ -33,7 +33,7 @@ try {
     $stmt->execute();
     $advisories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // For each advisory, fetch the assigned students
+    // For each advisory, fetch only active assigned students
     foreach ($advisories as &$advisory) {
         $studentStmt = $pdo->prepare("
             SELECT 
@@ -44,7 +44,7 @@ try {
                 s.parent_id
             FROM tbl_student_assigned sa
             JOIN tbl_students s ON sa.student_id = s.student_id
-            WHERE sa.advisory_id = ?
+            WHERE sa.advisory_id = ? AND s.stud_school_status = 'Active'
         ");
         $studentStmt->execute([$advisory['advisory_id']]);
         $advisory['students'] = $studentStmt->fetchAll(PDO::FETCH_ASSOC);

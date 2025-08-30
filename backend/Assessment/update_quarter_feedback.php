@@ -36,7 +36,7 @@ if (!$table_name) {
 $sql = "SELECT t.visual_feedback_id
         FROM $table_name t
         JOIN tbl_activities a ON t.activity_id = a.activity_id
-        WHERE t.student_id = ? AND a.subject_id = ? AND a.quarter_id = ?";
+        WHERE t.student_id = ? AND a.subject_id = ? AND a.quarter_id = ? AND a.activity_status = 'Active'";
 $stmt = $conn->prepare($sql);
 $stmt->execute([$student_id, $subject_id, $quarter_id]);
 $feedbacks = $stmt->fetchAll(PDO::FETCH_ASSOC);

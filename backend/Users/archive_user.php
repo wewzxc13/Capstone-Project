@@ -2,7 +2,7 @@
 // Archive user functionality
 // - Archives users by setting status to 'Inactive'
 // - Archives students by setting stud_school_status to 'Inactive'
-// - Auto-archives linked students when a parent is archived
+// - Parent archiving with student unlinking is handled in the frontend
 // Dynamic CORS for localhost:3000+
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (preg_match('/^http:\/\/localhost:3[0-9]{3,}$/', $origin)) {
@@ -71,45 +71,8 @@ try {
         $successMessage = date('Y-m-d H:i:s') . " - Successfully archived user $userId\n";
         file_put_contents('../SystemLogs/debug_log.txt', $successMessage, FILE_APPEND);
         
-        // If archiving a parent, also archive all linked students
-        if ($role === "Parent") {
-            // Get the parent profile ID to find linked students
-            $parentProfileStmt = $conn->prepare("SELECT parent_profile_id FROM tbl_parents_profile WHERE user_id = ?");
-            $parentProfileStmt->execute([$userId]);
-            $parentProfile = $parentProfileStmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($parentProfile && $parentProfile['parent_profile_id']) {
-                // Find and archive all students linked to this parent
-                $linkedStudentsStmt = $conn->prepare("
-                    SELECT student_id, stud_firstname, stud_lastname 
-                    FROM tbl_students 
-                    WHERE parent_profile_id = ? AND stud_school_status = 'Active'
-                ");
-                $linkedStudentsStmt->execute([$parentProfile['parent_profile_id']]);
-                $linkedStudents = $linkedStudentsStmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                if (!empty($linkedStudents)) {
-                    // Archive all linked students
-                    $archiveStudentsStmt = $conn->prepare("
-                        UPDATE tbl_students 
-                        SET stud_school_status = 'Inactive' 
-                        WHERE parent_profile_id = ? AND stud_school_status = 'Active'
-                    ");
-                    $archiveStudentsStmt->execute([$parentProfile['parent_profile_id']]);
-                    $archivedCount = $archiveStudentsStmt->rowCount();
-                    
-                    // Log the auto-archive of linked students
-                    $autoArchiveMessage = date('Y-m-d H:i:s') . " - Auto-archived $archivedCount students linked to parent $userId\n";
-                    file_put_contents('../SystemLogs/debug_log.txt', $autoArchiveMessage, FILE_APPEND);
-                    
-                    // Log each archived student for detailed tracking
-                    foreach ($linkedStudents as $student) {
-                        $studentArchiveLog = date('Y-m-d H:i:s') . " - Auto-archived student {$student['student_id']} ({$student['stud_firstname']} {$student['stud_lastname']}) due to parent archive\n";
-                        file_put_contents('../SystemLogs/debug_log.txt', $studentArchiveLog, FILE_APPEND);
-                    }
-                }
-            }
-        }
+        // Note: Parent archiving with student unlinking is now handled in the frontend
+        // This ensures proper unlinking of students before archiving the parent
     }
     
     $conn->commit();

@@ -53,7 +53,7 @@ try {
     // - Different advisory + same subject + same date = allowed (accepted)
     
     $sql = "SELECT COUNT(*) FROM tbl_activities 
-            WHERE advisory_id = ? AND subject_id = ? AND activity_date = ?";
+            WHERE advisory_id = ? AND subject_id = ? AND activity_date = ? AND activity_status = 'Active'";
     $params = [$advisory_id, $subject_id, $activity_date];
     
     // If editing an existing activity, exclude it from the duplicate check

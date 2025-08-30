@@ -27,17 +27,23 @@ try {
     $advisory_id = $advisory['advisory_id'];
     
     // Get quarterly performance data for all students in this advisory
+    // Only count students linked to parents AND currently assigned to this advisory
     $stmt = $conn->prepare('
         SELECT 
             pc.quarter_id,
             pc.quarter_visual_feedback_id,
             COUNT(*) as student_count
         FROM tbl_progress_cards pc
-        WHERE pc.advisory_id = ?
+        JOIN tbl_students s ON pc.student_id = s.student_id
+        JOIN tbl_student_assigned sa ON s.student_id = sa.student_id
+        WHERE pc.advisory_id = ? 
+          AND s.parent_id IS NOT NULL 
+          AND s.stud_school_status = "Active"
+          AND sa.advisory_id = ?
         GROUP BY pc.quarter_id, pc.quarter_visual_feedback_id
         ORDER BY pc.quarter_id, pc.quarter_visual_feedback_id
     ');
-    $stmt->execute([$advisory_id]);
+    $stmt->execute([$advisory_id, $advisory_id]);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Initialize quarters data

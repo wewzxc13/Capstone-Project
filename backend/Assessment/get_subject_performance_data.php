@@ -53,6 +53,21 @@ try {
         $level_id = $advisory['level_id'];
         $level_name = $advisory['level_name'];
         
+        // First check if this advisory has any active students currently assigned
+        $checkActiveStudents = $conn->prepare('
+            SELECT COUNT(*) as active_count
+            FROM tbl_student_assigned sa
+            JOIN tbl_students s ON sa.student_id = s.student_id
+            WHERE sa.advisory_id = ? AND s.stud_school_status = "Active" AND s.parent_id IS NOT NULL
+        ');
+        $checkActiveStudents->execute([$advisory_id]);
+        $activeCheck = $checkActiveStudents->fetch(PDO::FETCH_ASSOC);
+        
+        // Skip this advisory if it has no active students
+        if ($activeCheck['active_count'] == 0) {
+            continue;
+        }
+        
         // Map level_id to class name
         $className = '';
         switch ($level_id) {
@@ -84,9 +99,15 @@ try {
                 SELECT AVG(sop.finalsubj_avg_score) as avg_score, COUNT(*) as student_count
                 FROM tbl_subject_overall_progress sop
                 JOIN tbl_students s ON sop.student_id = s.student_id
-                WHERE sop.subject_id = ? AND sop.advisory_id = ? AND sop.finalsubj_avg_score IS NOT NULL
+                JOIN tbl_student_assigned sa ON s.student_id = sa.student_id
+                WHERE sop.subject_id = ? 
+                  AND sop.advisory_id = ? 
+                  AND sop.finalsubj_avg_score IS NOT NULL 
+                  AND s.parent_id IS NOT NULL 
+                  AND s.stud_school_status = "Active"
+                  AND sa.advisory_id = ?
             ');
-            $avgStmt->execute([$subject_id, $advisory_id]);
+            $avgStmt->execute([$subject_id, $advisory_id, $advisory_id]);
             $result = $avgStmt->fetch(PDO::FETCH_ASSOC);
             
             if ($result && $result['student_count'] > 0) {

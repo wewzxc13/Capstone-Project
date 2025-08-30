@@ -23,18 +23,40 @@ try {
         $level_id = $advisory['level_id'];
         $level_name = $advisory['level_name'];
         
+        // First check if this advisory has any active students currently assigned
+        $checkActiveStudents = $conn->prepare('
+            SELECT COUNT(*) as active_count
+            FROM tbl_student_assigned sa
+            JOIN tbl_students s ON sa.student_id = s.student_id
+            WHERE sa.advisory_id = ? AND s.stud_school_status = "Active" AND s.parent_id IS NOT NULL
+        ');
+        $checkActiveStudents->execute([$advisory_id]);
+        $activeCheck = $checkActiveStudents->fetch(PDO::FETCH_ASSOC);
+        
+        // Skip this advisory if it has no active students
+        if ($activeCheck['active_count'] == 0) {
+            continue;
+        }
+        
         // Get quarterly performance data for this advisory using quarter_avg_score (actual averages)
+        // Only count students linked to parents AND currently assigned to this advisory
         $stmt = $conn->prepare('
             SELECT 
                 pc.quarter_id,
                 AVG(pc.quarter_avg_score) as class_avg_score,
                 COUNT(*) as student_count
             FROM tbl_progress_cards pc
-            WHERE pc.advisory_id = ? AND pc.quarter_avg_score IS NOT NULL
+            JOIN tbl_students s ON pc.student_id = s.student_id
+            JOIN tbl_student_assigned sa ON s.student_id = sa.student_id
+            WHERE pc.advisory_id = ? 
+              AND pc.quarter_avg_score IS NOT NULL 
+              AND s.parent_id IS NOT NULL 
+              AND s.stud_school_status = "Active"
+              AND sa.advisory_id = ?
             GROUP BY pc.quarter_id
             ORDER BY pc.quarter_id
         ');
-        $stmt->execute([$advisory_id]);
+        $stmt->execute([$advisory_id, $advisory_id]);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Initialize quarters data for this class

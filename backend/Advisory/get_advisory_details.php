@@ -176,13 +176,14 @@ try {
     $advisory['assistant_teacher_photo'] = $assistant_teacher_photo;
 
     // 2. Get active students that are specifically assigned to this advisory through tbl_student_assigned
+    // Only include students linked to parents (consistent with Report pages)
     $stmt = $conn->prepare("
         SELECT s.student_id, s.stud_firstname, s.stud_middlename, s.stud_lastname, 
                s.stud_birthdate, s.stud_gender, s.stud_schedule_class, s.stud_school_status, 
                s.level_id, s.parent_id, s.stud_photo, s.stud_enrollment_date, s.stud_handedness
         FROM tbl_students s
         INNER JOIN tbl_student_assigned sa ON s.student_id = sa.student_id
-        WHERE sa.advisory_id = ? AND s.stud_school_status = 'Active'
+        WHERE sa.advisory_id = ? AND s.stud_school_status = 'Active' AND s.parent_id IS NOT NULL
         GROUP BY s.student_id
         ORDER BY s.stud_lastname, s.stud_firstname
     ");

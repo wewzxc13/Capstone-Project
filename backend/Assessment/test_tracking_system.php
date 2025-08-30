@@ -39,7 +39,7 @@ try {
         echo "Test 4: Testing tracking record operations\n";
         
         // Get a sample activity
-        $stmt = $conn->prepare('SELECT activity_id FROM tbl_activities LIMIT 1');
+        $stmt = $conn->prepare('SELECT activity_id FROM tbl_activities WHERE activity_status = "Active" LIMIT 1');
         $stmt->execute();
         $activity = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -62,7 +62,7 @@ try {
     $stmt->execute();
     $studentIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
-    $stmt = $conn->prepare('SELECT activity_id FROM tbl_activities LIMIT 3');
+    $stmt = $conn->prepare('SELECT activity_id FROM tbl_activities WHERE activity_status = "Active" LIMIT 3');
     $stmt->execute();
     $activityIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
     

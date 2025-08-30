@@ -390,7 +390,7 @@ export default function SuperAdminReportsPage() {
                 <li className="text-center text-gray-500 text-sm">
                   <div className="mb-2">📊</div>
                   <div>No subject performance data available</div>
-                  <div className="text-xs mt-1">Data will appear once subject assessments are recorded</div>
+                  <div className="text-xs mt-1">Data will appear once subject assessments are recorded for students linked to parents</div>
                 </li>
               </>
             );
@@ -409,7 +409,7 @@ export default function SuperAdminReportsPage() {
               if (availableSubjects.length === 0) {
                 subjectInsights.push(
                   <li key={levelName}>
-                    {renderColoredLevelName(levelName)} - No subject performance data recorded yet. Subject tracking will begin once teachers start recording assessments.
+                    {renderColoredLevelName(levelName)} - No subject performance data recorded yet. Subject tracking will begin once teachers start recording assessments for students linked to parents.
                   </li>
                 );
               } else {
@@ -502,7 +502,7 @@ export default function SuperAdminReportsPage() {
                  <li className="text-center text-gray-500 text-sm">
                    <div className="mb-2">📊</div>
                    <div>No progress data available</div>
-                   <div className="text-xs mt-1">Data will appear once progress assessments are recorded</div>
+                   <div className="text-xs mt-1">Data will appear once progress assessments are recorded for students linked to parents</div>
                  </li>
                </>
              );
@@ -519,7 +519,7 @@ export default function SuperAdminReportsPage() {
                                 if (availableQuarters.length === 0) {
                    progressInsights.push(
                      <li key={levelName}>
-                       {renderColoredLevelName(levelName)} - No progress assessment data recorded yet. Progress tracking will begin once teachers start recording assessments.
+                       {renderColoredLevelName(levelName)} - No progress assessment data recorded yet. Progress tracking will begin once teachers start recording assessments for students linked to parents.
                      </li>
                    );
                  } else {
@@ -587,7 +587,7 @@ export default function SuperAdminReportsPage() {
           return (
             <>
               <li>
-                No attendance data available for the current year. Attendance insights will appear once teachers start recording daily attendance.
+                No attendance data available for the current year. Attendance insights will appear once teachers start recording daily attendance for students linked to parents.
                   </li>
                   <li>
                 The system is ready to track attendance patterns across all student levels ({renderColoredLevelName("Discoverer")}, {renderColoredLevelName("Explorer")}, {renderColoredLevelName("Adventurer")}) once data becomes available.
@@ -706,7 +706,7 @@ export default function SuperAdminReportsPage() {
                  Total of Student
                </h3>
                <div className="text-center text-gray-500 text-sm p-2">
-                 {attendanceData.message || 'No students found in the system yet.'}
+                 {attendanceData.message || 'No active students linked to parents found in the system yet.'}
           </div>
              </>
            );
@@ -806,7 +806,7 @@ export default function SuperAdminReportsPage() {
                  Risk Level
                </h3>
                <div className="text-center text-gray-500 text-sm p-2">
-                 {progressData.message || 'No progress data found yet.'}
+                 {progressData.message || 'No active students linked to parents found yet.'}
                </div>
              </>
            );
@@ -918,7 +918,7 @@ export default function SuperAdminReportsPage() {
                  Risk Level
                </h3>
                <div className="text-center text-gray-500 text-sm p-2">
-                 {subjectData.message || 'No subject data found yet.'}
+                 {subjectData.message || 'No active students linked to parents found yet.'}
                </div>
              </>
            );
@@ -1072,7 +1072,7 @@ export default function SuperAdminReportsPage() {
                   <div className="text-center text-gray-500 text-sm p-4">
                     <div className="mb-2">📊</div>
                     <div>No attendance data available</div>
-                    <div className="text-xs mt-1">Data will appear once teachers start recording attendance</div>
+                    <div className="text-xs mt-1">Data will appear once teachers start recording attendance for students linked to parents</div>
                   </div>
                 </div>
               )}
@@ -1081,7 +1081,7 @@ export default function SuperAdminReportsPage() {
                    <div className="text-center text-gray-500 text-sm p-4">
                      <div className="mb-2">📊</div>
                      <div>No progress data available</div>
-                     <div className="text-xs mt-1">Data will appear once progress assessments are recorded</div>
+                     <div className="text-xs mt-1">Data will appear once progress assessments are recorded for students linked to parents</div>
                    </div>
                  </div>
                )}
@@ -1090,7 +1090,7 @@ export default function SuperAdminReportsPage() {
                    <div className="text-center text-gray-500 text-sm p-4">
                      <div className="mb-2">📊</div>
                      <div>No subject data available</div>
-                     <div className="text-xs mt-1">Data will appear once subject assessments are recorded</div>
+                     <div className="text-xs mt-1">Data will appear once subject assessments are recorded for students linked to parents</div>
                    </div>
                  </div>
                )}

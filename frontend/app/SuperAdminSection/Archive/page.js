@@ -23,6 +23,7 @@ export default function SuperAdminArchivePage() {
   const searchParams = useSearchParams();
   const { getUserPhoto, getStudentPhoto, initializeAllUsersPhotos } = useUser();
 
+ 
   // Format phone number for display: +63 918 123 4567 (3-3-4)
   function formatPhoneForDisplay(phoneNumber) {
     if (!phoneNumber) return "";

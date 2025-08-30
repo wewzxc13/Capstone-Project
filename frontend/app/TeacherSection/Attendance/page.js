@@ -1083,7 +1083,7 @@ export default function AttendancePage() {
                       const name = student.stud_lastname + ', ' + student.stud_firstname + (student.stud_middlename ? ' ' + student.stud_middlename : '');
                       return (
                         <tr key={key} className="hover:bg-gray-50 transition-colors">
-                          <td className="sticky left-0 bg-white px-6 py-3 font-medium whitespace-nowrap z-10 border-r border-gray-200" style={{ width: '50%' }}>
+                          <td className={`sticky left-0 bg-white px-6 font-medium whitespace-nowrap z-10 border-r border-gray-200 ${filteredStudents.length === 6 ? 'py-2' : 'py-3'}`} style={{ width: '50%' }}>
                           <div className="flex items-center gap-3">
                             {(() => {
                               // Get real-time photo from UserContext, fallback to student.photo if not available
@@ -1123,7 +1123,7 @@ export default function AttendancePage() {
                           {paginatedDates.map((date, dIdx) => {
                             const status = getAttendanceStatus(key, date);
                             return (
-                              <td key={dIdx} className="px-4 py-3 text-center border-l border-gray-200" style={{ width: paginatedDates.length === 1 ? '20%' : `${Math.max(20, 100 / paginatedDates.length)}%` }}>
+                              <td key={dIdx} className={`px-4 text-center border-l border-gray-200 ${filteredStudents.length === 6 ? 'py-2' : 'py-3'}`} style={{ width: paginatedDates.length === 1 ? '20%' : `${Math.max(20, 100 / paginatedDates.length)}%` }}>
                                 <div className="flex items-center justify-center">
                                   {status === 'Present' ? (
                                     <>
@@ -1164,25 +1164,80 @@ export default function AttendancePage() {
             >
               <span className="text-lg">&lt;</span>
             </button>
-            {/* Page Numbers */}
-            {Array.from({ length: Math.max(1, totalDatePages) }, (_, i) => {
-              const pageNum = i + 1;
-              const isActive = pageNum === datePage;
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => setDatePage(pageNum)}
-                  className={
-                    isActive
-                      ? "w-10 h-10 rounded-lg bg-[#232c67] text-white text-sm font-semibold flex items-center justify-center"
-                      : "w-10 h-10 rounded-lg border border-gray-300 text-gray-700 text-sm font-semibold flex items-center justify-center bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67]"
+            
+            {/* Smart Pagination with Ellipsis */}
+            {(() => {
+              const maxVisible = 7;
+              const items = [];
+              
+              if (totalDatePages <= maxVisible) {
+                // If total pages is less than max visible, show all pages
+                for (let i = 1; i <= totalDatePages; i++) {
+                  items.push({ type: 'page', page: i });
+                }
+              } else {
+                // Always show first page
+                items.push({ type: 'page', page: 1 });
+                
+                if (datePage <= 4) {
+                  // Near the beginning: show first 5 pages + ellipsis + last page
+                  for (let i = 2; i <= Math.min(5, totalDatePages - 1); i++) {
+                    items.push({ type: 'page', page: i });
                   }
-                  disabled={isActive}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+                  if (totalDatePages > 5) {
+                    items.push({ type: 'ellipsis' });
+                  }
+                  if (totalDatePages > 1) {
+                    items.push({ type: 'page', page: totalDatePages });
+                  }
+                } else if (datePage >= totalDatePages - 3) {
+                  // Near the end: show first page + ellipsis + last 5 pages
+                  items.push({ type: 'ellipsis' });
+                  for (let i = Math.max(2, totalDatePages - 4); i <= totalDatePages; i++) {
+                    items.push({ type: 'page', page: i });
+                  }
+                } else {
+                  // In the middle: show first + ellipsis + current page ±2 + ellipsis + last
+                  items.push({ type: 'ellipsis' });
+                  for (let i = datePage - 2; i <= datePage + 2; i++) {
+                    items.push({ type: 'page', page: i });
+                  }
+                  items.push({ type: 'ellipsis' });
+                  items.push({ type: 'page', page: totalDatePages });
+                }
+              }
+              
+              return items.map((item, index) => {
+                if (item.type === 'page') {
+                  const isActive = item.page === datePage;
+                  return (
+                    <button
+                      key={`page-${item.page}`}
+                      onClick={() => setDatePage(item.page)}
+                      className={
+                        isActive
+                          ? "w-10 h-10 rounded-lg bg-[#232c67] text-white text-sm font-semibold flex items-center justify-center"
+                          : "w-10 h-10 rounded-lg border border-gray-300 text-gray-700 text-sm font-semibold flex items-center justify-center bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67]"
+                      }
+                      disabled={isActive}
+                    >
+                      {item.page}
+                    </button>
+                  );
+                } else if (item.type === 'ellipsis') {
+                  return (
+                    <span
+                      key={`ellipsis-${index}`}
+                      className="w-10 h-10 flex items-center justify-center text-gray-500 text-sm font-medium"
+                    >
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              });
+            })()}
+            
             {/* Right Arrow */}
             <button
               className="w-10 h-10 rounded-lg bg-white border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67]"

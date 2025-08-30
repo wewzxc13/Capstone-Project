@@ -55,7 +55,7 @@ export default function StudentsPage() {
   const [isScheduleDropdownOpen, setIsScheduleDropdownOpen] = useState(false);
   const [studentRisks, setStudentRisks] = useState({});
 
-  // Helper functions
+// Helper functions
   const getName = (s) => {
     if (s.stud_firstname && s.stud_lastname) {
       return `${s.stud_lastname}, ${s.stud_firstname} ${s.stud_middlename || ''}`.trim();
@@ -549,7 +549,7 @@ export default function StudentsPage() {
     return (
       <div className="h-full flex flex-col">
         {/* Sticky Tabs */}
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-10 flex-shrink-0">
           <div className="flex">
             {["Assessment", "Status"].map((tab) => (
               <button
@@ -569,7 +569,7 @@ export default function StudentsPage() {
 
         {/* Sticky Student Info Header - show for both Assessment and Status tabs */}
         {(activeTab === "Assessment" || activeTab === "Status") && (
-          <div className="bg-[#232c67] px-6 py-4 text-white flex flex-row items-center gap-8 sticky top-0 z-10">
+          <div className="bg-[#232c67] px-6 py-3 text-white flex flex-row items-center gap-8 sticky top-0 z-10 flex-shrink-0">
             {/* Back Icon + Icon + Name (horizontal, large) */}
             <div className="flex flex-row items-center justify-center mr-8" style={{ minWidth: '260px' }}>
               <button
@@ -591,7 +591,7 @@ export default function StudentsPage() {
                       <img
                         src={realTimePhoto}
                         alt="Profile"
-                        className="text-5xl bg-blue-200 rounded-full p-2 mr-4 w-16 h-16 object-cover shadow-sm"
+                        className="text-5xl bg-blue-200 rounded-full mr-4 w-14 h-14 object-cover shadow-sm"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           if (e.target.nextSibling) {
@@ -600,14 +600,14 @@ export default function StudentsPage() {
                         }}
                       />
                       {/* Fallback icon that shows when photo fails to load */}
-                      <div className="text-5xl bg-blue-200 rounded-full p-2 mr-4 flex items-center justify-center hidden">
+                      <div className="text-5xl bg-blue-200 rounded-full mr-4 flex items-center justify-center hidden">
                         <FaUser className="text-blue-600 text-2xl" />
                       </div>
                     </>
                   );
                 } else {
                   return (
-                    <div className="text-5xl bg-blue-200 rounded-full p-2 mr-4 flex items-center justify-center">
+                    <div className="text-5xl bg-blue-200 rounded-full mr-4 flex items-center justify-center">
                       <FaUser className="text-blue-600 text-2xl" />
                     </div>
                   );
@@ -618,7 +618,7 @@ export default function StudentsPage() {
             {/* Info fields (two stacked rows) */}
             <div className="flex flex-col flex-1">
               {/* First row: Schedule, Gender, Handedness */}
-              <div className="flex flex-row items-center gap-6 mb-1">
+              <div className="flex flex-row items-center gap-6 mb-0.5">
                 {/* Schedule */}
                 <div className="flex flex-row items-center mx-2">
                   <span className="font-bold text-base text-blue-200 mr-1">Schedule:</span>
@@ -636,7 +636,7 @@ export default function StudentsPage() {
                 </div>
               </div>
               {/* Second row: Date of Birth, Parent */}
-              <div className="flex flex-row items-center gap-6 mt-1">
+              <div className="flex flex-row items-center gap-6 mt-0.5">
                 {/* Date of Birth */}
                 <div className="flex flex-row items-center mx-2">
                   <span className="font-bold text-base text-blue-200 mr-1">Date of Birth:</span>
@@ -655,7 +655,7 @@ export default function StudentsPage() {
         )}
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 100px)' }}>
+        <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
           <div className="p-6 flex flex-col bg-white rounded-xl shadow">
             {activeTab === "Status" && (
               <StudentStatus student={s} renderChart={renderChart} onBack={() => setSelected(null)} />
@@ -674,7 +674,7 @@ export default function StudentsPage() {
   };
 
   return (
-    <main className="flex-1">
+    <main className="flex-1 overflow-hidden">
       {loading ? (
         <div className="flex flex-col justify-center items-center h-64 text-gray-600">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
@@ -885,8 +885,8 @@ export default function StudentsPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {displayStudents.map((s, idx) => (
-                        <tr key={`${s.student_id}-${idx}`} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => handleSelectStudent(s)}>
-                          <td className="px-6 py-3">
+                        <tr key={`${s.student_id}-${idx}`} className="hover:bg-gray-100 hover:text-white transition-colors cursor-pointer" onClick={() => handleSelectStudent(s)}>
+                          <td className={`px-6 ${displayStudents.length === 6 ? 'py-2' : 'py-3'}`}>
                             <div className="flex items-center gap-3">
                               {(() => {
                                 // Get real-time photo from UserContext, fallback to student.photo if not available
@@ -923,7 +923,7 @@ export default function StudentsPage() {
                               <div className="font-medium text-gray-900 flex-1 min-w-0 truncate">{getName(s)}</div>
                             </div>
                           </td>
-                          <td className="px-6 py-3">
+                          <td className={`px-6 ${displayStudents.length === 6 ? 'py-2' : 'py-3'}`}>
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                               getGender(s)?.toLowerCase() === "male"
                                 ? "bg-blue-100 text-blue-800"
@@ -934,7 +934,7 @@ export default function StudentsPage() {
                               {getGender(s) || <span className="italic text-gray-400">No Data</span>}
                             </span>
                           </td>
-                          <td className="px-6 py-3">
+                          <td className={`px-6 ${displayStudents.length === 6 ? 'py-2' : 'py-3'}`}>
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                               getSchedule(s) === "Morning" || getSchedule(s) === "AM"
                                 ? "bg-blue-100 text-blue-800"
@@ -945,7 +945,7 @@ export default function StudentsPage() {
                               {getSchedule(s) || <span className="italic text-gray-400">No Data</span>}
                             </span>
                           </td>
-                          <td className="px-6 py-3 text-center">
+                          <td className={`px-6 ${displayStudents.length === 6 ? 'py-2' : 'py-3'}`}>
                             <div className="flex items-center justify-center gap-2">
                               <span
                                 className="w-4 h-4 rounded-full"
@@ -968,7 +968,7 @@ export default function StudentsPage() {
           </div>
         </>
       ) : (
-        <div className="h-[calc(100vh-190px)] overflow-y-auto">
+        <div className="h-[calc(100vh-200px)] overflow-hidden">
           {selectedLoading ? (
             <div className="flex justify-center items-center h-40 text-blue-900 font-semibold">Loading student details...</div>
           ) : renderDetailView()}

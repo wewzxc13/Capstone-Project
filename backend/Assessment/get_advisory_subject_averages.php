@@ -27,17 +27,24 @@ try {
     $advisory_id = $advisory['advisory_id'];
     
     // Get average scores for all subjects in this advisory, rounded to 2 decimal places
+    // Only count students linked to parents AND currently assigned to this advisory
     $stmt = $conn->prepare('
         SELECT 
             s.subject_name,
             ROUND(AVG(sop.finalsubj_avg_score), 2) as average_score
         FROM tbl_subject_overall_progress sop
         JOIN tbl_subjects s ON sop.subject_id = s.subject_id
-        WHERE sop.advisory_id = ? AND sop.finalsubj_avg_score IS NOT NULL
+        JOIN tbl_students st ON sop.student_id = st.student_id
+        JOIN tbl_student_assigned sa ON st.student_id = sa.student_id
+        WHERE sop.advisory_id = ? 
+          AND sop.finalsubj_avg_score IS NOT NULL 
+          AND st.parent_id IS NOT NULL 
+          AND st.stud_school_status = "Active"
+          AND sa.advisory_id = ?
         GROUP BY s.subject_id, s.subject_name
         ORDER BY s.subject_name
     ');
-    $stmt->execute([$advisory_id]);
+    $stmt->execute([$advisory_id, $advisory_id]);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Format the data for the chart

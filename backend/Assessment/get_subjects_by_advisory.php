@@ -21,12 +21,16 @@ if (!$advisory_id) {
 
 try {
     // Get all subjects that are used in the schedule for this advisory's level
+    // Updated to include BOTH subject_id and subject_id_2 to capture dual subjects
     $stmt = $conn->prepare("
         SELECT DISTINCT sub.subject_id, sub.subject_name
         FROM tbl_advisory a
         JOIN tbl_schedule s ON a.level_id = s.level_id
         JOIN tbl_schedule_items si ON s.schedule_item_id = si.schedule_item_id
-        JOIN tbl_subjects sub ON (si.subject_id = sub.subject_id OR si.subject_id_2 = sub.subject_id)
+        JOIN tbl_subjects sub ON (
+            si.subject_id = sub.subject_id OR 
+            si.subject_id_2 = sub.subject_id
+        )
         WHERE a.advisory_id = ? AND sub.subject_name IS NOT NULL
         ORDER BY sub.subject_name
     ");

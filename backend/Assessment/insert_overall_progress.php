@@ -104,9 +104,36 @@ try {
     
     if (empty($existingSubjectProgress)) {
         // Calculate and insert subject overall progress
-        // 1. Get all subjects for this advisory
-        $stmt = $conn->prepare('SELECT DISTINCT s.subject_id, s.subject_name FROM tbl_schedule sch JOIN tbl_schedule_items si ON sch.schedule_item_id = si.schedule_item_id JOIN tbl_subjects s ON si.subject_id = s.subject_id WHERE sch.level_id = (SELECT level_id FROM tbl_advisory WHERE advisory_id = ?)');
-        $stmt->execute([$advisory_id]);
+        // 1. Get all subjects from BOTH quarter feedback AND schedule (including subject_id_2)
+        $stmt = $conn->prepare('
+            SELECT DISTINCT s.subject_id, s.subject_name 
+            FROM tbl_subjects s 
+            WHERE s.subject_id IN (
+                -- Subjects with quarter feedback
+                SELECT DISTINCT qf.subject_id 
+                FROM tbl_quarter_feedback qf 
+                WHERE qf.student_id = ?
+                
+                UNION
+                
+                -- Subjects from schedule (including subject_id_2)
+                SELECT DISTINCT si.subject_id 
+                FROM tbl_schedule sch 
+                JOIN tbl_schedule_items si ON sch.schedule_item_id = si.schedule_item_id 
+                WHERE sch.level_id = (SELECT level_id FROM tbl_advisory WHERE advisory_id = ?)
+                AND si.subject_id IS NOT NULL
+                
+                UNION
+                
+                SELECT DISTINCT si.subject_id_2 
+                FROM tbl_schedule sch 
+                JOIN tbl_schedule_items si ON sch.schedule_item_id = si.schedule_item_id 
+                WHERE sch.level_id = (SELECT level_id FROM tbl_advisory WHERE advisory_id = ?)
+                AND si.subject_id_2 IS NOT NULL
+            )
+            ORDER BY s.subject_name
+        ');
+        $stmt->execute([$student_id, $advisory_id, $advisory_id]);
         $subjectRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         if (!empty($subjectRows)) {

@@ -211,7 +211,7 @@ export default function SuperAdminDashboard() {
       icon: <FaUsers className="text-yellow-500 text-xl" />,
     },
     {
-      label: "Active Students",
+      label: "Active Students", // Only students linked to parents
       value: userCounts.students,
       color: "bg-blue-100 text-blue-700",
       iconBg: "bg-blue-200",

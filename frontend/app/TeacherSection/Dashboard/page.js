@@ -288,15 +288,17 @@ export default function TeacherDashboard() {
                 const students = advisoryData.students;
                 const total = students.length;
                 const active = students.filter(stu => stu.stud_school_status === 'Active').length;
-                const inactive = students.filter(stu => stu.stud_school_status === 'Inactive').length;
+                // NEW LOGIC: Only count inactive students WITH parent linking
+                const inactive = students.filter(stu => 
+                  stu.stud_school_status === 'Inactive' && stu.parent_id !== null
+                ).length;
                 
-                // Also fetch all students in the same level to check if there are inactive students not assigned to this advisory
-                fetch(`http://localhost/capstone-project/backend/Advisory/get_students_by_level.php?level_id=${data.advisory.level_id}`)
+                // Also fetch inactive students count with parent linking for this level
+                fetch(`http://localhost/capstone-project/backend/Advisory/get_inactive_students_count.php?level_id=${data.advisory.level_id}`)
                   .then(levelRes => levelRes.json())
                   .then(levelData => {
-                    if (levelData.status === 'success' && levelData.students) {
-                      const allLevelStudents = levelData.students;
-                      const levelInactive = allLevelStudents.filter(stu => stu.stud_school_status === 'Inactive').length;
+                    if (levelData.status === 'success') {
+                      const levelInactive = levelData.inactive_count;
                       
                       if (levelInactive > 0) {
                         setStudentStats(prevStats => ({ ...prevStats, inactive: levelInactive }));
@@ -593,7 +595,7 @@ export default function TeacherDashboard() {
 
             {/* Right Column: Stats and Charts */}
             <div className="flex flex-col gap-3 lg:w-1/2 w-full">
-              {/* Student Stats Grid */}
+                              {/* Student Stats Grid */}
               <div className="flex flex-wrap lg:flex-nowrap items-stretch gap-3 min-h-[64px] w-full">
                 {/* Total Students */}
                 <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3 shadow-sm min-h-[72px] flex-1">
@@ -602,6 +604,7 @@ export default function TeacherDashboard() {
                   </div>
                   <div className="flex flex-col justify-center leading-tight text-left">
                     <span className="text-xs text-gray-500 font-medium">Total Students</span>
+                 
                     <span className="text-xl font-bold text-[#1e2a79]">{studentStats.total}</span>
                   </div>
                 </div>
@@ -613,6 +616,7 @@ export default function TeacherDashboard() {
                   </div>
                   <div className="flex flex-col justify-center leading-tight text-left">
                     <span className="text-xs text-gray-500 font-medium">Active Students</span>
+              
                     <span className="text-xl font-bold text-[#1e2a79]">{studentStats.active}</span>
                   </div>
                 </div>
@@ -624,6 +628,7 @@ export default function TeacherDashboard() {
                   </div>
                   <div className="flex flex-col justify-center leading-tight text-left">
                     <span className="text-xs text-gray-500 font-medium">Students at Risk</span>
+                 
                     <span className="text-xl font-bold text-[#1e2a79]">{riskLoading ? '...' : studentStats.risk}</span>
                   </div>
                 </div>
@@ -646,6 +651,7 @@ export default function TeacherDashboard() {
                 <div>
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2">
                     <h3 className="text-base font-bold text-[#1e2a79]">Subjects Performance</h3>
+                
                     {subjectsData.labels.length > 0 && subjectsData.datasets[0].data.some(score => score > 0) && (
                       <span className="text-xs font-bold text-[#1e2a79] bg-blue-50 px-2 py-0.5 rounded-full">
                         Overall Average: {(subjectsData.datasets[0].data.filter(score => score > 0).reduce((a, b) => a + b, 0) / subjectsData.datasets[0].data.filter(score => score > 0).length || 0).toFixed(2)}%
@@ -738,6 +744,7 @@ export default function TeacherDashboard() {
                    <h3 className="font-bold text-base text-[#1e2a79] mb-2">
                      {advisory ? `Progress of Class ${className}` : 'Progress Tracking'}
                    </h3>
+                
                   <div className="h-[190px]">
                     {quarterlyLoading ? (
                       <div className="flex items-center justify-center h-full text-sm text-gray-500">

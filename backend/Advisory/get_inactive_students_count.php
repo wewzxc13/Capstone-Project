@@ -20,24 +20,25 @@ if (!$level_id) {
 }
 
 try {
-    // Get only active students in this level (consistent with other advisory files)
+    // Count inactive students WITH parent linking in this level
     $stmt = $conn->prepare("
-        SELECT s.*, s.parent_id
+        SELECT COUNT(*) as inactive_count
         FROM tbl_students s
-        WHERE s.level_id = ? AND s.stud_school_status = 'Active'
-        ORDER BY s.stud_lastname, s.stud_firstname
+        WHERE s.level_id = ? 
+        AND s.stud_school_status = 'Inactive' 
+        AND s.parent_id IS NOT NULL
     ");
     $stmt->execute([$level_id]);
-    $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
     
     echo json_encode([
         'status' => 'success',
-        'students' => $students,
-        'total' => count($students)
+        'inactive_count' => (int)$result['inactive_count'],
+        'level_id' => $level_id
     ]);
     
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Database error', 'error' => $e->getMessage()]);
 }
-?> 
+?>

@@ -842,6 +842,45 @@ export default function ViewUserPage() {
     setError(null);
     
     try {
+      // Special handling for Parent role - unlink students first
+      if (role === "Parent") {
+        try {
+          // Get all students linked to this parent
+          const studentsResponse = await fetch(`http://localhost/capstone-project/backend/Users/get_parent_students.php?parent_id=${userId}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          });
+          
+          const studentsData = await studentsResponse.json();
+          
+          if (studentsData.status === "success" && studentsData.data && studentsData.data.students) {
+            // Unlink each student by setting parent_id and parent_profile_id to NULL
+            // and set their status to 'Inactive'
+            for (const student of studentsData.data.students) {
+              await fetch("http://localhost/capstone-project/backend/Users/update_student.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  student_id: student.student_id,
+                  parent_id: null,
+                  parent_profile_id: null,
+                  stud_school_status: "Inactive"
+                }),
+              });
+            }
+            
+            // Show success message for student unlinking
+            if (studentsData.data.students.length > 0) {
+              toast.success(`${studentsData.data.students.length} linked student(s) have been unlinked and set to inactive.`);
+            }
+          }
+        } catch (error) {
+          console.error('Error unlinking students:', error);
+          // Continue with archiving even if student unlinking fails
+        }
+      }
+      
+      // Proceed with normal archiving
       const response = await fetch("http://localhost/capstone-project/backend/Users/archive_user.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1295,11 +1334,30 @@ export default function ViewUserPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
                     {isEditing ? (
-                      <select name="gender" value={formData.gender || ""} onChange={handleChange} className={getInputClassName("gender")}>
-                        <option value="">Select</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                      </select>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 text-sm text-gray-700">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value="Male"
+                            checked={formData.gender === "Male"}
+                            onChange={handleChange}
+                            className="text-[#232c67] focus:ring-[#232c67]"
+                          />
+                          Male
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-700">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value="Female"
+                            checked={formData.gender === "Female"}
+                            onChange={handleChange}
+                            className="text-[#232c67] focus:ring-[#232c67]"
+                          />
+                          Female
+                        </label>
+                      </div>
                     ) : (
                       <div className="border w-full p-2 rounded bg-gray-50 text-gray-700">
                         {formData.gender || "Not specified"}
@@ -1373,11 +1431,30 @@ export default function ViewUserPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Class Schedule</label>
                     {isEditing ? (
-                      <select name="class_schedule" value={formData.class_schedule || ""} onChange={handleChange} className={getInputClassName("class_schedule")}>
-                        <option value="">Select</option>
-                        <option value="Morning">Morning</option>
-                        <option value="Afternoon">Afternoon</option>
-                      </select>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 text-sm text-gray-700">
+                          <input
+                            type="radio"
+                            name="class_schedule"
+                            value="Morning"
+                            checked={formData.class_schedule === "Morning"}
+                            onChange={handleChange}
+                            className="text-[#232c67] focus:ring-[#232c67]"
+                          />
+                          Morning
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-700">
+                          <input
+                            type="radio"
+                            name="class_schedule"
+                            value="Afternoon"
+                            checked={formData.class_schedule === "Afternoon"}
+                            onChange={handleChange}
+                            className="text-[#232c67] focus:ring-[#232c67]"
+                          />
+                          Afternoon
+                        </label>
+                      </div>
                     ) : (
                       <div className="border w-full p-2 rounded bg-gray-50 text-gray-700">
                         {formData.class_schedule || "Not specified"}
@@ -1557,6 +1634,11 @@ export default function ViewUserPage() {
                   <p className="text-sm text-gray-700">
                     Are you sure you want to archive <span className="font-semibold">"{formData?.firstName && formData?.lastName ? `${formData.lastName}, ${formData.firstName}` : formData?.name || 'this user'}"</span>? 
                     This action will set their status to inactive and they will lose access to the system. The user can be restored later if needed.
+                    {role === "Parent" && (
+                      <span className="block mt-2 text-amber-700 font-medium">
+                        ⚠️ Note: All linked students will be unlinked and set to inactive status.
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
