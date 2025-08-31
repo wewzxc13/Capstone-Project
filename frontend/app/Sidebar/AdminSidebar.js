@@ -12,8 +12,10 @@ import {
   FaCommentDots,
   FaBars,
   FaTimes,
+  FaFileAlt,
 } from "react-icons/fa";
 import { usePathname } from "next/navigation";
+import { useUser } from "../Context/UserContext";
 
 const navItems = [
   { name: "Dashboard", icon: FaHome, href: "/AdminSection/Dashboard" },
@@ -21,12 +23,14 @@ const navItems = [
   { name: "Schedule", icon: FaClipboardList, href: "/AdminSection/Schedule" },
   { name: "Calendar", icon: FaCalendarAlt, href: "/AdminSection/Calendar" },
   { name: "Report", icon: FaChartBar, href: "/AdminSection/Report" },
+  { name: "Logs", icon: FaFileAlt, href: "/AdminSection/Logs" },
   { name: "Archive", icon: FaArchive, href: "/AdminSection/Archive" },
   { name: "Message", icon: FaCommentDots, href: "/AdminSection/Message" },
 ];
 
 const AdminSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
   const pathname = usePathname();
+  const { unreadCounts } = useUser();
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
 
   const SidebarContent = ({ isSidebarOpen, onNavClick }) => (
@@ -63,6 +67,8 @@ const AdminSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
       >
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const unreadCount = item.name === "Message" ? unreadCounts.total : 0;
+          
           return (
             <Link
               href={item.href}
@@ -84,7 +90,14 @@ const AdminSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
                     }`
               }`}
             >
-              <item.icon size={24} className="text-[#232c67] shrink-0" aria-hidden="true" />
+              <div className="relative">
+                <item.icon size={24} className="text-[#232c67] shrink-0" aria-hidden="true" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </div>
               {isSidebarOpen && <span className="tracking-wide">{item.name}</span>}
             </Link>
           );

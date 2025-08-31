@@ -1422,18 +1422,6 @@ export default function SuperAdminCalendarPage() {
                   </div>
                   <div className="flex justify-end gap-3 px-4 py-4 bg-gray-50 border-t border-gray-200">
                     <button
-                      onClick={() => { 
-                        setEditMode(false); 
-                        setEditEventData(null); 
-                        setOriginalInvitees({ teachers: [], parents: [] });
-                        toast.info("Edit mode closed");
-                      }}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
-                    >
-                      <FaTimes className="w-3 h-3" />
-                      Cancel
-                    </button>
-                    <button
                       onClick={async () => {
                         if (!selectedEvent) return;
                         // Compose start/end datetime strings
@@ -2810,7 +2798,7 @@ export default function SuperAdminCalendarPage() {
                   setCancelLoading(true);
                   try {
                     const userId = localStorage.getItem('userId');
-                    const res = await fetch('http://localhost/capstone-project/backend/Meetingupdate_meeting.php', {
+                    const res = await fetch('http://localhost/capstone-project/backend/Meeting/update_meeting.php', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ 
@@ -2856,14 +2844,14 @@ export default function SuperAdminCalendarPage() {
             </div>
             
             <div className="mx-6 mb-6">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
-                    <FaExclamationTriangle className="w-5 h-5 text-yellow-600" />
+                    <FaExclamationTriangle className="w-5 h-5 text-red-600" />
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-yellow-800 mb-1">Warning</h3>
-                    <p className="text-sm text-yellow-700">
+                    <h3 className="text-sm font-medium text-red-800 mb-1">Warning</h3>
+                    <p className="text-sm text-red-700">
                       Are you sure you want to permanently delete "{selectedEvent?.title}"? This will remove all meeting data including notifications and recipient records. This action cannot be undone.
                     </p>
                   </div>

@@ -1267,9 +1267,9 @@ export default function AssessmentPage() {
           </div>
         ) : (
           <div className="w-full">
-            <div className={students.length > 5 ? "overflow-y-auto" : ""} style={students.length > 5 ? { maxHeight: '400px' } : {}}>
+            <div className={students.length > 6 ? "overflow-y-auto" : ""} style={students.length > 6 ? { maxHeight: 'calc(100vh - 400px)' } : {}}>
               <table className="min-w-full text-sm text-gray-900" style={{ width: '100%', tableLayout: 'fixed' }}>
-                <thead className={`bg-[#232c67] text-white border-b border-[#1a1f4d] ${students.length > 5 ? "sticky top-0 z-10" : ""}`}>
+                                  <thead className={`bg-[#232c67] text-white border-b border-[#1a1f4d] ${students.length > 6 ? "sticky top-0 z-10" : ""}`}>
                   <tr>
                     <th
                       className="sticky top-0 left-0 text-left px-6 py-3 font-semibold text-white z-20 bg-[#232c67]"
@@ -1314,7 +1314,7 @@ export default function AssessmentPage() {
                     return (
                       <tr key={sIdx} className="hover:bg-gray-50 transition-colors">
                         <td
-                          className={`sticky left-0 bg-white px-6 font-medium whitespace-nowrap z-0 border-r border-gray-200 ${students.length === 6 ? 'py-2' : 'py-3'}`}
+                          className={`sticky left-0 bg-white px-6 font-medium whitespace-nowrap z-0 border-r border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'}`}
                           style={{ width: '50%' }}
                         >
                           <div className="flex items-center gap-3">
@@ -1354,7 +1354,7 @@ export default function AssessmentPage() {
                           </div>
                         </td>
                         {paginatedActivities.map((act) => (
-                          <td key={act.activity_id} className={`px-4 text-center border-l border-gray-200 ${students.length === 6 ? 'py-2' : 'py-3'}`} style={{ width: '20%' }}>
+                          <td key={act.activity_id} className={`px-4 text-center border-l border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'}`} style={{ width: '20%' }}>
                             <div
                               className={`w-8 h-8 rounded-lg border border-gray-300 flex justify-center items-center mx-auto text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
                                 getTrackingShape(student.student_id, act.activity_id) ? "bg-white" : "bg-gray-100"

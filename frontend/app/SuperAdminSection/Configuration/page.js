@@ -979,7 +979,7 @@ export default function SuperAdminConfigurationPage() {
               <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900">
-                    Visual Scoring System Management
+                    Visual Scoring System
                   </h2>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
@@ -1129,7 +1129,7 @@ export default function SuperAdminConfigurationPage() {
               <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900">
-                    Activities Database Management
+                    All Activities 
                   </h2>
                                      <div className="flex items-center gap-4">
                      <div className="flex items-center gap-4">
@@ -1319,7 +1319,7 @@ export default function SuperAdminConfigurationPage() {
               <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900">
-                    School Year Timeline Management
+                    School Year Timeline
                   </h2>
                                      <div className="flex items-center gap-4">
                      <button 

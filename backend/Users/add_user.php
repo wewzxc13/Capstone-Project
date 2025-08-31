@@ -60,11 +60,11 @@ $pagibig        = trim($data['pagibig'] ?? '');
 if (!$photo) {
     // Assign default photo based on user type
     if ($role === 'admin') {
-        $photo = 'default_admin.jpg';
+        $photo = 'default_admin.png';
     } else if ($role === 'teacher') {
-        $photo = 'default_teacher.jpg';
+        $photo = 'default_teacher.png';
     } else if ($role === 'parent') {
-        $photo = 'default_parent.jpg';
+        $photo = 'default_parent.png';
     } else {
         $photo = 'default_photo.jpg'; // fallback
     }

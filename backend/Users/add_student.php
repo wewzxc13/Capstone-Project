@@ -61,9 +61,9 @@ if (!in_array($scheduleClass, ['Morning', 'Afternoon'])) {
 if (!$photo) {
     // Assign default photo based on student gender
     if ($gender === 'Male') {
-        $photo = 'default_boy_student.jpg';
+        $photo = 'default_boy_student.png';
     } else if ($gender === 'Female') {
-        $photo = 'default_girl_student.jpg';
+        $photo = 'default_girl_student.png';
     } else {
         $photo = 'default_photo.jpg'; // fallback
     }

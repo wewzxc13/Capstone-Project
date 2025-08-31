@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const UserContext = createContext();
 
@@ -17,6 +17,13 @@ export function UserProvider({ children }) {
 
   // Global state for all users' photos to enable real-time updates
   const [allUsersPhotos, setAllUsersPhotos] = useState(new Map());
+
+  // Global state for unread message counts
+  const [unreadCounts, setUnreadCounts] = useState({
+    users: 0,
+    groups: 0,
+    total: 0
+  });
 
   const updateUserData = (newData) => {
     setUserData(prev => ({ ...prev, ...newData }));
@@ -98,6 +105,46 @@ export function UserProvider({ children }) {
       return newMap;
     });
   };
+
+  // New function: Update unread message counts
+  const updateUnreadCounts = useCallback((newCounts) => {
+    setUnreadCounts(prev => {
+      const updated = { ...prev, ...newCounts };
+      // Calculate total
+      updated.total = updated.users + updated.groups;
+      return updated;
+    });
+  }, []);
+
+  // Function to initialize unread counts from backend
+  const initializeUnreadCounts = useCallback(async () => {
+    try {
+      const uid = Number(localStorage.getItem('userId'));
+      if (!uid) return;
+      
+      // Fetch current unread counts from backend
+      const [recentRes, groupsRes] = await Promise.all([
+        fetch(`http://localhost/capstone-project/backend/Communication/get_recent_conversations.php?user_id=${uid}`),
+        fetch(`http://localhost/capstone-project/backend/Communication/get_groups.php?user_id=${uid}`)
+      ]);
+      
+      const recentData = await recentRes.json();
+      const groupsData = await groupsRes.json();
+      
+      const usersUnread = recentData?.success ? 
+        (recentData.data || []).reduce((sum, item) => sum + (Number(item.unread_count) || 0), 0) : 0;
+      
+      const groupsUnread = groupsData?.success ? 
+        (groupsData.data || []).reduce((sum, item) => sum + (Number(item.unread_count) || 0), 0) : 0;
+      
+      updateUnreadCounts({
+        users: usersUnread,
+        groups: groupsUnread
+      });
+    } catch (err) {
+      console.error('Error initializing unread counts:', err);
+    }
+  }, [updateUnreadCounts]);
 
   // New function: Get photo for any user by ID
   const getUserPhoto = (userId) => {
@@ -257,6 +304,9 @@ export function UserProvider({ children }) {
             if (photoUrl) {
               setAllUsersPhotos(prev => new Map(prev).set(lsUserId.toString(), photoUrl));
             }
+            
+            // Initialize unread counts after user data is loaded
+            initializeUnreadCounts();
             return;
           }
         }
@@ -290,7 +340,11 @@ export function UserProvider({ children }) {
       getStudentPhoto,
       initializeAllUsersPhotos,
       initializeAdvisoryPhotos,
-      allUsersPhotos
+      allUsersPhotos,
+      // Unread message counts
+      unreadCounts,
+      updateUnreadCounts,
+      initializeUnreadCounts
     }}>
       {children}
     </UserContext.Provider>

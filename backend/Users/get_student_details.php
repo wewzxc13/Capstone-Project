@@ -73,7 +73,7 @@ try {
                 'scheduleClass' => $student['stud_schedule_class'],
                 'photo' => $student['stud_photo'] ? 
                     'http://localhost/capstone-project/backend/Uploads/' . $student['stud_photo'] : 
-                    ($student['stud_gender'] === 'Male' ? 'http://localhost/capstone-project/backend/Uploads/default_boy_student.jpg' : 'http://localhost/capstone-project/backend/Uploads/default_girl_student.jpg'),
+                    ($student['stud_gender'] === 'Male' ? 'http://localhost/capstone-project/backend/Uploads/default_boy_student.png' : 'http://localhost/capstone-project/backend/Uploads/default_girl_student.png'),
                 'stud_photo' => $student['stud_photo'],
                 'schoolStatus' => $student['stud_school_status'],
                 'levelId' => $student['level_id'],

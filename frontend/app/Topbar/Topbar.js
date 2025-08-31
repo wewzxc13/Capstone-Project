@@ -2150,7 +2150,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
               {isLoading ? "Welcome..." : `Welcome, ${userDisplayName}!`}
             </p>
             <p className="text-[10px] sm:text-xs text-[#1B3764] opacity-80">
-              {isLoading ? "Loading..." : userData.role}
+              {isLoading ? "Loading..." : (userData.role === "SuperAdmin" || userData.role === "Super Admin" ? "Owner" : userData.role)}
             </p>
           </div>
         </div>

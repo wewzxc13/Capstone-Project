@@ -76,9 +76,9 @@ try {
             'status' => $user['user_status'],
             'role' => $user['role_name'] ?? 'Unknown Role',
             'photo' => $user['user_photo'] ? 'http://localhost/capstone-project/backend/Uploads/' . $user['user_photo'] : 
-                     (($user['role_name'] === 'Admin') ? 'http://localhost/capstone-project/backend/Uploads/default_admin.jpg' :
-                      (($user['role_name'] === 'Teacher') ? 'http://localhost/capstone-project/backend/Uploads/default_teacher.jpg' :
-                      (($user['role_name'] === 'Parent') ? 'http://localhost/capstone-project/backend/Uploads/default_parent.jpg' : null)))
+                     (($user['role_name'] === 'Admin') ? 'http://localhost/capstone-project/backend/Uploads/default_admin.png' :
+                      (($user['role_name'] === 'Teacher') ? 'http://localhost/capstone-project/backend/Uploads/default_teacher.png' :
+                      (($user['role_name'] === 'Parent') ? 'http://localhost/capstone-project/backend/Uploads/default_parent.png' : null)))
         ];
         // Only add parent_profile_id for parents
         if ($user['role_name'] === 'Parent') {
@@ -208,7 +208,7 @@ try {
             'parent_id' => $student['parent_id'] ?? null,
             'photo' => $student['stud_photo'] ? 
                 'http://localhost/capstone-project/backend/Uploads/' . $student['stud_photo'] : 
-                ($student['stud_gender'] === 'Male' ? 'http://localhost/capstone-project/backend/Uploads/default_boy_student.jpg' : 'http://localhost/capstone-project/backend/Uploads/default_girl_student.jpg')
+                ($student['stud_gender'] === 'Male' ? 'http://localhost/capstone-project/backend/Uploads/default_boy_student.png' : 'http://localhost/capstone-project/backend/Uploads/default_girl_student.png')
         ];
 
         $response['users']['Student'][] = $studentData;

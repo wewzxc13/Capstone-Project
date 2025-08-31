@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { FaPaperPlane, FaSearch, FaArrowLeft, FaUser, FaTimes, FaEdit, FaTrash, FaCheck, FaUndo, FaEye } from "react-icons/fa";
 import ProtectedRoute from "../../Context/ProtectedRoute";
+import { useUser } from "../../Context/UserContext";
 import { toast } from "react-toastify";
 
 function getInitials(name) {
@@ -31,6 +32,7 @@ const seededGroupChats = [];
 
 export default function SuperAdminMessagesPage() {
   const router = useRouter();
+  const { updateUnreadCounts } = useUser();
   const [chats, setChats] = useState(seededChats);
   const [groupChats, setGroupChats] = useState(seededGroupChats);
   const [selectedChatId, setSelectedChatId] = useState(chats[0]?.id || "");
@@ -109,6 +111,62 @@ export default function SuperAdminMessagesPage() {
         return 'bg-amber-500';
       default:
         return 'bg-gray-500';
+    }
+  };
+
+  // Get the appropriate class photo based on group_ref_id for class groups
+  const getClassPhoto = (groupRefId, groupName) => {
+    console.log('getClassPhoto called with groupRefId:', groupRefId, 'groupName:', groupName);
+    
+    // First try to use group_ref_id if available
+    if (groupRefId !== null && groupRefId !== undefined) {
+      const refId = Number(groupRefId);
+      console.log('getClassPhoto - converted refId:', refId);
+      
+      if (!isNaN(refId)) {
+        switch (refId) {
+          case 1:
+            console.log('getClassPhoto - returning discoverer photo (by refId)');
+            return '/assets/image/discoverer_gc_photo.png';
+          case 2:
+            console.log('getClassPhoto - returning explorer photo (by refId)');
+            return '/assets/image/explorer_gc_photo.png';
+          case 3:
+            console.log('getClassPhoto - returning adventurer photo (by refId)');
+            return '/assets/image/adventurer_gc_photo.png';
+        }
+      }
+    }
+    
+    // Fallback to name-based detection if groupRefId doesn't work
+    console.log('getClassPhoto - falling back to name-based detection for:', groupName);
+    const name = (groupName || '').toLowerCase();
+    if (name.includes('discoverer')) {
+      console.log('getClassPhoto - returning discoverer photo (by name)');
+      return '/assets/image/discoverer_gc_photo.png';
+    } else if (name.includes('explorer')) {
+      console.log('getClassPhoto - returning explorer photo (by name)');
+      return '/assets/image/explorer_gc_photo.png';
+    } else if (name.includes('adventurer')) {
+      console.log('getClassPhoto - returning adventurer photo (by name)');
+      return '/assets/image/adventurer_gc_photo.png';
+    }
+    
+    // Final fallback
+    console.log('getClassPhoto - returning default explorer photo');
+    return '/assets/image/ville.jpg';
+  };
+
+  // Get the appropriate group photo based on group type
+  const getGroupPhoto = (groupType) => {
+    switch ((groupType || '').toLowerCase()) {
+      case 'class':
+        return '/assets/image/explorer_gc_photo.png';
+      case 'staff':
+        return '/assets/image/staff_gc_photo.png';
+      case 'overall':
+      default:
+        return '/assets/image/general_gc_photo.png';
     }
   };
 
@@ -625,7 +683,22 @@ export default function SuperAdminMessagesPage() {
           })(),
           messages: [],
           groupType: g.group_type,
+          groupRefId: g.group_ref_id, // Add this field to access group_ref_id
         }));
+        
+        // Debug logging for class groups
+        console.log('Raw groups data from API:', json.data);
+        console.log('Mapped groups:', mapped);
+        mapped.forEach(group => {
+          if (group.groupType === 'Class') {
+            console.log('Class group details:', {
+              name: group.name,
+              groupRefId: group.groupRefId,
+              type: typeof group.groupRefId
+            });
+          }
+        });
+        
         if (isMounted) {
           console.log('Setting groupChats state with groups:', mapped);
           console.log('Groups count:', mapped.length);
@@ -634,6 +707,9 @@ export default function SuperAdminMessagesPage() {
           isRunningRef.current.groups = false; // Mark as not running
           console.log('Groups loaded successfully, groupChats state updated');
           console.log('Current groupChats state after setState:', mapped);
+          
+          // Fetch user photos for all group members
+          fetchUserPhotosForGroupMembers(mapped);
         }
         
         // For users mentioned in group messages, mark them as processed
@@ -814,6 +890,17 @@ export default function SuperAdminMessagesPage() {
   }, [groupChats]);
 
   // Intentionally no fallback to all users; only real recent conversations will appear
+
+  // Update global unread counts whenever they change
+  useEffect(() => {
+    updateUnreadCounts({
+      users: usersUnreadTotal,
+      groups: groupsUnreadTotal
+    });
+  }, [usersUnreadTotal, groupsUnreadTotal, updateUnreadCounts]);
+
+  // Remove the immediate refresh on mount to prevent infinite loops
+  // The unread counts will be updated automatically when the calculated values change
 
   // Ensure archive tab is kept in sync when tab becomes active
   useEffect(() => {
@@ -1175,6 +1262,9 @@ export default function SuperAdminMessagesPage() {
           time: m.sent_at ? new Date(m.sent_at) : new Date(),
         }));
         setGroupChats((prev) => prev.map((g) => (g.id === selectedChat.id ? { ...g, messages: msgs, unread: 0 } : g)));
+        
+        // Fetch user photos for all message senders
+        fetchUserPhotosForGroupMessages(msgs);
       })
       .catch((err) => { if (!(err && err.name === 'AbortError')) { /* ignore */ } });
     return () => { if (!controller.signal.aborted) controller.abort(); };
@@ -1606,6 +1696,154 @@ export default function SuperAdminMessagesPage() {
     });
   };
 
+  // Function to fetch user photos for group message senders
+  const fetchUserPhotosForGroupMessages = async (messages) => {
+    try {
+      const uniqueSenderIds = [...new Set(messages.map(msg => msg.senderId).filter(Boolean))];
+      const newPhotos = {};
+      
+      for (const senderId of uniqueSenderIds) {
+        // Skip if we already have this user's photo
+        if (userPhotos[senderId] || photosFetchedRef.current.has(senderId)) {
+          continue;
+        }
+        
+        try {
+          const res = await fetch(`http://localhost/capstone-project/backend/Users/get_user_details.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: senderId })
+          });
+          const data = await res.json();
+          
+          if (data?.status === 'success' && data.user?.photo) {
+            newPhotos[senderId] = data.user.photo;
+          }
+          
+          // Mark as processed
+          photosFetchedRef.current.add(senderId);
+        } catch (err) {
+          console.error(`Failed to fetch photo for user ${senderId}:`, err);
+          photosFetchedRef.current.add(senderId);
+        }
+      }
+      
+      // Update userPhotos state if we found new photos
+      if (Object.keys(newPhotos).length > 0) {
+        setUserPhotos(prev => ({ ...prev, ...newPhotos }));
+        console.log('Fetched new user photos for group messages:', newPhotos);
+      }
+    } catch (err) {
+      console.error('Error fetching user photos for group messages:', err);
+    }
+  };
+
+  // Function to fetch user photos for all group members
+  const fetchUserPhotosForGroupMembers = async (groups) => {
+    try {
+      const uniqueUserIds = new Set();
+      
+      // Collect all user IDs from group participants
+      for (const group of groups) {
+        if (group.groupType === 'Class' && group.groupRefId) {
+          // For class groups, we need to fetch advisory teachers and parents
+          try {
+            // Since we can't directly query by advisory_id, we'll use a different approach
+            // We'll fetch all users and filter by role to get teachers, and use get_all_users for parents
+            const usersRes = await fetch('http://localhost/capstone-project/backend/Users/get_all_users.php');
+            const usersData = await usersRes.json();
+            
+            if (usersData?.success && usersData.data) {
+              // Add all teachers (role 3) and admins (role 2) and owners (role 1)
+              usersData.data.forEach(user => {
+                if ([1, 2, 3].includes(Number(user.user_role))) {
+                  uniqueUserIds.add(String(user.user_id));
+                }
+              });
+              
+              // For parents, we'll add all active parents (role 4)
+              usersData.data.forEach(user => {
+                if (Number(user.user_role) === 4 && user.user_status === 'Active') {
+                  uniqueUserIds.add(String(user.user_id));
+                }
+              });
+            }
+          } catch (err) {
+            console.error(`Failed to fetch users for class group ${group.id}:`, err);
+          }
+        } else if (group.groupType === 'Staff') {
+          // For staff groups, fetch all teachers, admins, and owners
+          try {
+            const usersRes = await fetch('http://localhost/capstone-project/backend/Users/get_all_users.php');
+            const usersData = await usersRes.json();
+            
+            if (usersData?.success && usersData.data) {
+              usersData.data.forEach(user => {
+                if ([1, 2, 3].includes(Number(user.user_role))) { // Owner, Admin, Teacher
+                  uniqueUserIds.add(String(user.user_id));
+                }
+              });
+            }
+          } catch (err) {
+            console.error('Failed to fetch staff users:', err);
+          }
+        } else if (group.groupType === 'Overall') {
+          // For overall groups, fetch all active users
+          try {
+            const usersRes = await fetch('http://localhost/capstone-project/backend/Users/get_all_users.php');
+            const usersData = await usersRes.json();
+            
+            if (usersData?.success && usersData.data) {
+              usersData.data.forEach(user => {
+                if (user.user_status === 'Active') {
+                  uniqueUserIds.add(String(user.user_id));
+                }
+              });
+            }
+          } catch (err) {
+            console.error('Failed to fetch overall users:', err);
+          }
+        }
+      }
+      
+      // Fetch photos for all unique users
+      const newPhotos = {};
+      for (const userId of uniqueUserIds) {
+        // Skip if we already have this user's photo
+        if (userPhotos[userId] || photosFetchedRef.current.has(userId)) {
+          continue;
+        }
+        
+        try {
+          const res = await fetch(`http://localhost/capstone-project/backend/Users/get_user_details.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+          });
+          const data = await res.json();
+          
+          if (data?.status === 'success' && data.user?.photo) {
+            newPhotos[userId] = data.user.photo;
+            }
+          
+          // Mark as processed
+          photosFetchedRef.current.add(userId);
+        } catch (err) {
+          console.error(`Failed to fetch photo for user ${userId}:`, err);
+          photosFetchedRef.current.add(userId);
+        }
+      }
+      
+      // Update userPhotos state if we found new photos
+      if (Object.keys(newPhotos).length > 0) {
+        setUserPhotos(prev => ({ ...prev, ...newPhotos }));
+        console.log('Fetched new user photos for group members:', newPhotos);
+      }
+    } catch (err) {
+      console.error('Error fetching user photos for group members:', err);
+    }
+  };
+
   // Helper function to render user avatar
   const renderUserAvatar = (userId, role, size = "w-10 h-10") => {
     const photo = userPhotos[userId];
@@ -1772,7 +2010,7 @@ export default function SuperAdminMessagesPage() {
                           }
                         }, 300); // Increased delay to allow button clicks and prevent race conditions
                       }}
-                      placeholder="Search friends"
+                      placeholder="Search names to connect..."
                       className="w-full pl-12 pr-10 py-2.5 text-sm rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200 caret-[#1E2A79]"
                       ref={searchInputRef}
                     />
@@ -2174,18 +2412,9 @@ export default function SuperAdminMessagesPage() {
                       {filteredGroups.map((grp) => {
                         const isSelected = selectedType === "group" && grp.id === selectedChatId;
                         
-                        // Get the appropriate group photo based on group type
-                        const getGroupPhoto = (groupType) => {
-                          switch ((groupType || '').toLowerCase()) {
-                            case 'class':
-                              return '/assets/image/class_gc_photo.jpg';
-                            case 'staff':
-                              return '/assets/image/staff_gc_photo.jpg';
-                            case 'overall':
-                            default:
-                              return '/assets/image/general_gc_photo.jpg';
-                          }
-                        };
+
+
+
 
                         return (
                           <button
@@ -2199,7 +2428,16 @@ export default function SuperAdminMessagesPage() {
                           >
                             <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
                               <img 
-                                src={getGroupPhoto(grp.groupType)} 
+                                src={(() => {
+                                  if (grp.groupType === 'Class') {
+                                    console.log('Class group detected:', grp.name, 'groupRefId:', grp.groupRefId, 'type:', typeof grp.groupRefId);
+                                    const photo = getClassPhoto(grp.groupRefId, grp.name);
+                                    console.log('Selected photo for', grp.name, ':', photo);
+                                    return photo;
+                                  } else {
+                                    return getGroupPhoto(grp.groupType);
+                                  }
+                                })()} 
                                 alt={grp.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
@@ -2377,14 +2615,20 @@ export default function SuperAdminMessagesPage() {
                             <img 
                               src={(() => {
                                 const groupType = selectedChat?.groupType || '';
-                                switch (groupType.toLowerCase()) {
-                                  case 'class':
-                                    return '/assets/image/class_gc_photo.jpg';
-                                  case 'staff':
-                                    return '/assets/image/staff_gc_photo.jpg';
-                                  case 'overall':
-                                  default:
-                                    return '/assets/image/general_gc_photo.jpg';
+                                if (groupType === 'Class') {
+                                  // Use the class-specific photo based on group_ref_id
+                                  const groupRefId = selectedChat?.groupRefId;
+                                  const groupName = selectedChat?.name;
+                                  return getClassPhoto(groupRefId, groupName);
+                                } else {
+                                  // Use the general group photo logic
+                                  switch (groupType.toLowerCase()) {
+                                    case 'staff':
+                                      return '/assets/image/staff_gc_photo.png';
+                                    case 'overall':
+                                    default:
+                                      return '/assets/image/general_gc_photo.png';
+                                  }
                                 }
                               })()}
                               alt={selectedChat?.name}

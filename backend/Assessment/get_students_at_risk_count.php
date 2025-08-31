@@ -34,11 +34,11 @@ try {
         exit();
     }
     
-    // Get all students in this advisory/level
+    // Get all students in this advisory/level (active + inactive) as long as they have parent linked
     $studentsStmt = $conn->prepare("
-        SELECT student_id 
+        SELECT student_id, stud_school_status 
         FROM tbl_students 
-        WHERE level_id = ? AND stud_school_status = 'Active'
+        WHERE level_id = ? AND parent_id IS NOT NULL
     ");
     $studentsStmt->execute([$advisory['level_id']]);
     $students = $studentsStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -49,11 +49,20 @@ try {
     }
     
     $riskCount = 0;
+    $activeCount = 0;
+    $inactiveCount = 0;
     $advisory_id = $advisory['advisory_id'];
     
     // Check each student
     foreach ($students as $student) {
         $student_id = $student['student_id'];
+        
+        // Count active vs inactive students
+        if ($student['stud_school_status'] === 'Active') {
+            $activeCount++;
+        } else {
+            $inactiveCount++;
+        }
         
         // Check if student has completed all quarters (4 quarters)
         $quartersStmt = $conn->prepare("
@@ -107,6 +116,8 @@ try {
         "status" => "success", 
         "count" => $riskCount,
         "total_students" => count($students),
+        "active_students" => $activeCount,
+        "inactive_students" => $inactiveCount,
         "advisory_id" => $advisory_id
     ]);
     

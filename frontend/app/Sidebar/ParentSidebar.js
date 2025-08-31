@@ -14,6 +14,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { usePathname } from "next/navigation";
+import { useUser } from "../Context/UserContext";
 
 const navItems = [
   { name: "Dashboard", icon: FaHome, href: "/ParentSection/Dashboard" },
@@ -27,54 +28,10 @@ const navItems = [
 
 const ParentSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
   const pathname = usePathname();
+  const { unreadCounts } = useUser();
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
-  const [messageUnread, setMessageUnread] = React.useState(0);
 
-  // Poll unread totals for Messages (users + groups)
-  React.useEffect(() => {
-    let timer;
-    const fetchCounts = async () => {
-      try {
-        const uid = Number(localStorage.getItem("userId"));
-        if (!uid) {
-          setMessageUnread(0);
-          return;
-        }
-        const [recentRes, groupsRes, advRes] = await Promise.all([
-          fetch(`http://localhost/capstone-project/backend/Communication/get_recent_conversations.php?user_id=${uid}`).then((r) => r.json()).catch(() => null),
-          fetch(`http://localhost/capstone-project/backend/Communication/get_groups.php?user_id=${uid}`).then((r) => r.json()).catch(() => null),
-          fetch('http://localhost/capstone-project/backend/Advisory/get_all_advisory_details.php').then((r) => r.json()).catch(() => null),
-        ]);
-        const usersUnread = Array.isArray(recentRes?.data)
-          ? recentRes.data.reduce((s, it) => s + (Number(it.unread_count) || 0), 0)
-          : 0;
-        // Apply Parent visibility: exclude Staff; include Class groups only if any child is in that advisory
-        const groups = Array.isArray(groupsRes?.data) ? groupsRes.data : [];
-        const advisories = (advRes && (advRes.advisories || advRes.data)) || [];
-        const parentAdvisoryIds = new Set();
-        advisories.forEach((a) => {
-          const students = a && a.students ? a.students : [];
-          if (students.some((s) => Number(s.parent_id) === uid)) {
-            parentAdvisoryIds.add(Number(a.advisory_id));
-          }
-        });
-        const eligibleGroups = groups.filter((g) => {
-          const type = String(g.group_type || '').toLowerCase();
-          if (type === 'staff') return false; // hide All Staff
-          if (type !== 'class') return true; // allow Overall etc.
-          const refId = Number(g.group_ref_id || 0);
-          return parentAdvisoryIds.has(refId);
-        });
-        const groupsUnread = eligibleGroups.reduce((s, it) => s + (Number(it.unread_count) || 0), 0);
-        setMessageUnread(usersUnread + groupsUnread);
-      } catch {
-        // noop
-      }
-    };
-    fetchCounts();
-    timer = setInterval(fetchCounts, 30000);
-    return () => timer && clearInterval(timer);
-  }, []);
+  // Use context-based unread counts instead of polling
 
   const SidebarContent = ({ isSidebarOpen, onNavClick }) => (
     <div
@@ -131,14 +88,14 @@ const ParentSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
                     }`
               }`}
             >
-              <span className="relative">
+              <div className="relative">
                 <item.icon size={24} className="text-[#232c67] shrink-0" aria-hidden="true" />
-                {item.name === "Message" && messageUnread > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
-                    {messageUnread > 99 ? "99+" : messageUnread}
+                {item.name === "Message" && unreadCounts.total > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                    {unreadCounts.total > 99 ? '99+' : unreadCounts.total}
                   </span>
                 )}
-              </span>
+              </div>
               {isSidebarOpen && <span className="tracking-wide">{item.name}</span>}
             </Link>
           );

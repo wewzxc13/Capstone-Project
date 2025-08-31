@@ -1052,7 +1052,7 @@ export default function AttendancePage() {
             </div>
           ) : (
             <div className="w-full">
-              <div className={filteredStudents.length > 5 ? "overflow-y-auto" : ""} style={students.length > 5 ? { maxHeight: '395px' } : {}}>
+              <div className={filteredStudents.length > 6 ? "overflow-y-auto" : ""} style={students.length > 6 ? { maxHeight: 'calc(100vh - 400px)' } : {}}>
                 <table className="min-w-full text-sm text-gray-900" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead className="sticky top-0 z-20 bg-[#232c67] text-white border-b border-[#1a1f4d]">
                     <tr>
@@ -1083,7 +1083,7 @@ export default function AttendancePage() {
                       const name = student.stud_lastname + ', ' + student.stud_firstname + (student.stud_middlename ? ' ' + student.stud_middlename : '');
                       return (
                         <tr key={key} className="hover:bg-gray-50 transition-colors">
-                          <td className={`sticky left-0 bg-white px-6 font-medium whitespace-nowrap z-10 border-r border-gray-200 ${filteredStudents.length === 6 ? 'py-2' : 'py-3'}`} style={{ width: '50%' }}>
+                          <td className={`sticky left-0 bg-white px-6 font-medium whitespace-nowrap z-10 border-r border-gray-200 ${filteredStudents.length > 6 ? 'py-2' : 'py-3'}`} style={{ width: '50%' }}>
                           <div className="flex items-center gap-3">
                             {(() => {
                               // Get real-time photo from UserContext, fallback to student.photo if not available
@@ -1123,7 +1123,7 @@ export default function AttendancePage() {
                           {paginatedDates.map((date, dIdx) => {
                             const status = getAttendanceStatus(key, date);
                             return (
-                              <td key={dIdx} className={`px-4 text-center border-l border-gray-200 ${filteredStudents.length === 6 ? 'py-2' : 'py-3'}`} style={{ width: paginatedDates.length === 1 ? '20%' : `${Math.max(20, 100 / paginatedDates.length)}%` }}>
+                              <td key={dIdx} className={`px-4 text-center border-l border-gray-200 ${filteredStudents.length > 6 ? 'py-2' : 'py-3'}`} style={{ width: paginatedDates.length === 1 ? '20%' : `${Math.max(20, 100 / paginatedDates.length)}%` }}>
                                 <div className="flex items-center justify-center">
                                   {status === 'Present' ? (
                                     <>

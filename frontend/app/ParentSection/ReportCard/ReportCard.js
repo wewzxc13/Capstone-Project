@@ -611,6 +611,24 @@ export default function StudentProgress({ formData: initialFormData }) {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
+  // Helper to format names as "Lastname, Firstname Middlename"
+  function formatName(fullName) {
+    if (!fullName) return "-";
+    
+    const nameParts = fullName.trim().split(' ');
+    if (nameParts.length < 2) return fullName;
+    
+    const lastName = nameParts[nameParts.length - 1];
+    const firstName = nameParts[0];
+    const middleName = nameParts.slice(1, -1).join(' ');
+    
+    if (middleName) {
+      return `${lastName}, ${firstName} ${middleName}`;
+    } else {
+      return `${lastName}, ${firstName}`;
+    }
+  }
+
   const getDisplayName = (key) => {
     if (key === "Socio") return "Socio Emotional";
     if (key === "Literacy") return "Literacy/English";
@@ -1113,7 +1131,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                    ) : (
-                     selectedStudent.lead_teacher_name || "Not assigned"
+                     selectedStudent.lead_teacher_name ? formatName(selectedStudent.lead_teacher_name) : "Not assigned"
                    )}
                  </span>
                </span>
@@ -1122,7 +1140,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                    ) : (
-                     selectedStudent.assistant_teacher_name || "Not assigned"
+                     selectedStudent.assistant_teacher_name ? formatName(selectedStudent.assistant_teacher_name) : "Not assigned"
                    )}
                  </span>
                </span>

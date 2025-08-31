@@ -12,10 +12,11 @@ import {
   FaCommentDots,
   FaBars,
   FaTimes,
-  FaHistory,
+  FaFileAlt,
   FaTools,
 } from "react-icons/fa";
 import { usePathname } from "next/navigation";
+import { useUser } from "../Context/UserContext";
 
 const navItems = [
   { name: "Dashboard", icon: FaHome, href: "/SuperAdminSection/Dashboard" },
@@ -23,7 +24,7 @@ const navItems = [
   { name: "Schedule", icon: FaClipboardList, href: "/SuperAdminSection/Schedule" },
   { name: "Calendar", icon: FaCalendarAlt, href: "/SuperAdminSection/Calendar" },
   { name: "Report", icon: FaChartBar, href: "/SuperAdminSection/Report" },
-  { name: "Logs", icon: FaHistory, href: "/SuperAdminSection/Logs" },
+  { name: "Logs", icon: FaFileAlt, href: "/SuperAdminSection/Logs" },
   { name: "Archive", icon: FaArchive, href: "/SuperAdminSection/Archive" },
   { name: "Configuration", icon: FaTools, href: "/SuperAdminSection/Configuration" }, 
   { name: "Message", icon: FaCommentDots, href: "/SuperAdminSection/Message" },
@@ -31,38 +32,10 @@ const navItems = [
 
 const SuperAdminSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
   const pathname = usePathname();
+  const { unreadCounts } = useUser();
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
-  const [messageUnread, setMessageUnread] = React.useState(0);
 
-  // Poll unread totals for Messages (users + groups)
-  React.useEffect(() => {
-    let timer;
-    const fetchCounts = async () => {
-      try {
-        const uid = Number(localStorage.getItem("userId"));
-        if (!uid) {
-          setMessageUnread(0);
-          return;
-        }
-        const [recentRes, groupsRes] = await Promise.all([
-          fetch(`http://localhost/capstone-project/backend/Communication/get_recent_conversations.php?user_id=${uid}`).then((r) => r.json()).catch(() => null),
-          fetch(`http://localhost/capstone-project/backend/Communication/get_groups.php?user_id=${uid}`).then((r) => r.json()).catch(() => null),
-        ]);
-        const usersUnread = Array.isArray(recentRes?.data)
-          ? recentRes.data.reduce((s, it) => s + (Number(it.unread_count) || 0), 0)
-          : 0;
-        const groupsUnread = Array.isArray(groupsRes?.data)
-          ? groupsRes.data.reduce((s, it) => s + (Number(it.unread_count) || 0), 0)
-          : 0;
-        setMessageUnread(usersUnread + groupsUnread);
-      } catch {
-        // noop
-      }
-    };
-    fetchCounts();
-    timer = setInterval(fetchCounts, 30000);
-    return () => timer && clearInterval(timer);
-  }, []);
+  // Use context-based unread counts instead of polling
 
   const SidebarContent = ({ isSidebarOpen, onNavClick }) => (
     <div
@@ -119,14 +92,14 @@ const SuperAdminSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
                     }`
               }`}
             >
-              <span className="relative">
+              <div className="relative">
                 <item.icon size={24} className="text-[#232c67] shrink-0" aria-hidden="true" />
-                {item.name === "Message" && messageUnread > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
-                    {messageUnread > 99 ? "99+" : messageUnread}
+                {item.name === "Message" && unreadCounts.total > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                    {unreadCounts.total > 99 ? '99+' : unreadCounts.total}
                   </span>
                 )}
-              </span>
+              </div>
               {isSidebarOpen && <span className="tracking-wide">{item.name}</span>}
             </Link>
           );

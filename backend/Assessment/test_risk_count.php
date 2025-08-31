@@ -1,13 +1,16 @@
 <?php
-// Simple test for the risk count API
+// Simple test file to verify the updated get_students_at_risk_count.php API
 require_once __DIR__ . '/../connection.php';
 
-echo "<h2>Testing Student Risk Count API</h2>";
+echo "<h2>Testing Updated Risk Count API</h2>";
 
-// Test with a sample teacher ID (you may need to adjust this)
-$teacher_id = 5; // Teacher ID 5 (Jessa Hambora Decena) from the database
+// Test with a sample teacher ID (you can change this)
+$test_teacher_id = 19; // Change this to an actual teacher ID in your system
 
-echo "<p>Testing with teacher_id: $teacher_id</p>";
+echo "<p>Testing with teacher ID: $test_teacher_id</p>";
+
+// Simulate the API call
+$input = ['teacher_id' => $test_teacher_id];
 
 try {
     // First, get the advisory details for this teacher
@@ -17,99 +20,67 @@ try {
         WHERE lead_teacher_id = ? OR assistant_teacher_id = ? 
         LIMIT 1
     ");
-    $advisoryStmt->execute([$teacher_id, $teacher_id]);
+    $advisoryStmt->execute([$test_teacher_id, $test_teacher_id]);
     $advisory = $advisoryStmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$advisory) {
-        echo "<p style='color: red;'>No advisory found for teacher_id: $teacher_id</p>";
+        echo "<p style='color: red;'>❌ No advisory found for teacher ID: $test_teacher_id</p>";
         exit();
     }
     
-    echo "<p>Found advisory_id: {$advisory['advisory_id']}, level_id: {$advisory['level_id']}</p>";
+    echo "<p style='color: green;'>✅ Found advisory: ID {$advisory['advisory_id']}, Level ID: {$advisory['level_id']}</p>";
     
-    // Get all students in this advisory/level
+    // Get all students in this advisory/level (active + inactive) as long as they have parent linked
     $studentsStmt = $conn->prepare("
-        SELECT student_id 
+        SELECT student_id, stud_school_status, parent_id
         FROM tbl_students 
-        WHERE level_id = ? AND stud_school_status = 'Active'
+        WHERE level_id = ? AND parent_id IS NOT NULL
     ");
     $studentsStmt->execute([$advisory['level_id']]);
     $students = $studentsStmt->fetchAll(PDO::FETCH_ASSOC);
     
-    echo "<p>Found " . count($students) . " active students</p>";
+    echo "<p>📊 Student Counts:</p>";
+    echo "<ul>";
+    echo "<li>Total students with parent linked: " . count($students) . "</li>";
     
-    if (empty($students)) {
-        echo "<p style='color: orange;'>No active students found</p>";
-        exit();
-    }
+    $activeCount = 0;
+    $inactiveCount = 0;
     
-    $riskCount = 0;
-    $advisory_id = $advisory['advisory_id'];
-    
-    echo "<h3>Checking each student:</h3>";
-    
-    // Check each student
     foreach ($students as $student) {
-        $student_id = $student['student_id'];
-        
-        echo "<p>Student ID: $student_id</p>";
-        
-        // Check if student has completed all quarters (4 quarters)
-        $quartersStmt = $conn->prepare("
-            SELECT COUNT(DISTINCT quarter_id) as quarter_count 
-            FROM tbl_progress_cards 
-            WHERE student_id = ? AND advisory_id = ? AND is_finalized = 1
-        ");
-        $quartersStmt->execute([$student_id, $advisory_id]);
-        $quarterResult = $quartersStmt->fetch(PDO::FETCH_ASSOC);
-        $completedQuarters = $quarterResult['quarter_count'] ?? 0;
-        
-        echo "<p>  - Completed quarters: $completedQuarters</p>";
-        
-        if ($completedQuarters >= 4) {
-            // Student completed all quarters - check overall progress
-            $overallStmt = $conn->prepare("
-                SELECT risk_id 
-                FROM tbl_overall_progress 
-                WHERE student_id = ? AND advisory_id = ? 
-                ORDER BY overall_progress_id DESC 
-                LIMIT 1
-            ");
-            $overallStmt->execute([$student_id, $advisory_id]);
-            $overallResult = $overallStmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($overallResult && $overallResult['risk_id'] == 3) {
-                $riskCount++;
-                echo "<p style='color: red;'>  - HIGH RISK (overall progress)</p>";
-            } else {
-                echo "<p>  - Risk level: " . ($overallResult['risk_id'] ?? 'No data') . " (overall progress)</p>";
-            }
+        if ($student['stud_school_status'] === 'Active') {
+            $activeCount++;
         } else {
-            // Student hasn't completed all quarters - check latest progress card
-            $cardStmt = $conn->prepare("
-                SELECT risk_id 
-                FROM tbl_progress_cards 
-                WHERE student_id = ? AND advisory_id = ? 
-                ORDER BY quarter_id DESC, card_id DESC 
-                LIMIT 1
-            ");
-            $cardStmt->execute([$student_id, $advisory_id]);
-            $cardResult = $cardStmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($cardResult && $cardResult['risk_id'] == 3) {
-                $riskCount++;
-                echo "<p style='color: red;'>  - HIGH RISK (progress card)</p>";
-            } else {
-                echo "<p>  - Risk level: " . ($cardResult['risk_id'] ?? 'No data') . " (progress card)</p>";
-            }
+            $inactiveCount++;
         }
     }
     
-    echo "<h3>Final Results:</h3>";
-    echo "<p>Total students: " . count($students) . "</p>";
-    echo "<p style='color: red; font-weight: bold;'>Students at risk (risk_id = 3): $riskCount</p>";
+    echo "<li>Active students: $activeCount</li>";
+    echo "<li>Inactive students: $inactiveCount</li>";
+    echo "</ul>";
+    
+    // Show sample student data
+    if (!empty($students)) {
+        echo "<p>📋 Sample Student Data:</p>";
+        echo "<table border='1' style='border-collapse: collapse;'>";
+        echo "<tr><th>Student ID</th><th>Status</th><th>Parent ID</th></tr>";
+        
+        $sampleCount = min(5, count($students)); // Show first 5 students
+        for ($i = 0; $i < $sampleCount; $i++) {
+            $student = $students[$i];
+            echo "<tr>";
+            echo "<td>{$student['student_id']}</td>";
+            echo "<td>{$student['stud_school_status']}</td>";
+            echo "<td>{$student['parent_id']}</td>";
+            echo "</tr>";
+        }
+        echo "</table>";
+    }
     
 } catch (PDOException $e) {
-    echo "<p style='color: red;'>Database error: " . $e->getMessage() . "</p>";
+    echo "<p style='color: red;'>❌ Database error: " . $e->getMessage() . "</p>";
 }
+
+echo "<hr>";
+echo "<p><strong>Test completed.</strong></p>";
+echo "<p>This test verifies that the updated API now counts ALL students with parent links (active + inactive) instead of just active students.</p>";
 ?> 

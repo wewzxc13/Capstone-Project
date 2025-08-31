@@ -276,69 +276,36 @@ export default function TeacherDashboard() {
               setLoadingSchedule(false);
             });
           
-          // Fetch students for this specific advisory
-          fetch("http://localhost/capstone-project/backend/Advisory/get_advisory_details.php", {
+                    // Initialize student stats - will be updated by the risk count API
+          // Initialize student stats - will be updated by the risk count API
+          setStudentStats({ total: 0, active: 0, risk: 0, inactive: 0 });
+          
+          // Fetch risk count and student counts using the new API endpoint
+          setRiskLoading(true);
+          fetch("http://localhost/capstone-project/backend/Assessment/get_students_at_risk_count.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ teacher_id })
-          })
-            .then(advisoryRes => advisoryRes.json())
-            .then(advisoryData => {
-              if (advisoryData.students && Array.isArray(advisoryData.students)) {
-                const students = advisoryData.students;
-                const total = students.length;
-                const active = students.filter(stu => stu.stud_school_status === 'Active').length;
-                // NEW LOGIC: Only count inactive students WITH parent linking
-                const inactive = students.filter(stu => 
-                  stu.stud_school_status === 'Inactive' && stu.parent_id !== null
-                ).length;
-                
-                // Also fetch inactive students count with parent linking for this level
-                fetch(`http://localhost/capstone-project/backend/Advisory/get_inactive_students_count.php?level_id=${data.advisory.level_id}`)
-                  .then(levelRes => levelRes.json())
-                  .then(levelData => {
-                    if (levelData.status === 'success') {
-                      const levelInactive = levelData.inactive_count;
-                      
-                      if (levelInactive > 0) {
-                        setStudentStats(prevStats => ({ ...prevStats, inactive: levelInactive }));
-                      }
-                    }
-                  })
-                  .catch(error => {
-                    console.error('Error fetching level students:', error);
-                  });
-                
-                setStudentStats({ total, active, risk: 0, inactive });
-                
-                // Fetch risk count using the new API endpoint
-                setRiskLoading(true);
-                fetch("http://localhost/capstone-project/backend/Assessment/get_students_at_risk_count.php", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ 
-                    teacher_id: teacher_id
-                  })
-                })
-                .then(res => res.json())
-                .then(riskData => {
-                  if (riskData.status === 'success') {
-                    setStudentStats(prevStats => ({ ...prevStats, risk: riskData.count }));
-                  }
-                  setRiskLoading(false);
-                })
-                .catch(error => {
-                  console.error('Error fetching risk count:', error);
-                  setRiskLoading(false);
-                });
-              } else {
-                setStudentStats({ total: 0, active: 0, risk: 0, inactive: 0 });
-              }
+            body: JSON.stringify({ 
+              teacher_id: teacher_id
             })
-            .catch(error => {
-              console.error('Error fetching advisory students:', error);
-              setStudentStats({ total: 0, active: 0, risk: 0, inactive: 0 });
-            });
+          })
+          .then(res => res.json())
+          .then(riskData => {
+            if (riskData.status === 'success') {
+              setStudentStats(prevStats => ({ 
+                ...prevStats, 
+                total: riskData.total_students,
+                active: riskData.active_students,
+                inactive: riskData.inactive_students,
+                risk: riskData.count 
+              }));
+            }
+            setRiskLoading(false);
+          })
+          .catch(error => {
+            console.error('Error fetching risk count:', error);
+            setRiskLoading(false);
+          });
         } else {
           setLoadingSchedule(false);
         }

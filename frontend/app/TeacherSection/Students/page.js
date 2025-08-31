@@ -221,8 +221,8 @@ export default function StudentsPage() {
     return age;
   }
 
-  // Helper to format teacher name as "Lastname, First Name Middle Name"
-  function formatTeacherName(fullName) {
+  // Helper to format names as "Lastname, Firstname Middlename"
+  function formatName(fullName) {
     if (!fullName) return "-";
     
     const nameParts = fullName.trim().split(' ');
@@ -647,7 +647,7 @@ export default function StudentsPage() {
                 {/* Parent */}
                 <div className="flex flex-row items-center mx-2">
                   <span className="font-bold text-base text-blue-200 mr-1">Parent:</span>
-                  <span className="text-base font-normal">{s.parent || <span className="italic">-</span>}</span>
+                  <span className="text-base font-normal">{s.parent ? formatName(s.parent) : <span className="italic">-</span>}</span>
                 </div>
               </div>
             </div>
@@ -772,13 +772,13 @@ export default function StudentsPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-gray-700">Lead Teacher:</span>
                       <span className="text-sm text-gray-900">
-                        {advisory?.lead_teacher_name ? formatTeacherName(advisory.lead_teacher_name) : <span className='italic text-gray-400'>None</span>}
+                        {advisory?.lead_teacher_name ? formatName(advisory.lead_teacher_name) : <span className='italic text-gray-400'>None</span>}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-gray-700">Assistant Teacher:</span>
                       <span className="text-sm text-gray-900">
-                        {advisory?.assistant_teacher_name ? formatTeacherName(advisory.assistant_teacher_name) : <span className='italic text-gray-400'>None</span>}
+                        {advisory?.assistant_teacher_name ? formatName(advisory.assistant_teacher_name) : <span className='italic text-gray-400'>None</span>}
                       </span>
                     </div>
                   </div>
@@ -837,9 +837,9 @@ export default function StudentsPage() {
               </div>
             ) : (
               <div className="w-full">
-                <div className={displayStudents.length > 5 ? "overflow-y-auto" : ""} style={displayStudents.length > 5 ? { maxHeight: '385px' } : {}}>
+                <div className={displayStudents.length > 6 ? "overflow-y-auto" : ""} style={displayStudents.length > 6 ? { maxHeight: 'calc(100vh - 400px)' } : {}}>
                   <table className="min-w-full text-sm text-gray-900" style={{ width: '100%', tableLayout: 'fixed' }}>
-                    <thead className={`bg-[#232c67] text-white border-b border-[#1a1f4d] ${displayStudents.length > 5 ? "sticky top-0 z-10" : ""}`}>
+                    <thead className={`bg-[#232c67] text-white border-b border-[#1a1f4d] ${displayStudents.length > 6 ? "sticky top-0 z-10" : ""}`}>
                       <tr>
                         <th 
                           className="sticky top-0 z-20 text-left px-6 py-3 font-semibold text-white cursor-pointer hover:bg-[#2b3572] transition-colors bg-[#232c67]" 
@@ -886,7 +886,7 @@ export default function StudentsPage() {
                     <tbody className="divide-y divide-gray-200">
                       {displayStudents.map((s, idx) => (
                         <tr key={`${s.student_id}-${idx}`} className="hover:bg-gray-100 hover:text-white transition-colors cursor-pointer" onClick={() => handleSelectStudent(s)}>
-                          <td className={`px-6 ${displayStudents.length === 6 ? 'py-2' : 'py-3'}`}>
+                          <td className={`px-6 ${displayStudents.length > 6 ? 'py-2' : 'py-3'}`}>
                             <div className="flex items-center gap-3">
                               {(() => {
                                 // Get real-time photo from UserContext, fallback to student.photo if not available
@@ -923,7 +923,7 @@ export default function StudentsPage() {
                               <div className="font-medium text-gray-900 flex-1 min-w-0 truncate">{getName(s)}</div>
                             </div>
                           </td>
-                          <td className={`px-6 ${displayStudents.length === 6 ? 'py-2' : 'py-3'}`}>
+                          <td className={`px-6 ${displayStudents.length > 6 ? 'py-2' : 'py-3'}`}>
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                               getGender(s)?.toLowerCase() === "male"
                                 ? "bg-blue-100 text-blue-800"
@@ -934,7 +934,7 @@ export default function StudentsPage() {
                               {getGender(s) || <span className="italic text-gray-400">No Data</span>}
                             </span>
                           </td>
-                          <td className={`px-6 ${displayStudents.length === 6 ? 'py-2' : 'py-3'}`}>
+                          <td className={`px-6 ${displayStudents.length > 6 ? 'py-2' : 'py-3'}`}>
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                               getSchedule(s) === "Morning" || getSchedule(s) === "AM"
                                 ? "bg-blue-100 text-blue-800"
@@ -945,7 +945,7 @@ export default function StudentsPage() {
                               {getSchedule(s) || <span className="italic text-gray-400">No Data</span>}
                             </span>
                           </td>
-                          <td className={`px-6 ${displayStudents.length === 6 ? 'py-2' : 'py-3'}`}>
+                          <td className={`px-6 ${displayStudents.length > 6 ? 'py-2' : 'py-3'}`}>
                             <div className="flex items-center justify-center gap-2">
                               <span
                                 className="w-4 h-4 rounded-full"

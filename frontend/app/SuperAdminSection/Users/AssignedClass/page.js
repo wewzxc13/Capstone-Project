@@ -883,8 +883,12 @@ export default function AssignedClassPage() {
                     <p className="text-gray-500">No parents match your search</p>
                   </div>
                                  ) : (
+                   // Remove duplicate parents by user_id to prevent React key conflicts
+                   // This handles cases where the backend API might return duplicate parent records
                    parents.filter(p =>
                      (`${p.user_lastname}, ${p.user_firstname} ${p.user_middlename || ''}`.toLowerCase().includes(parentSearch.toLowerCase()))
+                   ).filter((parent, index, self) => 
+                     index === self.findIndex(p => p.user_id === parent.user_id)
                    ).sort((a, b) => {
                      const lastA = (a.user_lastname || '').toLowerCase();
                      const lastB = (b.user_lastname || '').toLowerCase();
@@ -898,7 +902,7 @@ export default function AssignedClassPage() {
                     const children = students.filter(s => s.parent_id === parent.user_id);
                                          return (
                        <div 
-                         key={parent.user_id} 
+                         key={`${parent.user_id}-${idx}`}
                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                          onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?role=Parent&id=${parent.user_id}`)}
                        >

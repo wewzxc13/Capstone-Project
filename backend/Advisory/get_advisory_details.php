@@ -154,7 +154,7 @@ try {
             $lead_teacher_name = preg_replace('/\s+/', ' ', $lead_teacher_name);
             $lead_teacher_photo = $lead['user_photo'] ? 
                 'http://localhost/capstone-project/backend/Uploads/' . $lead['user_photo'] : 
-                'http://localhost/capstone-project/backend/Uploads/default_teacher.jpg';
+                'http://localhost/capstone-project/backend/Uploads/default_teacher.png';
         }
     }
     if (!empty($advisory['assistant_teacher_id'])) {
@@ -166,7 +166,7 @@ try {
             $assistant_teacher_name = preg_replace('/\s+/', ' ', $assistant_teacher_name);
             $assistant_teacher_photo = $assistant['user_photo'] ? 
                 'http://localhost/capstone-project/backend/Uploads/' . $assistant['user_photo'] : 
-                'http://localhost/capstone-project/backend/Uploads/default_teacher.jpg';
+                'http://localhost/capstone-project/backend/Uploads/default_teacher.png';
         }
     }
     // Add names and photos to advisory array
@@ -249,8 +249,8 @@ try {
         $students_for_processing[$i]['photo'] = $students_for_processing[$i]['stud_photo'] ? 
             'http://localhost/capstone-project/backend/Uploads/' . $students_for_processing[$i]['stud_photo'] : 
             ($students_for_processing[$i]['stud_gender'] === 'Male' ? 
-                'http://localhost/capstone-project/backend/Uploads/default_boy_student.jpg' : 
-                'http://localhost/capstone-project/backend/Uploads/default_girl_student.jpg');
+                'http://localhost/capstone-project/backend/Uploads/default_boy_student.png' : 
+                'http://localhost/capstone-project/backend/Uploads/default_girl_student.png');
     }
     
     // Use the processed students array
@@ -308,7 +308,7 @@ try {
         foreach ($parents as &$parent) {
             $parent['photo'] = $parent['user_photo'] ? 
                 'http://localhost/capstone-project/backend/Uploads/' . $parent['user_photo'] : 
-                'http://localhost/capstone-project/backend/Uploads/default_parent.jpg';
+                'http://localhost/capstone-project/backend/Uploads/default_parent.png';
         }
         
         // Create a lookup array for parent information

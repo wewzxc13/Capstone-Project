@@ -1341,13 +1341,6 @@ export default function TeacherCalendarPage() {
                   </div>
                   <div className="flex justify-end gap-3 px-4 py-4 bg-gray-50 border-t border-gray-200">
                     <button
-                      onClick={handleCancelEdit}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
-                    >
-                      <FaTimes className="w-3 h-3" />
-                      Cancel
-                    </button>
-                    <button
                       onClick={handleSaveEdit}
                       className="px-4 py-2 bg-[#232c67] hover:bg-[#1a1f4d] text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
                       disabled={!!validation.date || !!validation.time || !!validation.invite}

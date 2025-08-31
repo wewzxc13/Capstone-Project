@@ -169,10 +169,10 @@ try {
     foreach ($rows as &$row) {
         // Add photo field with exact same logic as get_all_users.php
         $row['user_photo'] = $row['user_photo'] ? 'http://localhost/capstone-project/backend/Uploads/' . $row['user_photo'] : 
-                     (($row['role_name'] === 'Admin') ? 'http://localhost/capstone-project/backend/Uploads/default_admin.jpg' :
-                      (($row['role_name'] === 'Teacher') ? 'http://localhost/capstone-project/backend/Uploads/default_teacher.jpg' :
-                      (($row['role_name'] === 'Parent') ? 'http://localhost/capstone-project/backend/Uploads/default_parent.jpg' : 
-                       'http://localhost/capstone-project/backend/Uploads/default_owner.jpg')));
+                     (($row['role_name'] === 'Admin') ? 'http://localhost/capstone-project/backend/Uploads/default_admin.png' :
+                      (($row['role_name'] === 'Teacher') ? 'http://localhost/capstone-project/backend/Uploads/default_teacher.png' :
+                      (($row['role_name'] === 'Parent') ? 'http://localhost/capstone-project/backend/Uploads/default_parent.png' : 
+                       'http://localhost/capstone-project/backend/Uploads/default_owner.png')));
     }
 
     // Debug: Log the processed data
