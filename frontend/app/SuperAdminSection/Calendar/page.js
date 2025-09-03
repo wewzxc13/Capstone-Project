@@ -1120,7 +1120,7 @@ export default function SuperAdminCalendarPage() {
                     }
                     return event.status === statusFilter;
                   })
-                  .sort((a, b) => new Date(a.start) - new Date(b.start))
+                  .sort((a, b) => new Date(b.start) - new Date(a.start))
                   .slice(0, 100)
                   .length === 0 ? (
                   <div className="text-gray-400 italic text-center py-8">
@@ -1134,7 +1134,7 @@ export default function SuperAdminCalendarPage() {
                       }
                       return event.status === statusFilter;
                     })
-                    .sort((a, b) => new Date(a.start) - new Date(b.start))
+                    .sort((a, b) => new Date(b.start) - new Date(a.start))
                     .slice(0, 100)
                     .map((event, i) => (
                       <div

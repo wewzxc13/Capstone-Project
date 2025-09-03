@@ -102,8 +102,10 @@ export default function SuperAdminDashboard() {
           const activeMeetings = data.meetings.filter(meeting => 
             meeting.status === 'Scheduled' || meeting.status === 'Rescheduled'
           );
+          // Sort by date descending (latest first) - API already returns DESC but ensure frontend consistency
+          const sortedMeetings = activeMeetings.sort((a, b) => new Date(b.date) - new Date(a.date));
           // API now returns created_by in each meeting (via tbl_notifications subquery)
-          setUpcomingMeetings(activeMeetings);
+          setUpcomingMeetings(sortedMeetings);
         }
       }
     } catch (error) {

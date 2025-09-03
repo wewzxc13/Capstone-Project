@@ -645,20 +645,12 @@ export default function AttendancePage() {
   const [datePage, setDatePage] = useState(1);
   const datesPerPage = 5;
   
-  // Sort dates: newest first (descending order)
+  // Sort dates: newest first (descending order) and paginate keeping newest-to-oldest within each page
   const sortedDates = [...dates].sort((a, b) => new Date(b) - new Date(a));
   const totalDatePages = Math.ceil(sortedDates.length / datesPerPage);
-  
-  // Get paginated dates for current page
-  let paginatedDates = [];
-  if (sortedDates.length > 0) {
-    const startIndex = (datePage - 1) * datesPerPage;
-    const endIndex = startIndex + datesPerPage;
-    paginatedDates = sortedDates.slice(startIndex, endIndex);
-    
-    // Within each page, sort dates chronologically (oldest to newest, left to right)
-    paginatedDates.sort((a, b) => new Date(a) - new Date(b));
-  }
+  const startIndex = (datePage - 1) * datesPerPage;
+  const endIndex = startIndex + datesPerPage;
+  const paginatedDates = sortedDates.slice(startIndex, endIndex); // keep descending order within page
 
   const handleEditDate = (date) => {
     setModalDate(date);

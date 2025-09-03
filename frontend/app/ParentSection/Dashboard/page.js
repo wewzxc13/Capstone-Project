@@ -178,7 +178,7 @@ const Dashboard = () => {
               const meetingStart = new Date(meeting.meeting_start);
               return meetingStart > new Date();
             })
-            .sort((a, b) => new Date(a.meeting_start) - new Date(b.meeting_start))
+            .sort((a, b) => new Date(b.meeting_start) - new Date(a.meeting_start))
             .map(meeting => {
               // Parse and format dates
               const startDate = new Date(meeting.meeting_start);

@@ -677,7 +677,7 @@ export default function ParentCalendarPage() {
                         }
                         return event.status === statusFilter || event.meeting_status === statusFilter;
                       })
-                      .sort((a, b) => new Date(a.start || a.meeting_start) - new Date(b.start || b.meeting_start))
+                      .sort((a, b) => new Date(b.start || b.meeting_start) - new Date(a.start || a.meeting_start))
                       .slice(0, 100)
                       .length === 0 ? (
                       <div className="text-gray-400 italic text-center py-8">
@@ -693,7 +693,7 @@ export default function ParentCalendarPage() {
                           }
                           return event.status === statusFilter || event.meeting_status === statusFilter;
                         })
-                        .sort((a, b) => new Date(a.start || a.meeting_start) - new Date(b.start || b.meeting_start))
+                        .sort((a, b) => new Date(b.start || b.meeting_start) - new Date(a.start || a.meeting_start))
                         .slice(0, 100)
                         .map((event, i) => (
                         <div

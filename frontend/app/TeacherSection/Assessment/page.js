@@ -1044,24 +1044,12 @@ export default function AssessmentPage() {
     setSavingRating(false);
   };
 
-  // Reverse filteredActivities so most recent activities (highest activity_num) are first
-  const reversedActivities = [...filteredActivities].sort((a, b) => b.activity_num - a.activity_num);
-  const totalPages = Math.ceil(reversedActivities.length / activitiesPerPage);
-  const sortedActivities = [...filteredActivities].sort((a, b) => a.activity_num - b.activity_num);
-  let paginatedActivities = [];
-  if (sortedActivities.length > 0) {
-    const remainder = sortedActivities.length % activitiesPerPage;
-    if (activityPage === 1) {
-      // First page: show the remainder (if any) or a full page from the end
-      const startIdx = remainder === 0 ? sortedActivities.length - activitiesPerPage : sortedActivities.length - remainder;
-      paginatedActivities = sortedActivities.slice(startIdx, sortedActivities.length);
-    } else {
-      // Other pages: show full pages from the start
-      const start = (activityPage - 2) * activitiesPerPage;
-      const end = start + activitiesPerPage;
-      paginatedActivities = sortedActivities.slice(start, end);
-    }
-  }
+  // Sort activities by date descending so newest appear first across pagination
+  const activitiesByDateDesc = [...filteredActivities].sort((a, b) => new Date(b.activity_date) - new Date(a.activity_date));
+  const totalPages = Math.ceil(activitiesByDateDesc.length / activitiesPerPage);
+  const start = (activityPage - 1) * activitiesPerPage;
+  const end = start + activitiesPerPage;
+  const paginatedActivities = activitiesByDateDesc.slice(start, end);
 
   return (
     <main className="flex-1">

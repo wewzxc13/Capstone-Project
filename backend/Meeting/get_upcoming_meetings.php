@@ -53,7 +53,7 @@ try {
         FROM tbl_meetings m
         WHERE m.meeting_status IN ('Scheduled', 'Rescheduled')
         AND m.meeting_start > NOW()
-        ORDER BY m.meeting_start ASC
+        ORDER BY m.meeting_start DESC
     ");
     
     $stmt->execute();

@@ -319,7 +319,7 @@ export default function TeacherDashboard() {
           const filtered = (data.meetings || []).filter(
             m => m.meeting_status === 'Scheduled' || m.meeting_status === 'Rescheduled'
           );
-          filtered.sort((a, b) => new Date(a.meeting_start) - new Date(b.meeting_start));
+          filtered.sort((a, b) => new Date(b.meeting_start) - new Date(a.meeting_start));
           
           const formatted = filtered.map((m, i) => {
             const start = new Date(m.meeting_start);
