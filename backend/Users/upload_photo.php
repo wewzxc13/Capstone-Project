@@ -91,8 +91,8 @@ if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
     exit;
 }
 
-// Build public URL for XAMPP setup (for debugging purposes only)
-$publicUrl = 'http://localhost/capstone-project/backend/Uploads/' . $uniqueName;
+// Build public URL (not returned; frontend prefixes /php/Uploads/)
+$publicUrl = $uniqueName;
 
 // Debug logging for successful upload
 $debugMessage = date('Y-m-d H:i:s') . " - Upload successful: Target: $targetPath, URL: $publicUrl\n";

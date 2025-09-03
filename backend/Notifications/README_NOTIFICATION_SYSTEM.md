@@ -284,17 +284,17 @@ Test the scripts with:
 
 ```bash
 # Count unseen notifications (Super Admin)
-curl -X POST http://localhost/capstone-project/backend/Notifications/count_unread_notifications.php \
+curl -X POST /php/Notifications/count_unread_notifications.php \
   -H "Content-Type: application/json" \
   -d '{"user_id": "1", "user_role": "SuperAdmin"}'
 
 # Mark all notifications as seen (Super Admin)
-curl -X POST http://localhost/capstone-project/backend/Notifications/mark_all_notifications_read.php \
+curl -X POST /php/Notifications/mark_all_notifications_read.php \
   -H "Content-Type: application/json" \
   -d '{"user_id": "1", "user_role": "SuperAdmin"}'
 
 # Mark individual notification as seen (Super Admin)
-curl -X POST http://localhost/capstone-project/backend/Notifications/mark_notification_seen.php \
+curl -X POST /php/Notifications/mark_notification_seen.php \
   -H "Content-Type: application/json" \
   -d '{"user_id": "1", "notification_id": "1", "user_role": "SuperAdmin"}'
 ```

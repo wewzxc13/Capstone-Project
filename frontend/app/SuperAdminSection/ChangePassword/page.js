@@ -178,7 +178,7 @@ export default function ChangePasswordPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost/capstone-project/backend/changepassword.php", {
+      const response = await fetch("/php/changepassword.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -210,7 +210,7 @@ export default function ChangePasswordPage() {
         formData.append("user_id", data.user_id);
         formData.append("email", data.email);
 
-        const otpRes = await fetch("http://localhost/capstone-project/backend/send_otp.php", {
+        const otpRes = await fetch("/php/send_otp.php", {
           method: "POST",
           body: formData,
         });
@@ -295,7 +295,7 @@ export default function ChangePasswordPage() {
         formData.append("new_password", localStorage.getItem("pendingPassword"));
       }
 
-      const response = await fetch("http://localhost/capstone-project/backend/otpverify.php", {
+      const response = await fetch("/php/otpverify.php", {
         method: "POST",
         body: formData,
       });
@@ -351,7 +351,7 @@ export default function ChangePasswordPage() {
     }
 
     try {
-      const response = await fetch("http://localhost/capstone-project/backend/send_otp.php", {
+      const response = await fetch("/php/send_otp.php", {
         method: "POST",
         body: formData,
       });

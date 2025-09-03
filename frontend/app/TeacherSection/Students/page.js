@@ -249,7 +249,7 @@ export default function StudentsPage() {
     const userId = localStorage.getItem("userId");
     if (userId) {
       console.log('=== AUTO-DEBUG: Fetching advisory for teacher ID:', userId, '===');
-      fetch("http://localhost/capstone-project/backend/Advisory/get_advisory_details.php", {
+      fetch("/php/Advisory/get_advisory_details.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teacher_id: userId })
@@ -360,7 +360,7 @@ export default function StudentsPage() {
     await Promise.all(students.map(async (student) => {
       let risk_id = "nodata";
       try {
-        const riskRes = await fetch("http://localhost/capstone-project/backend/Assessment/get_student_risk_status.php", {
+        const riskRes = await fetch("/php/Assessment/get_student_risk_status.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -387,7 +387,7 @@ export default function StudentsPage() {
     console.log('🔄 Refreshing risk data for student:', studentId);
     
     try {
-      const riskRes = await fetch("http://localhost/capstone-project/backend/Assessment/get_student_risk_status.php", {
+      const riskRes = await fetch("/php/Assessment/get_student_risk_status.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -427,7 +427,7 @@ export default function StudentsPage() {
       // Update URL with student id
       router.push(`/TeacherSection/Students?role=Student&id=${s.student_id || s.id}`);
       // Fetch student details
-      const res = await fetch("http://localhost/capstone-project/backend/Users/get_student_details.php", {
+      const res = await fetch("/php/Users/get_student_details.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ student_id: s.student_id || s.id })
@@ -444,7 +444,7 @@ export default function StudentsPage() {
         };
         // Fetch parent info if parentId exists
         if (data.student.parentId) {
-          const parentRes = await fetch("http://localhost/capstone-project/backend/Users/get_user_details.php", {
+          const parentRes = await fetch("/php/Users/get_user_details.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ user_id: data.student.parentId })
@@ -477,7 +477,7 @@ export default function StudentsPage() {
 
     try {
       console.log('=== AUTO-DEBUG: Checking advisory assignments ===');
-      const response = await fetch("http://localhost/capstone-project/backend/Advisory/fix_advisory_assignments.php", {
+      const response = await fetch("/php/Advisory/fix_advisory_assignments.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });

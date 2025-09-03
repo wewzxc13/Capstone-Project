@@ -99,19 +99,19 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
     const fetchAllData = async () => {
       try {
         const promises = [
-          fetch("http://localhost/capstone-project/backend/Assessment/get_visual_feedback.php"),
-          fetch("http://localhost/capstone-project/backend/Advisory/get_attendance.php", {
+          fetch("/php/Assessment/get_visual_feedback.php"),
+          fetch("/php/Advisory/get_attendance.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ advisory_id: student.advisory_id })
           }),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_subjects_by_advisory.php?advisory_id=${student.advisory_id}`),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_student_quarter_feedback.php?student_id=${student.student_id}`),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch('http://localhost/capstone-project/backend/Assessment/get_quarters.php'),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_comments.php?student_id=${student.student_id}`),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch('http://localhost/capstone-project/backend/Assessment/get_overall_progress.php?student_id=' + student.student_id + '&advisory_id=' + student.advisory_id)
+          fetch(`/php/Assessment/get_subjects_by_advisory.php?advisory_id=${student.advisory_id}`),
+          fetch(`/php/Assessment/get_student_quarter_feedback.php?student_id=${student.student_id}`),
+          fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
+          fetch('/php/Assessment/get_quarters.php'),
+          fetch(`/php/Assessment/get_comments.php?student_id=${student.student_id}`),
+          fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
+          fetch('/php/Assessment/get_overall_progress.php?student_id=' + student.student_id + '&advisory_id=' + student.advisory_id)
         ];
 
         const responses = await Promise.all(promises);
@@ -365,7 +365,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                             setOverallProgressLoading(true);
                             const user_id = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
                             try {
-                              const res = await fetch('http://localhost/capstone-project/backend/Assessment/update_overall_progress.php', {
+                              const res = await fetch('/php/Assessment/update_overall_progress.php', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id, user_id })
@@ -393,7 +393,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                             setOverallProgressLoading(true);
                             try {
                               const user_id = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
-                              const res = await fetch('http://localhost/capstone-project/backend/Assessment/insert_overall_progress.php', {
+                              const res = await fetch('/php/Assessment/insert_overall_progress.php', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id, user_id: user_id })
@@ -456,7 +456,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                             }
                             
                             try {
-                              const res = await fetch('http://localhost/capstone-project/backend/Assessment/update_progress_card.php', {
+                              const res = await fetch('/php/Assessment/update_progress_card.php', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -470,7 +470,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                               
                               if (data.status === 'success') {
                                 // Refresh data
-                                const refreshRes = await fetch(`http://localhost/capstone-project/backend/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                const refreshRes = await fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
                                 const refreshData = await refreshRes.json();
                                 if (refreshData.status === 'success' && Array.isArray(refreshData.cards)) {
                                   const status = {};
@@ -483,20 +483,20 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                                 
                                 if (q.id === 4) {
                                   // Check if subject overall progress already exists to decide between insert/update
-                                  const checkRes = await fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                  const checkRes = await fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
                                   const checkData = await checkRes.json();
                                   
                                   let subjectRes;
                                   if (checkData.status === 'success' && checkData.progress && checkData.progress.length > 0) {
                                     // Records exist - use UPDATE
-                                    subjectRes = await fetch('http://localhost/capstone-project/backend/Assessment/update_subject_overall_progress.php', {
+                                    subjectRes = await fetch('/php/Assessment/update_subject_overall_progress.php', {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
                                     });
                                   } else {
                                     // No records exist - use INSERT
-                                    subjectRes = await fetch('http://localhost/capstone-project/backend/Assessment/insert_subject_overall_progress.php', {
+                                    subjectRes = await fetch('/php/Assessment/insert_subject_overall_progress.php', {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
@@ -507,7 +507,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                                   
                                   if (subjectData.status === 'success') {
                                     // Refresh the subject progress data
-                                    const refreshSubjectRes = await fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                    const refreshSubjectRes = await fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
                                     const refreshSubjectData = await refreshSubjectRes.json();
                                     if (refreshSubjectData.status === 'success') {
                                       setFinalSubjectProgress(refreshSubjectData.progress || []);
@@ -554,7 +554,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                               }
                                 
                               try {
-                                const res = await fetch('http://localhost/capstone-project/backend/Assessment/insert_progress_card.php', {
+                                const res = await fetch('/php/Assessment/insert_progress_card.php', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
@@ -569,7 +569,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                                 
                                 if (data.status === 'success' && data.students && data.students.length > 0) {
                                   // Refresh data
-                                  const refreshRes = await fetch(`http://localhost/capstone-project/backend/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                  const refreshRes = await fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
                                   const refreshData = await refreshRes.json();
                                   if (refreshData.status === 'success' && Array.isArray(refreshData.cards)) {
                                     const status = {};
@@ -582,20 +582,20 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                                   
                                   if (q.id === 4) {
                                     // Check if subject overall progress already exists to decide between insert/update
-                                    const checkRes = await fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                    const checkRes = await fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
                                     const checkData = await checkRes.json();
                                     
                                     let subjectRes;
                                     if (checkData.status === 'success' && checkData.progress && checkData.progress.length > 0) {
                                       // Records exist - use UPDATE
-                                      subjectRes = await fetch('http://localhost/capstone-project/backend/Assessment/update_subject_overall_progress.php', {
+                                      subjectRes = await fetch('/php/Assessment/update_subject_overall_progress.php', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
                                       });
                                     } else {
                                       // No records exist - use INSERT
-                                      subjectRes = await fetch('http://localhost/capstone-project/backend/Assessment/insert_subject_overall_progress.php', {
+                                      subjectRes = await fetch('/php/Assessment/insert_subject_overall_progress.php', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
@@ -606,7 +606,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                                     
                                     if (subjectData.status === 'success') {
                                       // Refresh the subject progress data
-                                      const refreshSubjectRes = await fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                      const refreshSubjectRes = await fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
                                       const refreshSubjectData = await refreshSubjectRes.json();
                                       if (refreshSubjectData.status === 'success') {
                                         setFinalSubjectProgress(refreshSubjectData.progress || []);
@@ -962,7 +962,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                         }
                         if (!canComment) return;
                         try {
-                          const res = await fetch('http://localhost/capstone-project/backend/Assessment/create_comment.php', {
+                          const res = await fetch('/php/Assessment/create_comment.php', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ comment: comment, commentor_id: commentor_id, student_id: student.student_id })
@@ -1052,7 +1052,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
                                   const trimmed = editingValue.trim();
                                   if (!trimmed) return;
                                   try {
-                                    const res = await fetch('http://localhost/capstone-project/backend/Assessment/update_comment.php', {
+                                    const res = await fetch('/php/Assessment/update_comment.php', {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ comment_id: c.comment_id, comment: trimmed })

@@ -37,7 +37,7 @@ export default function AdminLogsPage() {
       try {
         setLoading(true);
         setError(null);
-        const sysRes = await fetch("http://localhost/capstone-project/backend/Logs/get_system_logs.php", { method: "GET" });
+        const sysRes = await fetch("/php/Logs/get_system_logs.php", { method: "GET" });
         const sysData = await sysRes.json();
         if (!sysData.success) {
           throw new Error(sysData.message || "Failed to fetch system logs");
@@ -45,7 +45,7 @@ export default function AdminLogsPage() {
 
         const rawLogs = Array.isArray(sysData.logs) ? sysData.logs : [];
 
-        const notificationsPromise = fetch("http://localhost/capstone-project/backend/Notifications/get_notifications.php")
+        const notificationsPromise = fetch("/php/Notifications/get_notifications.php")
           .then(r => r.json())
           .catch(() => ({ status: 'error', notifications: [] }));
 
@@ -79,14 +79,14 @@ export default function AdminLogsPage() {
 
         const [userMap, studentMap] = await Promise.all([
           uniqueUserIds.length > 0
-            ? fetch("http://localhost/capstone-project/backend/Users/get_user_names.php", {
+            ? fetch("/php/Users/get_user_names.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_ids: uniqueUserIds })
               }).then(r => r.json())
             : Promise.resolve({}),
           uniqueStudentIds.length > 0
-            ? fetch("http://localhost/capstone-project/backend/Users/get_student_names.php", {
+            ? fetch("/php/Users/get_student_names.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ student_ids: uniqueStudentIds })

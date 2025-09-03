@@ -162,7 +162,7 @@ export default function ParentCalendarPage() {
     async function fetchParentMeetings() {
       try {
         // Fetch meetings with advisor and student details
-        const res = await fetch(`http://localhost/capstone-project/backend/Meeting/get_meetings_details.php?user_id=${userId}&parent_only=1`);
+        const res = await fetch(`/php/Meeting/get_meetings_details.php?user_id=${userId}&parent_only=1`);
         const data = await res.json();
         console.log('Raw meetings data:', data);
         
@@ -286,7 +286,7 @@ export default function ParentCalendarPage() {
       // Preferred approach: fetch all advisory details and look up by advisory_id
       if (advisoryId) {
         try {
-          const allAdvisoryRes = await fetch('http://localhost/capstone-project/backend/Advisory/get_all_advisory_details.php');
+          const allAdvisoryRes = await fetch('/php/Advisory/get_all_advisory_details.php');
           const allAdvisoryData = await allAdvisoryRes.json();
           if (allAdvisoryData.status === 'success' && Array.isArray(allAdvisoryData.advisories)) {
             const adv = allAdvisoryData.advisories.find(a => String(a.advisory_id) === String(advisoryId));
@@ -294,7 +294,7 @@ export default function ParentCalendarPage() {
               // Fetch lead teacher name if present
               if (adv.lead_teacher_id) {
                 try {
-                  const leadRes = await fetch('http://localhost/capstone-project/backend/Users/get_user_details.php', {
+                  const leadRes = await fetch('/php/Users/get_user_details.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: adv.lead_teacher_id })
@@ -310,7 +310,7 @@ export default function ParentCalendarPage() {
               // Fetch assistant teacher name if present
               if (adv.assistant_teacher_id) {
                 try {
-                  const asstRes = await fetch('http://localhost/capstone-project/backend/Users/get_user_details.php', {
+                  const asstRes = await fetch('/php/Users/get_user_details.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: adv.assistant_teacher_id })
@@ -338,7 +338,7 @@ export default function ParentCalendarPage() {
       // Fetch student name if student_id exists
       if (studentId) {
         try {
-          const studentRes = await fetch('http://localhost/capstone-project/backend/Users/get_student_details.php', {
+          const studentRes = await fetch('/php/Users/get_student_details.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ student_id: studentId })
@@ -379,7 +379,7 @@ export default function ParentCalendarPage() {
       let finalTeacherName = details?.leadTeacherName;
       if (!finalTeacherName && event.created_by) {
         try {
-          const creatorRes = await fetch(`http://localhost/capstone-project/backend/Users/get_user_details.php`, {
+          const creatorRes = await fetch(`/php/Users/get_user_details.php`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ user_id: event.created_by })

@@ -82,7 +82,7 @@ export default function SuperAdminArchivePage() {
 
   const fetchArchivedUsers = async () => {
     try {
-      const response = await fetch("http://localhost/capstone-project/backend/Users/get_archived_users.php", {
+      const response = await fetch("/php/Users/get_archived_users.php", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });

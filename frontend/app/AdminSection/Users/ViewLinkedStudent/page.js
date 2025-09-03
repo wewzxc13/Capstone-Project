@@ -92,11 +92,11 @@ export default function ViewLinkedStudentPage() {
       setError(null);
       try {
         // Fetch active users
-        const res = await fetch("http://localhost/capstone-project/backend/Users/get_all_users.php");
+        const res = await fetch("/php/Users/get_all_users.php");
         const data = await res.json();
         
         // Fetch archived users
-        const archivedRes = await fetch("http://localhost/capstone-project/backend/Users/get_archived_users.php");
+        const archivedRes = await fetch("/php/Users/get_archived_users.php");
         const archivedData = await archivedRes.json();
         
         if (data.status === "success" && data.users) {
@@ -187,7 +187,7 @@ export default function ViewLinkedStudentPage() {
   const handleLinkStudent = async () => {
     if (!selectedStudent || !modalParent) return;
     try {
-      const res = await fetch("http://localhost/capstone-project/backend/Users/link_student_to_parent.php", {
+      const res = await fetch("/php/Users/link_student_to_parent.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -203,11 +203,11 @@ export default function ViewLinkedStudentPage() {
         toast.success("Student successfully linked to parent!");
         // Re-fetch all users to update UI
         try {
-          const res = await fetch("http://localhost/capstone-project/backend/Users/get_all_users.php");
+          const res = await fetch("/php/Users/get_all_users.php");
           const data = await res.json();
           
           // Fetch archived users
-          const archivedRes = await fetch("http://localhost/capstone-project/backend/Users/get_archived_users.php");
+          const archivedRes = await fetch("/php/Users/get_archived_users.php");
           const archivedData = await archivedRes.json();
           
           if (data.status === "success" && data.users) {
@@ -266,7 +266,7 @@ export default function ViewLinkedStudentPage() {
     if (!studentToRemove) return;
     setRemoving(true);
     try {
-      const res = await fetch('http://localhost/capstone-project/backend/Users/unlink_student_from_parent.php', {
+      const res = await fetch('/php/Users/unlink_student_from_parent.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -279,11 +279,11 @@ export default function ViewLinkedStudentPage() {
         toast.success("Student successfully unlinked from parent!");
         // Refresh parent/student list
         try {
-          const res = await fetch("http://localhost/capstone-project/backend/Users/get_all_users.php");
+          const res = await fetch("/php/Users/get_all_users.php");
           const data = await res.json();
           
           // Fetch archived users
-          const archivedRes = await fetch("http://localhost/capstone-project/backend/Users/get_archived_users.php");
+          const archivedRes = await fetch("/php/Users/get_archived_users.php");
           const archivedData = await archivedRes.json();
           
           if (data.status === "success" && data.users) {

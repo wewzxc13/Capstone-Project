@@ -165,14 +165,24 @@ try {
     // Debug: Log the raw data being returned
     error_log("get_users.php - Raw SQL results for user $loggedInUserId: " . json_encode($rows));
 
-    // Process each user to include photo URLs
+    // Process each user photo to return filename only (frontend prefixes /php/Uploads/)
     foreach ($rows as &$row) {
-        // Add photo field with exact same logic as get_all_users.php
-        $row['user_photo'] = $row['user_photo'] ? 'http://localhost/capstone-project/backend/Uploads/' . $row['user_photo'] : 
-                     (($row['role_name'] === 'Admin') ? 'http://localhost/capstone-project/backend/Uploads/default_admin.png' :
-                      (($row['role_name'] === 'Teacher') ? 'http://localhost/capstone-project/backend/Uploads/default_teacher.png' :
-                      (($row['role_name'] === 'Parent') ? 'http://localhost/capstone-project/backend/Uploads/default_parent.png' : 
-                       'http://localhost/capstone-project/backend/Uploads/default_owner.png')));
+        if (!empty($row['user_photo'])) {
+            // If full URL or path slipped in, normalize to filename
+            $parts = explode('/', (string)$row['user_photo']);
+            $row['user_photo'] = end($parts);
+        } else {
+            // Provide default filename based on role
+            if ($row['role_name'] === 'Admin') {
+                $row['user_photo'] = 'default_admin.png';
+            } else if ($row['role_name'] === 'Teacher') {
+                $row['user_photo'] = 'default_teacher.png';
+            } else if ($row['role_name'] === 'Parent') {
+                $row['user_photo'] = 'default_parent.png';
+            } else {
+                $row['user_photo'] = 'default_owner.png';
+            }
+        }
     }
 
     // Debug: Log the processed data

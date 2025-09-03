@@ -134,10 +134,10 @@ function getPhotoUrl(filename) {
   // If it's a filename, construct the full backend URL
   // Try multiple possible backend paths
   const possiblePaths = [
-    `http://localhost/capstone-project/backend/Uploads/${filename}`,
+    `/php/Uploads/${filename}`,
     `http://localhost/backend/Uploads/${filename}`,
     `http://localhost/capstone-project/Uploads/${filename}`,
-    `http://localhost/capstone-project/backend/Uploads/${filename}`
+    `/php/Uploads/${filename}`
   ];
   
   // For now, return the first path, but you can implement logic to test which one works
@@ -199,7 +199,7 @@ const StudentDetails = () => {
         }
 
         // Fetch all users to get students
-        const usersRes = await fetch("http://localhost/capstone-project/backend/Users/get_all_users.php");
+        const usersRes = await fetch("/php/Users/get_all_users.php");
         const usersData = await usersRes.json();
         
         // Check if the API response has the expected structure
@@ -234,7 +234,7 @@ const StudentDetails = () => {
           // This will help the navigation tabs display photos
           myStudents.forEach(async (student) => {
             try {
-              const studentRes = await fetch("http://localhost/capstone-project/backend/Users/get_student_details.php", {
+              const studentRes = await fetch("/php/Users/get_student_details.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ student_id: student.id })
@@ -258,7 +258,7 @@ const StudentDetails = () => {
         }
         
         // Fetch parent profile (with father/mother details)
-        const parentRes = await fetch("http://localhost/capstone-project/backend/Users/get_user_details.php", {
+        const parentRes = await fetch("/php/Users/get_user_details.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: parentId })
@@ -267,7 +267,7 @@ const StudentDetails = () => {
         
         if (parentData.status === "success") {
           // Fetch full parent profile (father/mother details)
-          const parentProfileRes = await fetch("http://localhost/capstone-project/backend/Users/get_user_profile.php", {
+          const parentProfileRes = await fetch("/php/Users/get_user_profile.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ user_id: parentId })
@@ -290,7 +290,7 @@ const StudentDetails = () => {
     const fetchStudent = async () => {
       setStudentLoading(true);
       try {
-        const res = await fetch("http://localhost/capstone-project/backend/Users/get_student_details.php", {
+        const res = await fetch("/php/Users/get_student_details.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ student_id: selectedStudentId })
@@ -492,7 +492,7 @@ const StudentDetails = () => {
   const fetchLatestData = async (studentId, parentId) => {
     // Fetch student
     if (studentId) {
-      const res = await fetch("http://localhost/capstone-project/backend/Users/get_student_details.php", {
+      const res = await fetch("/php/Users/get_student_details.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ student_id: studentId })
@@ -504,7 +504,7 @@ const StudentDetails = () => {
     }
     // Fetch parent profile
     if (parentId) {
-      const parentRes = await fetch("http://localhost/capstone-project/backend/Users/get_user_details.php", {
+      const parentRes = await fetch("/php/Users/get_user_details.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: parentId })
@@ -512,7 +512,7 @@ const StudentDetails = () => {
       const parentData = await parentRes.json();
       if (parentData.status === "success") {
         // Fetch full parent profile (father/mother details)
-        const parentProfileRes = await fetch("http://localhost/capstone-project/backend/Users/get_user_profile.php", {
+        const parentProfileRes = await fetch("/php/Users/get_user_profile.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: parentId })
@@ -533,7 +533,7 @@ const StudentDetails = () => {
         try {
           const form = new FormData();
           form.append('photo', selectedPhoto);
-          const uploadRes = await fetch('http://localhost/capstone-project/backend/Users/upload_photo.php', {
+          const uploadRes = await fetch('/php/Users/upload_photo.php', {
             method: 'POST',
             body: form,
           });
@@ -569,7 +569,7 @@ const StudentDetails = () => {
           : (typeof editStudentData.stud_photo === 'string' ? editStudentData.stud_photo : undefined),
       };
       Object.keys(studentPayload).forEach(key => studentPayload[key] === undefined && delete studentPayload[key]);
-      const studentRes = await fetch("http://localhost/capstone-project/backend/Users/update_student.php", {
+      const studentRes = await fetch("/php/Users/update_student.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(studentPayload)
@@ -592,7 +592,7 @@ const StudentDetails = () => {
           mother_occupation: editParentProfile.mother_occupation,
         };
         Object.keys(parentPayload).forEach(key => parentPayload[key] === undefined && delete parentPayload[key]);
-        const parentRes = await fetch("http://localhost/capstone-project/backend/Users/update_user.php", {
+        const parentRes = await fetch("/php/Users/update_user.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(parentPayload)
@@ -614,7 +614,7 @@ const StudentDetails = () => {
         // Update the global photo map for real-time updates across all pages
         if (selectedStudentId) {
           // Construct the full URL for the uploaded photo
-          const fullPhotoUrl = `http://localhost/capstone-project/backend/Uploads/${uploadedPhotoUrl}`;
+          const fullPhotoUrl = `/php/Uploads/${uploadedPhotoUrl}`;
           updateAnyStudentPhoto(selectedStudentId, fullPhotoUrl);
           console.log('Updated global photo map for student:', selectedStudentId, 'with URL:', fullPhotoUrl);
         }
@@ -693,7 +693,7 @@ const StudentDetails = () => {
       // Log the update in system_logs
       const parentId = parentProfile?.id || parentProfile?.user_id;
       const studentId = editStudentData.id || selectedStudentId;
-      await fetch("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+      await fetch("/php/Logs/create_system_log.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

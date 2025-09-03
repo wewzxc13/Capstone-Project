@@ -103,7 +103,7 @@ try {
                 
                 // Use cURL for proper HTTP request
                 $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, 'http://localhost/capstone-project/backend/Logs/create_system_log.php');
+                curl_setopt($ch, CURLOPT_URL, (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/capstone-project/backend/Logs/create_system_log.php');
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($logData));
                 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);

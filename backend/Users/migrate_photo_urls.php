@@ -15,9 +15,11 @@ try {
         $photoUrl = $user['user_photo'];
         $userId = $user['user_id'];
         
-        // Extract filename from full URL
-        if (strpos($photoUrl, 'http://localhost/capstone-project/backend/Uploads/') === 0) {
-            $filename = str_replace('http://localhost/capstone-project/backend/Uploads/', '', $photoUrl);
+        // Extract filename from any full URL/path pointing to Uploads
+        $filename = $photoUrl;
+        if (preg_match('~^https?://~i', $photoUrl) || strpos($photoUrl, '/Uploads/') !== false) {
+            $parts = explode('/', $photoUrl);
+            $filename = end($parts);
             
             // Update the database with filename only
             $updateStmt = $conn->prepare("UPDATE tbl_users SET user_photo = ? WHERE user_id = ?");

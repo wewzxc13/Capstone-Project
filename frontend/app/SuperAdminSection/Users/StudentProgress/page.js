@@ -170,10 +170,10 @@ export default function StudentProgress({ formData: initialFormData }) {
     const fetchAssessmentData = async () => {
       try {
         const promises = [
-          fetch("http://localhost/capstone-project/backend/Assessment/get_visual_feedback.php"),
-          fetch("http://localhost/capstone-project/backend/Assessment/get_risk_levels.php"),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_comments.php?student_id=${selectedStudent.student_id}`),
-          fetch("http://localhost/capstone-project/backend/Advisory/get_attendance.php", {
+          fetch("/php/Assessment/get_visual_feedback.php"),
+          fetch("/php/Assessment/get_risk_levels.php"),
+          fetch(`/php/Assessment/get_comments.php?student_id=${selectedStudent.student_id}`),
+          fetch("/php/Advisory/get_attendance.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -181,12 +181,12 @@ export default function StudentProgress({ formData: initialFormData }) {
               student_id: selectedStudent.student_id 
             })
           }),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_subjects_by_advisory.php?advisory_id=${selectedStudent.advisory_id}`),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_student_quarter_feedback.php?student_id=${selectedStudent.student_id}`),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_student_progress_cards.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
-          fetch('http://localhost/capstone-project/backend/Assessment/get_quarters.php'),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
-          fetch('http://localhost/capstone-project/backend/Assessment/get_overall_progress.php?student_id=' + selectedStudent.student_id + '&advisory_id=' + selectedStudent.advisory_id)
+          fetch(`/php/Assessment/get_subjects_by_advisory.php?advisory_id=${selectedStudent.advisory_id}`),
+          fetch(`/php/Assessment/get_student_quarter_feedback.php?student_id=${selectedStudent.student_id}`),
+          fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
+          fetch('/php/Assessment/get_quarters.php'),
+          fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
+          fetch('/php/Assessment/get_overall_progress.php?student_id=' + selectedStudent.student_id + '&advisory_id=' + selectedStudent.advisory_id)
         ];
 
         const responses = await Promise.all(promises);
@@ -286,11 +286,11 @@ export default function StudentProgress({ formData: initialFormData }) {
     const fetchStatusData = async () => {
       try {
         const promises = [
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_overall_progress.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
-          fetch("http://localhost/capstone-project/backend/Assessment/get_visual_feedback.php"),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_student_progress_cards.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_milestone_interpretation.php?student_id=${selectedStudent.student_id}`)
+          fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
+          fetch(`/php/Assessment/get_overall_progress.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
+          fetch("/php/Assessment/get_visual_feedback.php"),
+          fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
+          fetch(`/php/Assessment/get_milestone_interpretation.php?student_id=${selectedStudent.student_id}`)
         ];
 
         const responses = await Promise.all(promises);
@@ -354,7 +354,7 @@ export default function StudentProgress({ formData: initialFormData }) {
 
   const loadClasses = async () => {
     try {
-      const response = await fetch("http://localhost/capstone-project/backend/Advisory/list_class_levels.php");
+      const response = await fetch("/php/Advisory/list_class_levels.php");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -374,7 +374,7 @@ export default function StudentProgress({ formData: initialFormData }) {
 
   const loadSessions = async () => {
     try {
-      const response = await fetch("http://localhost/capstone-project/backend/Advisory/get_available_sessions.php");
+      const response = await fetch("/php/Advisory/get_available_sessions.php");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -398,7 +398,7 @@ export default function StudentProgress({ formData: initialFormData }) {
     setLoading(true);
     try {
       // Use the same API endpoint as AssignedClass to get consistent photo data
-      const response = await fetch("http://localhost/capstone-project/backend/Advisory/get_advisory_details.php", {
+      const response = await fetch("/php/Advisory/get_advisory_details.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -435,7 +435,7 @@ export default function StudentProgress({ formData: initialFormData }) {
           filteredStudents.map(async (student) => {
             if (student.parent_id) {
               try {
-                const parentRes = await fetch("http://localhost/capstone-project/backend/Users/get_user_details.php", {
+                const parentRes = await fetch("/php/Users/get_user_details.php", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ user_id: student.parent_id })

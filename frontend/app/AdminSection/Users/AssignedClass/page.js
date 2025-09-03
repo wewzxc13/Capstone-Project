@@ -106,7 +106,7 @@ export default function AssignedClassPage() {
     setLoading(true);
     
     // First check if API is accessible
-    fetch("http://localhost/capstone-project/backend/health_check.php")
+    fetch("/php/health_check.php")
       .then(res => {
         if (!res.ok) {
           throw new Error("API server is not responding");
@@ -118,7 +118,7 @@ export default function AssignedClassPage() {
           throw new Error("Database connection failed");
         }
         // API is healthy, proceed with data fetch
-        return fetch("http://localhost/capstone-project/backend/Advisory/get_advisory_details.php", {
+        return fetch("/php/Advisory/get_advisory_details.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ level_id: selectedClass.level_id }),
@@ -174,7 +174,7 @@ export default function AssignedClassPage() {
       };
 
              // Fetch available teachers
-       fetch("http://localhost/capstone-project/backend/Advisory/list_teachers_without_advisory.php")
+       fetch("/php/Advisory/list_teachers_without_advisory.php")
          .then(res => {
            if (!res.ok) {
              throw new Error(`HTTP error! status: ${res.status}`);
@@ -199,7 +199,7 @@ export default function AssignedClassPage() {
          });
 
              // Fetch class levels
-       fetch("http://localhost/capstone-project/backend/Advisory/list_class_levels.php")
+       fetch("/php/Advisory/list_class_levels.php")
          .then(res => {
            if (!res.ok) {
              throw new Error(`HTTP error! status: ${res.status}`);
@@ -252,7 +252,7 @@ export default function AssignedClassPage() {
     try {
       // Update class name/level
       if (selectedClassLevel && advisory.level_id !== selectedClassLevel) {
-        const res = await fetch("http://localhost/capstone-project/backend/Advisory/update_advisory_class.php", {
+        const res = await fetch("/php/Advisory/update_advisory_class.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -277,7 +277,7 @@ export default function AssignedClassPage() {
       
       // Update lead teacher
       if (selectedLead && advisory.lead_teacher_id !== selectedLead) {
-        const res = await fetch("http://localhost/capstone-project/backend/Advisory/update_advisory_teacher.php", {
+        const res = await fetch("/php/Advisory/update_advisory_teacher.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -317,7 +317,7 @@ export default function AssignedClassPage() {
         
         console.log('Request body:', requestBody);
         
-        const res = await fetch("http://localhost/capstone-project/backend/Advisory/update_advisory_teacher.php", {
+        const res = await fetch("/php/Advisory/update_advisory_teacher.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody)
@@ -378,7 +378,7 @@ export default function AssignedClassPage() {
     setStudents(prev => prev.map(s => s.student_id === studentId ? { ...s, stud_schedule_class: newSchedule } : s));
     
     try {
-      const res = await fetch("http://localhost/capstone-project/backend/Users/update_student.php", {
+      const res = await fetch("/php/Users/update_student.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ student_id: studentId, stud_schedule_class: newSchedule })

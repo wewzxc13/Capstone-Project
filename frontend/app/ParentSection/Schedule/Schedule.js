@@ -75,7 +75,7 @@ export default function Schedule() {
           return;
         }
 
-        const response = await fetch("http://localhost/capstone-project/backend/Users/get_all_users.php");
+        const response = await fetch("/php/Users/get_all_users.php");
         const data = await response.json();
 
         if (data.status === "success" && data.users && data.users.Student) {
@@ -117,7 +117,7 @@ export default function Schedule() {
     const fetchSchedule = async () => {
       setScheduleLoading(true);
       try {
-        const response = await fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php");
+        const response = await fetch("/php/Schedule/get_schedule.php");
         const data = await response.json();
 
         if (data.status === "success") {

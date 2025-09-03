@@ -121,7 +121,7 @@ export default function AssessmentPage() {
       // Get subject_id for the current modal subject selection
       let currentSubjectId = null;
       console.log('Fetching schedule data...');
-      const res = await fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php");
+      const res = await fetch("/php/Schedule/get_schedule.php");
       const data = await res.json();
       console.log('Schedule data:', data);
       
@@ -152,7 +152,7 @@ export default function AssessmentPage() {
         exclude_activity_id: excludeActivityId
       });
       
-      const checkRes = await fetch("http://localhost/capstone-project/backend/Assessment/check_duplicate_activity.php", {
+      const checkRes = await fetch("/php/Assessment/check_duplicate_activity.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -188,7 +188,7 @@ export default function AssessmentPage() {
       // Get subject_id for the edit modal subject selection
       let currentSubjectId = null;
       console.log('Fetching schedule data for edit...');
-      const res = await fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php");
+      const res = await fetch("/php/Schedule/get_schedule.php");
       const data = await res.json();
       console.log('Schedule data for edit:', data);
       
@@ -219,7 +219,7 @@ export default function AssessmentPage() {
         exclude_activity_id: excludeActivityId
       });
       
-      const checkRes = await fetch("http://localhost/capstone-project/backend/Assessment/check_duplicate_activity.php", {
+      const checkRes = await fetch("/php/Assessment/check_duplicate_activity.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -508,7 +508,7 @@ export default function AssessmentPage() {
   const [selectedQuarterId, setSelectedQuarterId] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost/capstone-project/backend/Assessment/get_quarters.php')
+    fetch('/php/Assessment/get_quarters.php')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -554,7 +554,7 @@ export default function AssessmentPage() {
     const teacher_id = localStorage.getItem("userId");
     if (!teacher_id) return;
     setLoading(true);
-    fetch("http://localhost/capstone-project/backend/Advisory/get_advisory_details.php", {
+    fetch("/php/Advisory/get_advisory_details.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ teacher_id }),
@@ -608,7 +608,7 @@ export default function AssessmentPage() {
   // Fetch schedule and subjects
   useEffect(() => {
     if (!levelId) return;
-    fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php")
+    fetch("/php/Schedule/get_schedule.php")
       .then((res) => res.json())
       .then((data) => {
         const sched = data.schedules.find((s) => s.level_id == levelId);
@@ -649,7 +649,7 @@ export default function AssessmentPage() {
     if (!advisoryId || !subjectId || !session) return;
     setLoading(true);
     try {
-      const resp = await fetch("http://localhost/capstone-project/backend/Assessment/get_assessment_table.php", {
+      const resp = await fetch("/php/Assessment/get_assessment_table.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -685,7 +685,7 @@ export default function AssessmentPage() {
       // Find subject_id from schedule API
       let foundSubjectId = null;
       try {
-        const res = await fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php");
+        const res = await fetch("/php/Schedule/get_schedule.php");
         const data = await res.json();
         const sched = data.schedules.find((s) => s.level_id == levelId);
         if (sched && sched.schedule) {
@@ -761,7 +761,7 @@ export default function AssessmentPage() {
     let subject_id = null;
     let foundSubjectId = null;
     try {
-      const res = await fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php");
+      const res = await fetch("/php/Schedule/get_schedule.php");
       const data = await res.json();
       const sched = data.schedules.find((s) => s.level_id == levelId);
       if (sched && sched.schedule) {
@@ -780,7 +780,7 @@ export default function AssessmentPage() {
     subject_id = foundSubjectId;
     // Call backend
     try {
-      const resp = await fetch("http://localhost/capstone-project/backend/Assessment/add_activity.php", {
+      const resp = await fetch("/php/Assessment/add_activity.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -831,7 +831,7 @@ export default function AssessmentPage() {
   // Visual feedback state
   const [visualFeedback, setVisualFeedback] = useState([]);
   useEffect(() => {
-    fetch("http://localhost/capstone-project/backend/Assessment/get_visual_feedback.php")
+    fetch("/php/Assessment/get_visual_feedback.php")
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success' && Array.isArray(data.feedback)) {
@@ -897,7 +897,7 @@ export default function AssessmentPage() {
     setSavingEdit(true);
     try {
       const activity = activities[editActivityIndex];
-      const resp = await fetch('http://localhost/capstone-project/backend/Assessment/update_activity.php', {
+      const resp = await fetch('/php/Assessment/update_activity.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -914,7 +914,7 @@ export default function AssessmentPage() {
         // Refresh table
         let foundSubjectId = null;
         try {
-          const res = await fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php");
+          const res = await fetch("/php/Schedule/get_schedule.php");
           const data = await res.json();
           const sched = data.schedules.find((s) => s.level_id == levelId);
           if (sched && sched.schedule) {
@@ -950,7 +950,7 @@ export default function AssessmentPage() {
       const feedback = visualFeedback.find(fb => fb.visual_feedback_shape === selectedShape);
       if (!feedback) return;
       const visual_feedback_id = feedback.visual_feedback_id;
-      const resp = await fetch('http://localhost/capstone-project/backend/Assessment/save_rating.php', {
+      const resp = await fetch('/php/Assessment/save_rating.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id, activity_id, visual_feedback_id })
@@ -977,7 +977,7 @@ export default function AssessmentPage() {
           // Try to get subject_id from selectedSubject and schedule
           let foundSubjectId = null;
           try {
-            const res = await fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php");
+            const res = await fetch("/php/Schedule/get_schedule.php");
             const data = await res.json();
             const sched = data.schedules.find((s) => s.level_id == levelId);
             if (sched && sched.schedule) {
@@ -999,7 +999,7 @@ export default function AssessmentPage() {
           toast.error('Failed to update quarterly feedback: missing data.');
         } else {
           try {
-            const resp = await fetch('http://localhost/capstone-project/backend/Assessment/update_quarter_feedback.php', {
+            const resp = await fetch('/php/Assessment/update_quarter_feedback.php', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -1020,7 +1020,7 @@ export default function AssessmentPage() {
         // Refresh table
         let foundSubjectId = null;
         try {
-          const res = await fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php");
+          const res = await fetch("/php/Schedule/get_schedule.php");
           const data = await res.json();
           const sched = data.schedules.find((s) => s.level_id == levelId);
           if (sched && sched.schedule) {

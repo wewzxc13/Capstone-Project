@@ -60,7 +60,7 @@ export default function AdminDashboard() {
     try {
       setError(null);
       setLoading(true);
-      const response = await fetch('http://localhost/capstone-project/backend/Users/get_user_counts.php', {
+      const response = await fetch('/php/Users/get_user_counts.php', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
   const fetchUpcomingMeetings = async () => {
     try {
       setMeetingsLoading(true);
-      const response = await fetch('http://localhost/capstone-project/backend/Meeting/get_upcoming_meetings.php', {
+      const response = await fetch('/php/Meeting/get_upcoming_meetings.php', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
   const fetchProgressData = async () => {
     try {
       setProgressLoading(true);
-      const response = await fetch('http://localhost/capstone-project/backend/Assessment/get_all_classes_quarterly_performance.php', {
+      const response = await fetch('/php/Assessment/get_all_classes_quarterly_performance.php', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -42,7 +42,7 @@ export function UserProvider({ children }) {
     }
     
     // If it's just a filename, construct the full backend URL
-    const fullPhotoUrl = `http://localhost/capstone-project/backend/Uploads/${newPhoto}`;
+    const fullPhotoUrl = `/php/Uploads/${newPhoto}`;
     setUserData(prev => ({ ...prev, user_photo: fullPhotoUrl }));
   };
 
@@ -57,7 +57,7 @@ export function UserProvider({ children }) {
         photoUrl = newPhoto;
       } else {
         // If it's just a filename, construct the full backend URL
-        photoUrl = `http://localhost/capstone-project/backend/Uploads/${newPhoto}`;
+        photoUrl = `/php/Uploads/${newPhoto}`;
       }
     }
     
@@ -87,7 +87,7 @@ export function UserProvider({ children }) {
         photoUrl = newPhoto;
       } else {
         // If it's just a filename, construct the full backend URL
-        photoUrl = `http://localhost/capstone-project/backend/Uploads/${newPhoto}`;
+        photoUrl = `/php/Uploads/${newPhoto}`;
       }
     }
     
@@ -124,8 +124,8 @@ export function UserProvider({ children }) {
       
       // Fetch current unread counts from backend
       const [recentRes, groupsRes] = await Promise.all([
-        fetch(`http://localhost/capstone-project/backend/Communication/get_recent_conversations.php?user_id=${uid}`),
-        fetch(`http://localhost/capstone-project/backend/Communication/get_groups.php?user_id=${uid}`)
+        fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`),
+        fetch(`/php/Communication/get_groups.php?user_id=${uid}`)
       ]);
       
       const recentData = await recentRes.json();
@@ -183,7 +183,10 @@ export function UserProvider({ children }) {
       if (users[role]) {
         users[role].forEach(user => {
           if (user.photo) {
-            photoMap.set(user.id.toString(), user.photo);
+            const finalUrl = (typeof user.photo === 'string' && (user.photo.startsWith('http://') || user.photo.startsWith('https://') || user.photo.startsWith('/php/Uploads/')))
+              ? user.photo
+              : `/php/Uploads/${user.photo}`;
+            photoMap.set(user.id.toString(), finalUrl);
           }
         });
       }
@@ -193,7 +196,10 @@ export function UserProvider({ children }) {
     if (users.Student) {
       users.Student.forEach(student => {
         if (student.photo) {
-          photoMap.set(`student_${student.id}`, student.photo);
+          const finalUrl = (typeof student.photo === 'string' && (student.photo.startsWith('http://') || student.photo.startsWith('https://') || student.photo.startsWith('/php/Uploads/')))
+            ? student.photo
+            : `/php/Uploads/${student.photo}`;
+          photoMap.set(`student_${student.id}`, finalUrl);
         }
       });
     }
@@ -223,7 +229,10 @@ export function UserProvider({ children }) {
     if (students) {
       students.forEach(student => {
         if (student.photo) {
-          photoMap.set(`student_${student.student_id}`, student.photo);
+          const finalUrl = (typeof student.photo === 'string' && (student.photo.startsWith('http://') || student.photo.startsWith('https://') || student.photo.startsWith('/php/Uploads/')))
+            ? student.photo
+            : `/php/Uploads/${student.photo}`;
+          photoMap.set(`student_${student.student_id}`, finalUrl);
         }
       });
     }
@@ -232,7 +241,10 @@ export function UserProvider({ children }) {
     if (parents) {
       parents.forEach(parent => {
         if (parent.photo) {
-          photoMap.set(parent.user_id.toString(), parent.photo);
+          const finalUrl = (typeof parent.photo === 'string' && (parent.photo.startsWith('http://') || parent.photo.startsWith('https://') || parent.photo.startsWith('/php/Uploads/')))
+            ? parent.photo
+            : `/php/Uploads/${parent.photo}`;
+          photoMap.set(parent.user_id.toString(), finalUrl);
         }
       });
     }
@@ -270,7 +282,7 @@ export function UserProvider({ children }) {
     }
 
     try {
-      const response = await fetch("http://localhost/capstone-project/backend/Users/get_user_details.php", {
+      const response = await fetch("/php/Users/get_user_details.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: lsUserId }),
@@ -290,7 +302,7 @@ export function UserProvider({ children }) {
               }
               
               // If it's just a filename, construct the full backend URL
-              return `http://localhost/capstone-project/backend/Uploads/${photo}`;
+              return `/php/Uploads/${photo}`;
             })();
             
             setUserData({

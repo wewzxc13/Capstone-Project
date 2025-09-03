@@ -9,6 +9,14 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: "/php/:path*",
+        destination: "http://192.168.254.151/capstone-project/backend/:path*",
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

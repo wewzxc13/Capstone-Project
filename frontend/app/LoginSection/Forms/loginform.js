@@ -484,7 +484,7 @@ export default function LoginForm({ setIsSignup }) {
                 .then(res => res.data.ip)
                 .catch(() => 'Unknown');
               try {
-                await axios.post("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+                await axios.post("/php/Logs/create_system_log.php", {
                   user_id: null,
                   action: `Unauthorized login attempt detected from IP ${clientIp}`
                 });
@@ -526,7 +526,7 @@ export default function LoginForm({ setIsSignup }) {
           .then(res => res.data.ip)
           .catch(() => 'Unknown');
         try {
-          await axios.post("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+          await axios.post("/php/Logs/create_system_log.php", {
             user_id: null,
             action: `Unauthorized login attempt detected from IP ${clientIp}`
           });
@@ -614,7 +614,7 @@ export default function LoginForm({ setIsSignup }) {
     setLoading(true);
 
     try {
-      const response = await axios.post("http://localhost/capstone-project/backend/login.php", {
+      const response = await axios.post("/php/login.php", {
         email,
         password,
       });
@@ -764,13 +764,13 @@ export default function LoginForm({ setIsSignup }) {
       `}</style>
 
       {/* Header */}
-      <h2 className="text-2xl font-bold text-center mb-6 text-blue-900 animate-float">
-        Login
+      <h2 className="text-2xl font-bold text-center mb-3 md:mb-6 text-blue-900">
+        Log in
       </h2>
 
-      <form onSubmit={handleLogin} className="space-y-4 animate-slide-in-left">
+      <form onSubmit={handleLogin} className="space-y-2.5 md:space-y-4 animate-slide-in-left">
         {/* Email */}
-        <div className="mb-2">
+        <div className="mb-1 md:mb-2">
           <label className="block text-sm font-semibold text-blue-900 mb-1">
             Email Address <span className="text-red-500">*</span>
           </label>
@@ -789,7 +789,7 @@ export default function LoginForm({ setIsSignup }) {
         </div>
 
         {/* Password */}
-        <div className="mb-2">
+        <div className="mb-1 md:mb-2">
           <label className="block text-sm font-semibold text-blue-900 mb-1">
             Password <span className="text-red-500">*</span>
           </label>
@@ -812,7 +812,7 @@ export default function LoginForm({ setIsSignup }) {
               {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
             </button>
           </div>
-          <p className="text-xs text-red-700 mt-1">
+          <p className="text-[11px] text-red-700 mt-1">
             * First-time access user needs to enter the default password.
             <br />
             Hint Password:{" "}
@@ -821,13 +821,13 @@ export default function LoginForm({ setIsSignup }) {
         </div>
 
         {/* Captcha styled box */}
-        <div className="bg-[#eaf6ff] p-4 rounded-xl border border-blue-100 shadow flex flex-col items-center mb-2">
+        <div className="bg-[#eaf6ff] p-2.5 md:p-4 rounded-xl border border-blue-100 shadow flex flex-col items-center mb-1 md:mb-2">
           <CustomCaptcha
             onCaptchaChange={handleCaptchaChange}
             disabled={cooldown > 0 || loginSuccess}
             shake={shakeCaptcha}
           />
-          <div className="w-full flex justify-between items-center mt-2">
+          <div className="w-full flex justify-between items-center mt-1 md:mt-2">
             <span className="text-sm text-gray-600">
               Attempt remaining:{" "}
               <span
@@ -844,7 +844,7 @@ export default function LoginForm({ setIsSignup }) {
         {/* Log In Button */}
         <button
           type="submit"
-          className={`w-full py-3 rounded-lg shadow-md flex items-center justify-center text-lg font-semibold transition-all-smooth animate-glow ${loading || cooldown > 0 || loginSuccess || !isCaptchaValid
+          className={`w-full py-2 md:py-3 rounded-lg shadow-md flex items-center justify-center text-lg font-semibold transition-all-smooth animate-glow ${loading || cooldown > 0 || loginSuccess || !isCaptchaValid
             ? "bg-blue-200 cursor-not-allowed"
             : "bg-blue-400 hover:bg-blue-500"
             } text-white`}
@@ -861,12 +861,12 @@ export default function LoginForm({ setIsSignup }) {
               Logged in!
             </span>
           ) : (
-            "Log In"
+            "Log in"
           )}
         </button>
 
         {/* Forgot Password */}
-        <div className="text-center mt-2">
+        <div className="text-center mt-1 md:mt-2">
           <button
             type="button"
             className="text-sm md:text-base text-blue-900 hover:underline bg-transparent border-none outline-none cursor-pointer"

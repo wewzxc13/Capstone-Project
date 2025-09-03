@@ -15,7 +15,7 @@ export default function AdminSchedulePage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php")
+    fetch("/php/Schedule/get_schedule.php")
       .then((res) => res.json())
       .then((data) => {
         if (data.status === "success") {

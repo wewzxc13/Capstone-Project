@@ -86,7 +86,7 @@ try {
                 'user_birthdate' => $user['user_birthdate'],
                 'role' => $roleName,
                 'status' => $user['user_status'],
-                'photo' => $user['user_photo'] ? 'http://localhost/capstone-project/backend/Uploads/' . $user['user_photo'] : null
+                'photo' => $user['user_photo'] ? $user['user_photo'] : null
             ]
         ];
 

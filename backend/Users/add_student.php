@@ -131,7 +131,7 @@ try {
                 'action' => 'Created a new student profile.'
             ];
             
-            $logResponse = file_get_contents('http://localhost/capstone-project/backend/Logs/create_system_log.php', false, stream_context_create([
+            $logResponse = file_get_contents(__DIR__ . '/../Logs/create_system_log.php', false, stream_context_create([
                 'http' => [
                     'method' => 'POST',
                     'header' => 'Content-Type: application/json',

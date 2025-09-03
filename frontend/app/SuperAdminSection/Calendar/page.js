@@ -114,7 +114,7 @@ function getColorForMeeting(meetingId) {
 // Move fetchMeetings outside useEffect so it can be reused
 async function fetchMeetings(setEvents) {
   try {
-    const res = await fetch("http://localhost/capstone-project/backend/Meeting/get_meetings_details.php");
+    const res = await fetch("/php/Meeting/get_meetings_details.php");
     const data = await res.json();
     if (data.status === "success" && Array.isArray(data.meetings)) {
       // Map backend meetings to event format
@@ -245,7 +245,7 @@ export default function SuperAdminCalendarPage() {
       setUsersLoading(true);
       try {
         console.log("📡 Making API request...");
-        const res = await fetch(`http://localhost/capstone-project/backend/Users/get_all_users.php`, {
+        const res = await fetch(`/php/Users/get_all_users.php`, {
           method: 'GET',
           cache: 'no-cache'
         });
@@ -331,7 +331,7 @@ export default function SuperAdminCalendarPage() {
     async function fetchLevelsAndAdvisory() {
       try {
         // Fetch student levels
-        const levelsRes = await fetch("http://localhost/capstone-project/backend/Advisory/get_student_levels.php");
+        const levelsRes = await fetch("/php/Advisory/get_student_levels.php");
         const levelsData = await levelsRes.json();
         console.log("Student levels response:", levelsData);
         if (levelsData.status === "success") {
@@ -342,7 +342,7 @@ export default function SuperAdminCalendarPage() {
         }
 
         // Fetch advisory data
-        const advisoryRes = await fetch("http://localhost/capstone-project/backend/Advisory/get_all_advisory_details.php");
+        const advisoryRes = await fetch("/php/Advisory/get_all_advisory_details.php");
         const advisoryData = await advisoryRes.json();
         console.log("Advisory data response:", advisoryData);
         if (advisoryData.status === "success") {
@@ -388,7 +388,7 @@ export default function SuperAdminCalendarPage() {
     if (!createdBy) return null;
     
     try {
-      const response = await fetch('http://localhost/capstone-project/backend/Users/get_user_details.php', {
+      const response = await fetch('/php/Users/get_user_details.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: createdBy }),
@@ -409,7 +409,7 @@ export default function SuperAdminCalendarPage() {
     if (!createdBy) return null;
     
     try {
-      const response = await fetch('http://localhost/capstone-project/backend/Users/get_user_details.php', {
+      const response = await fetch('/php/Users/get_user_details.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: createdBy }),
@@ -473,7 +473,7 @@ export default function SuperAdminCalendarPage() {
         setInvitedList(newInvitedList);
       } else {
         // For group meetings: get teachers and parents from tbl_notification_recipients
-        const res = await fetch(`http://localhost/capstone-project/backend/Meeting/get_notification_recipients.php?meeting_id=${meetingId}`);
+        const res = await fetch(`/php/Meeting/get_notification_recipients.php?meeting_id=${meetingId}`);
         const data = await res.json();
         if (data.status === 'success') {
           console.log('Fetched invited teachers:', data.teachers);
@@ -531,42 +531,7 @@ export default function SuperAdminCalendarPage() {
     setMeetingCreator(null); // Reset meeting creator when selecting a new event
   };
 
-  // Test function to debug invitee update issues
-  const testInviteeUpdate = async (meetingId) => {
-    console.log("🧪 Testing invitee update for meeting:", meetingId);
-    try {
-      const res = await fetch(`http://localhost/capstone-project/test_invitee_update.php?meeting_id=${meetingId}`);
-      
-      // Log response details for debugging
-      console.log("🔍 Response Status:", res.status);
-      console.log("🔍 Response Headers:", Object.fromEntries(res.headers.entries()));
-      
-      // Get raw response text first
-      const responseText = await res.text();
-      console.log("🔍 Raw Response Text:", responseText);
-      
-      // Try to parse as JSON
-      if (!responseText.trim()) {
-        console.error("🧪 Empty response received");
-        return null;
-      }
-      
-      const data = JSON.parse(responseText);
-      console.log("🧪 Test API Response:", data);
-      
-      // Log key information
-      console.log("📋 Meeting Details:", data.meeting_details);
-      console.log("👥 Current Recipients:", data.current_recipients);
-      console.log("✅ Available Users:", data.available_users);
-      console.log("📊 Debug Info:", data.debug_info);
-      
-      return data;
-    } catch (err) {
-      console.error("🧪 Test API Error:", err);
-      console.error("🧪 Error details:", err.message);
-      return null;
-    }
-  };
+  // Removed legacy testInviteeUpdate debug function
 
   // Add new event from modal
   const handleAddEvent = async () => {
@@ -603,7 +568,7 @@ export default function SuperAdminCalendarPage() {
     };
 
     try {
-      const res = await fetch("http://localhost/capstone-project/backend/Meeting/create_meeting.php", {
+      const res = await fetch("/php/Meeting/create_meeting.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1484,7 +1449,7 @@ export default function SuperAdminCalendarPage() {
                         };
 
                         try {
-                          const res = await fetch("http://localhost/capstone-project/backend/Meeting/update_meeting.php", {
+                          const res = await fetch("/php/Meeting/update_meeting.php", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(payload)
@@ -1663,7 +1628,7 @@ export default function SuperAdminCalendarPage() {
                             
                             // Fetch and auto-fill the invited list
                             try {
-                              const res = await fetch(`http://localhost/capstone-project/backend/Meeting/get_notification_recipients.php?meeting_id=${selectedEvent.id}`);
+                              const res = await fetch(`/php/Meeting/get_notification_recipients.php?meeting_id=${selectedEvent.id}`);
                               const data = await res.json();
                               if (data.status === 'success') {
                                 // Get the invited user IDs
@@ -2798,7 +2763,7 @@ export default function SuperAdminCalendarPage() {
                   setCancelLoading(true);
                   try {
                     const userId = localStorage.getItem('userId');
-                    const res = await fetch('http://localhost/capstone-project/backend/Meeting/update_meeting.php', {
+                    const res = await fetch('/php/Meeting/update_meeting.php', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ 
@@ -2876,7 +2841,7 @@ export default function SuperAdminCalendarPage() {
                   setDeleteLoading(true);
                   try {
                     const userId = localStorage.getItem('userId');
-                    const res = await fetch('http://localhost/capstone-project/backend/Meeting/delete_meeting.php', {
+                    const res = await fetch('/php/Meeting/delete_meeting.php', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ 

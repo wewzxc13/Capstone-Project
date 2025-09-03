@@ -152,9 +152,7 @@ try {
         if ($lead) {
             $lead_teacher_name = trim($lead['user_firstname'] . ' ' . $lead['user_middlename'] . ' ' . $lead['user_lastname']);
             $lead_teacher_name = preg_replace('/\s+/', ' ', $lead_teacher_name);
-            $lead_teacher_photo = $lead['user_photo'] ? 
-                'http://localhost/capstone-project/backend/Uploads/' . $lead['user_photo'] : 
-                'http://localhost/capstone-project/backend/Uploads/default_teacher.png';
+            $lead_teacher_photo = $lead['user_photo'] ? $lead['user_photo'] : 'default_teacher.png';
         }
     }
     if (!empty($advisory['assistant_teacher_id'])) {
@@ -164,9 +162,7 @@ try {
         if ($assistant) {
             $assistant_teacher_name = trim($assistant['user_firstname'] . ' ' . $assistant['user_middlename'] . ' ' . $assistant['user_lastname']);
             $assistant_teacher_name = preg_replace('/\s+/', ' ', $assistant_teacher_name);
-            $assistant_teacher_photo = $assistant['user_photo'] ? 
-                'http://localhost/capstone-project/backend/Uploads/' . $assistant['user_photo'] : 
-                'http://localhost/capstone-project/backend/Uploads/default_teacher.png';
+            $assistant_teacher_photo = $assistant['user_photo'] ? $assistant['user_photo'] : 'default_teacher.png';
         }
     }
     // Add names and photos to advisory array
@@ -247,10 +243,8 @@ try {
     // Add photo field to students based on gender
     for ($i = 0; $i < count($students_for_processing); $i++) {
         $students_for_processing[$i]['photo'] = $students_for_processing[$i]['stud_photo'] ? 
-            'http://localhost/capstone-project/backend/Uploads/' . $students_for_processing[$i]['stud_photo'] : 
-            ($students_for_processing[$i]['stud_gender'] === 'Male' ? 
-                'http://localhost/capstone-project/backend/Uploads/default_boy_student.png' : 
-                'http://localhost/capstone-project/backend/Uploads/default_girl_student.png');
+            $students_for_processing[$i]['stud_photo'] : 
+            ($students_for_processing[$i]['stud_gender'] === 'Male' ? 'default_boy_student.png' : 'default_girl_student.png');
     }
     
     // Use the processed students array
@@ -306,9 +300,7 @@ try {
         
         // Add photo field to parents
         foreach ($parents as &$parent) {
-            $parent['photo'] = $parent['user_photo'] ? 
-                'http://localhost/capstone-project/backend/Uploads/' . $parent['user_photo'] : 
-                'http://localhost/capstone-project/backend/Uploads/default_parent.png';
+            $parent['photo'] = $parent['user_photo'] ? $parent['user_photo'] : 'default_parent.png';
         }
         
         // Create a lookup array for parent information

@@ -5,6 +5,7 @@ import AdminSidebar from "../Sidebar/AdminSidebar";
 import { usePathname } from "next/navigation";
 import Topbar from "../Topbar/Topbar";
 import ProtectedRoute from "../Context/ProtectedRoute";
+import { FaBars } from "react-icons/fa";
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -28,6 +29,8 @@ export default function AdminLayout({ children }) {
   // Dynamic user name and role
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState("");
+  // Desktop sidebar open/close state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -57,7 +60,18 @@ export default function AdminLayout({ children }) {
   return (
     <ProtectedRoute role="Admin">
       <div className="flex h-screen bg-[#f4f9ff] overflow-hidden select-none caret-transparent">
-        {showSidebar && <AdminSidebar />}
+        {/* Desktop collapse/expand toggle */}
+        {showSidebar && (
+          <button
+            className={`hidden md:flex fixed top-6 z-40 ${isSidebarOpen ? "left-64 -translate-x-1/2" : "left-20 -translate-x-1/2"} transform bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none`}
+            onClick={() => setIsSidebarOpen((o) => !o)}
+            aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            <FaBars size={20} className="text-[#232c67]" />
+          </button>
+        )}
+        {showSidebar && <AdminSidebar isSidebarOpen={isSidebarOpen} />}
         <div className="flex-1 flex flex-col overflow-y-auto">
           <main className="flex-1 p-6 select-none caret-transparent">
             {showTopbar && (

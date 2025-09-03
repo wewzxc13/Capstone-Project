@@ -6,7 +6,7 @@ This API provides user details for the Topbar component in the frontend applicat
 ## API Endpoint
 
 ### GET_USER_DETAILS.PHP
-**URL:** `http://localhost/capstone-project/backend/Users/get_user_details.php`  
+**URL:** `/php/Users/get_user_details.php`  
 **Method:** POST  
 **Content-Type:** application/json
 
@@ -68,7 +68,7 @@ The login process stores:
 useEffect(() => {
   const fetchUserDetails = async () => {
     const userId = localStorage.getItem('userId');
-    const response = await fetch('http://localhost/capstone-project/backend/Users/get_user_details.php', {
+    const response = await fetch('/php/Users/get_user_details.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId })

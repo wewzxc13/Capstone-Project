@@ -83,7 +83,7 @@ export function AuthProvider({ children }) {
         // Set a flag to prevent other logout events from firing
         localStorage.setItem("logoutLogged", "true");
         
-        await fetch("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+        await fetch("/php/Logs/create_system_log.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

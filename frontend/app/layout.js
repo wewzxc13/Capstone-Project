@@ -3,6 +3,12 @@ import "./globals.css";
 import { Providers } from "./Context/Providers";
 import { metadata } from "./metadata";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

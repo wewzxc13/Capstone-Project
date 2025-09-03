@@ -723,8 +723,8 @@ export default function AddUserPage() {
     const isStudent = userType === "Student";
   
     const apiURL = isStudent
-      ? "http://localhost/capstone-project/backend/Users/add_student.php"
-      : "http://localhost/capstone-project/backend/Users/add_user.php";
+      ? "/php/Users/add_student.php"
+      : "/php/Users/add_user.php";
   
     let dataToSend = {
       ...formData,

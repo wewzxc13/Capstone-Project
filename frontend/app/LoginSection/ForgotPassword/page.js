@@ -67,7 +67,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await fetch("http://localhost/capstone-project/backend/changepassword.php", {
+      const response = await fetch("/php/changepassword.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,7 +98,7 @@ const ForgotPassword = () => {
         formData.append("user_id", data.user_id);
         formData.append("email", data.email);
 
-        const otpRes = await fetch("http://localhost/capstone-project/backend/send_otp.php", {
+        const otpRes = await fetch("/php/send_otp.php", {
           method: "POST",
           body: formData,
         });
@@ -274,13 +274,13 @@ const ForgotPassword = () => {
                   ref={policyRef}
                   className="absolute z-20 mt-2 right-0 w-72 bg-white border border-gray-200 rounded-lg shadow-lg p-3"
                 >
-                  <p className="text-gray-600 mb-1">Password must contain:</p>
+                  <p className={`${allValid ? 'text-green-600' : 'text-gray-600'} mb-1`}>Password must contain:</p>
                   <div className="space-y-1">
-                    <div className={`${allValid ? 'text-green-600' : 'text-gray-600'}`}>One lowercase letter (a-z)</div>
-                    <div className={`${allValid ? 'text-green-600' : 'text-gray-600'}`}>One uppercase letter (A-Z)</div>
-                    <div className={`${allValid ? 'text-green-600' : 'text-gray-600'}`}>One number (0-9)</div>
-                    <div className={`${allValid ? 'text-green-600' : 'text-gray-600'}`}>One special character (!@#$%^&*)</div>
-                    <div className={`${allValid ? 'text-green-600' : 'text-gray-600'}`}>Minimum 8 characters</div>
+                    <div className={`${passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-600'}`}>One lowercase letter (a-z)</div>
+                    <div className={`${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-600'}`}>One uppercase letter (A-Z)</div>
+                    <div className={`${passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-600'}`}>One number (0-9)</div>
+                    <div className={`${passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-gray-600'}`}>One special character (!@#$%^&*)</div>
+                    <div className={`${passwordValidation.hasMinLength ? 'text-green-600' : 'text-gray-600'}`}>Minimum 8 characters</div>
                   </div>
                 </div>
               )}

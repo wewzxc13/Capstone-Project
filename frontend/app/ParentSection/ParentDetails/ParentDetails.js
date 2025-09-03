@@ -183,10 +183,10 @@ function getPhotoUrl(filename) {
   // If it's a filename, construct the full backend URL
   // Try multiple possible backend paths
   const possiblePaths = [
-    `http://localhost/capstone-project/backend/Uploads/${filename}`,
+    `/php/Uploads/${filename}`,
     `http://localhost/backend/Uploads/${filename}`,
     `http://localhost/capstone-project/Uploads/${filename}`,
-    `http://localhost/capstone-project/backend/Uploads/${filename}`
+    `/php/Uploads/${filename}`
   ];
   
   // For now, return the first path, but you can implement logic to test which one works
@@ -256,7 +256,7 @@ export default function ParentDetails() {
       }
 
       try {
-        const response = await fetch('http://localhost/capstone-project/backend/Users/get_user_details.php', {
+        const response = await fetch('/php/Users/get_user_details.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: userId }),
@@ -385,7 +385,7 @@ export default function ParentDetails() {
         try {
           const form = new FormData();
           form.append('photo', selectedPhoto);
-          const uploadRes = await fetch('http://localhost/capstone-project/backend/Users/upload_photo.php', {
+          const uploadRes = await fetch('/php/Users/upload_photo.php', {
             method: 'POST',
             body: form,
           });
@@ -422,7 +422,7 @@ export default function ParentDetails() {
           
           const form = new FormData();
           form.append('photo', file);
-          const uploadRes = await fetch('http://localhost/capstone-project/backend/Users/upload_photo.php', {
+          const uploadRes = await fetch('/php/Users/upload_photo.php', {
             method: 'POST',
             body: form,
           });
@@ -487,7 +487,7 @@ export default function ParentDetails() {
           municipality_city: dataToSend.city // for backend compatibility
         };
 
-             const response = await fetch('http://localhost/capstone-project/backend/Users/update_user.php', {
+             const response = await fetch('/php/Users/update_user.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -535,7 +535,7 @@ export default function ParentDetails() {
         
         // System log for self-update (no notification)
         const action = `Edited their own details.`;
-        fetch("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+        fetch("/php/Logs/create_system_log.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

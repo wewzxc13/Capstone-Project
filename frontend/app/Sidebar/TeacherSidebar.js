@@ -29,6 +29,19 @@ const TeacherSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
   const { unreadCounts } = useUser();
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
 
+  // Prevent background scroll when mobile sidebar is open
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (mobileSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileSidebarOpen]);
+
   // Use context-based unread counts instead of polling
   React.useEffect(() => {
     let timer;
@@ -40,10 +53,10 @@ const TeacherSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
           return;
         }
         const [recentRes, groupsRes, userRes, advRes] = await Promise.all([
-          fetch(`http://localhost/capstone-project/backend/Communication/get_recent_conversations.php?user_id=${uid}`).then((r) => r.json()).catch(() => null),
-          fetch(`http://localhost/capstone-project/backend/Communication/get_groups.php?user_id=${uid}`).then((r) => r.json()).catch(() => null),
-          fetch('http://localhost/capstone-project/backend/Users/get_user_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid }) }).then((r) => r.json()).catch(() => null),
-          fetch('http://localhost/capstone-project/backend/Advisory/get_advisory_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ teacher_id: uid }) }).then((r) => r.json()).catch(() => null),
+          fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`).then((r) => r.json()).catch(() => null),
+          fetch(`/php/Communication/get_groups.php?user_id=${uid}`).then((r) => r.json()).catch(() => null),
+          fetch('/php/Users/get_user_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid }) }).then((r) => r.json()).catch(() => null),
+          fetch('/php/Advisory/get_advisory_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ teacher_id: uid }) }).then((r) => r.json()).catch(() => null),
         ]);
         const usersUnread = Array.isArray(recentRes?.data)
           ? recentRes.data.reduce((s, it) => s + (Number(it.unread_count) || 0), 0)
@@ -150,24 +163,26 @@ const TeacherSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
   return (
     <>
       {/* Hamburger button for mobile */}
-      <button
-        className="md:hidden fixed top-4 left-4 z-50 bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none"
-        onClick={() => setMobileSidebarOpen(true)}
-        aria-label="Open sidebar"
-      >
-        <FaBars size={24} className="text-[#232c67]" />
-      </button>
+      {!mobileSidebarOpen && (
+        <button
+          className="md:hidden fixed top-4 left-4 z-40 bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none"
+          onClick={() => setMobileSidebarOpen(true)}
+          aria-label="Open sidebar"
+        >
+          <FaBars size={24} className="text-[#232c67]" />
+        </button>
+      )}
 
       {/* Mobile sidebar overlay */}
       {mobileSidebarOpen && (
-        <div className="fixed inset-0 z-40 flex">
+        <div className="fixed inset-0 z-50 flex">
           {/* Overlay background */}
           <div
             className="fixed inset-0 bg-black bg-opacity-30"
             onClick={() => setMobileSidebarOpen(false)}
           />
           {/* Sidebar panel */}
-          <div className="relative z-50 w-64 max-w-full h-full">
+          <div className="relative z-50 w-[85vw] max-w-xs sm:max-w-sm h-full">
             <button
               className="absolute top-4 right-4 z-50 bg-white rounded-full p-2 shadow border border-blue-100 focus:outline-none"
               onClick={() => setMobileSidebarOpen(false)}

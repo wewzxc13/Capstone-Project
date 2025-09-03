@@ -232,7 +232,7 @@ export default function AttendancePage() {
 
   // Fetch quarters data for dynamic date validation
   useEffect(() => {
-    fetch('http://localhost/capstone-project/backend/Assessment/get_quarters.php')
+    fetch('/php/Assessment/get_quarters.php')
       .then(response => response.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -275,7 +275,7 @@ export default function AttendancePage() {
     const userId = localStorage.getItem("userId");
     if (userId) {
       // 1. Get advisory_id for this teacher
-      fetch("http://localhost/capstone-project/backend/Advisory/get_advisory_details.php", {
+      fetch("/php/Advisory/get_advisory_details.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teacher_id: userId })
@@ -310,7 +310,7 @@ export default function AttendancePage() {
           
           setStudents(data.students || []);
           // 2. Get ALL attendance records for this advisory
-          fetch("http://localhost/capstone-project/backend/Advisory/get_attendance.php", {
+          fetch("/php/Advisory/get_attendance.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ advisory_id: data.advisory.advisory_id })
@@ -519,7 +519,7 @@ export default function AttendancePage() {
         // 1. Update existing records
         let updatePromise = Promise.resolve({ updated: 0, errors: [] });
         if (recordsToUpdate.length > 0) {
-          updatePromise = fetch('http://localhost/capstone-project/backend/Advisory/update_attendance.php', {
+          updatePromise = fetch('/php/Advisory/update_attendance.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ records: recordsToUpdate }),
@@ -528,7 +528,7 @@ export default function AttendancePage() {
         // 2. Insert new records
         let insertPromise = Promise.resolve({ status: 'success' });
         if (recordsToInsert.length > 0) {
-          insertPromise = fetch('http://localhost/capstone-project/backend/Advisory/create_attendance.php', {
+          insertPromise = fetch('/php/Advisory/create_attendance.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ records: recordsToInsert }),
@@ -587,7 +587,7 @@ export default function AttendancePage() {
       return;
     }
     try {
-      const res = await fetch('http://localhost/capstone-project/backend/Advisory/create_attendance.php', {
+      const res = await fetch('/php/Advisory/create_attendance.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ records }),
@@ -599,7 +599,7 @@ export default function AttendancePage() {
         // Refetch latest attendance records from backend
         const userId = localStorage.getItem('userId');
         if (userId) {
-          fetch('http://localhost/capstone-project/backend/Advisory/get_advisory_details.php', {
+          fetch('/php/Advisory/get_advisory_details.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ teacher_id: userId })
@@ -608,7 +608,7 @@ export default function AttendancePage() {
             .then(data => {
               setStudents(data.students || []);
               if (data.advisory && data.advisory.advisory_id) {
-                fetch('http://localhost/capstone-project/backend/Advisory/get_attendance.php', {
+                fetch('/php/Advisory/get_attendance.php', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ advisory_id: data.advisory.advisory_id })

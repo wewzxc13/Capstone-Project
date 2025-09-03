@@ -221,7 +221,7 @@ export default function AdminMessagesPage() {
         console.log('SuperAdmin: Loading conversation history users');
         
         // Use get_users.php for conversation history (default mode)
-        const res = await fetch(`http://localhost/capstone-project/backend/Communication/get_users.php?user_id=${uid}`, {
+        const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -309,7 +309,7 @@ export default function AdminMessagesPage() {
       console.log('SuperAdmin: Loading all users for search');
       
       // Use get_users.php with search=true parameter to get all active users
-      const res = await fetch(`http://localhost/capstone-project/backend/Communication/get_users.php?user_id=${uid}&search=true`, {
+      const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}&search=true`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -366,7 +366,7 @@ export default function AdminMessagesPage() {
       console.log('SuperAdmin: Restoring conversation history');
       
       // Use get_users.php for conversation history (default mode)
-      const res = await fetch(`http://localhost/capstone-project/backend/Communication/get_users.php?user_id=${uid}`, {
+      const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -425,7 +425,7 @@ export default function AdminMessagesPage() {
       console.log('SuperAdmin: Checking conversation history for user:', userId);
       
       // Check if this user has any conversation history
-      const res = await fetch(`http://localhost/capstone-project/backend/Communication/get_conversation.php?user_id=${uid}&partner_id=${userId}`, {
+      const res = await fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -479,7 +479,7 @@ export default function AdminMessagesPage() {
       console.log('SuperAdmin: Marking messages as read for user:', userId);
       
       // Call the backend to mark messages as read
-      const res = await fetch(`http://localhost/capstone-project/backend/Communication/mark_messages_read.php`, {
+      const res = await fetch(`/php/Communication/mark_messages_read.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -495,7 +495,7 @@ export default function AdminMessagesPage() {
         // Refresh unread counts by calling the get_users API again
         try {
           const uid = Number(localStorage.getItem('userId'));
-          const refreshRes = await fetch(`http://localhost/capstone-project/backend/Communication/get_users.php?user_id=${uid}`, {
+          const refreshRes = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
@@ -556,7 +556,7 @@ export default function AdminMessagesPage() {
       // Mark as running to prevent conflicts
       isRunningRef.current.conversation = userId;
       
-      const res = await fetch(`http://localhost/capstone-project/backend/Communication/get_conversation.php?user_id=${uid}&partner_id=${userId}`, {
+      const res = await fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -654,7 +654,7 @@ export default function AdminMessagesPage() {
         console.log('loadGroups function called');
         const uid = Number(localStorage.getItem('userId')) || 0;
         console.log('loadGroups - user ID from localStorage:', uid);
-        const url = uid ? `http://localhost/capstone-project/backend/Communication/get_groups.php?user_id=${uid}` : 'http://localhost/capstone-project/backend/Communication/get_groups.php';
+        const url = uid ? `/php/Communication/get_groups.php?user_id=${uid}` : '/php/Communication/get_groups.php';
         console.log('loadGroups - API URL:', url);
         const res = await fetch(url, {
           method: 'GET',
@@ -735,7 +735,7 @@ export default function AdminMessagesPage() {
     
     console.log('SuperAdmin: Loading recent conversations for user:', uid);
     
-    fetch(`http://localhost/capstone-project/backend/Communication/get_recent_conversations.php?user_id=${uid}`, {
+    fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`, {
       signal: controller.signal,
     })
       .then((r) => {
@@ -895,7 +895,7 @@ export default function AdminMessagesPage() {
     const uid = Number(localStorage.getItem("userId"));
     if (!uid) return;
     let isMounted = true;
-    fetch(`http://localhost/capstone-project/backend/Communication/get_archived_conversations.php?user_id=${uid}`)
+    fetch(`/php/Communication/get_archived_conversations.php?user_id=${uid}`)
       .then((r) => r.json())
       .then(async (json) => {
         if (!json?.success) return;
@@ -1026,7 +1026,7 @@ export default function AdminMessagesPage() {
         setIsLoadingConversations(true);
         
         // First, load the user list
-        const res = await fetch(`http://localhost/capstone-project/backend/Communication/get_users.php?user_id=${uid}`, {
+        const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -1147,7 +1147,7 @@ export default function AdminMessagesPage() {
     // Store the controller reference to allow cancellation
     isRunningRef.current.controller = controller;
     
-    fetch(`http://localhost/capstone-project/backend/Communication/get_conversation.php?user_id=${uid}&partner_id=${selectedChatId}`, {
+    fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${selectedChatId}`, {
       signal: controller.signal,
     })
       .then((r) => r.json())
@@ -1225,7 +1225,7 @@ export default function AdminMessagesPage() {
     const uid = Number(localStorage.getItem('userId'));
     if (!uid) return;
     const controller = new AbortController();
-    fetch(`http://localhost/capstone-project/backend/Communication/get_group_messages.php?group_id=${selectedChat.id}&user_id=${uid}`, {
+    fetch(`/php/Communication/get_group_messages.php?group_id=${selectedChat.id}&user_id=${uid}`, {
       signal: controller.signal,
     })
       .then((r) => r.json())
@@ -1290,7 +1290,7 @@ export default function AdminMessagesPage() {
       try {
         const senderId = Number(localStorage.getItem('userId'));
         const groupId = Number(selectedChat.id);
-        fetch('http://localhost/capstone-project/backend/Communication/send_group_message.php', {
+        fetch('/php/Communication/send_group_message.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ group_id: groupId, sender_id: senderId, message_text: text }),
@@ -1380,7 +1380,7 @@ export default function AdminMessagesPage() {
       try {
         const senderId = Number(localStorage.getItem("userId"));
         const receiverId = Number(selectedChat.id);
-        fetch("http://localhost/capstone-project/backend/Communication/send_message.php", {
+        fetch("/php/Communication/send_message.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sender_id: senderId, receiver_id: receiverId, message_text: text }),
@@ -1704,7 +1704,7 @@ export default function AdminMessagesPage() {
         }
         
         try {
-          const res = await fetch(`http://localhost/capstone-project/backend/Users/get_user_details.php`, {
+          const res = await fetch(`/php/Users/get_user_details.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: senderId })
@@ -1745,7 +1745,7 @@ export default function AdminMessagesPage() {
           try {
             // Since we can't directly query by advisory_id, we'll use a different approach
             // We'll fetch all users and filter by role to get teachers, and use get_all_users for parents
-            const usersRes = await fetch('http://localhost/capstone-project/backend/Users/get_all_users.php');
+            const usersRes = await fetch('/php/Users/get_all_users.php');
             const usersData = await usersRes.json();
             
             if (usersData?.success && usersData.data) {
@@ -1769,7 +1769,7 @@ export default function AdminMessagesPage() {
         } else if (group.groupType === 'Staff') {
           // For staff groups, fetch all teachers, admins, and owners
           try {
-            const usersRes = await fetch('http://localhost/capstone-project/backend/Users/get_all_users.php');
+            const usersRes = await fetch('/php/Users/get_all_users.php');
             const usersData = await usersRes.json();
             
             if (usersData?.success && usersData.data) {
@@ -1785,7 +1785,7 @@ export default function AdminMessagesPage() {
         } else if (group.groupType === 'Overall') {
           // For overall groups, fetch all active users
           try {
-            const usersRes = await fetch('http://localhost/capstone-project/backend/Users/get_all_users.php');
+            const usersRes = await fetch('/php/Users/get_all_users.php');
             const usersData = await usersRes.json();
             
             if (usersData?.success && usersData.data) {
@@ -1810,7 +1810,7 @@ export default function AdminMessagesPage() {
         }
         
         try {
-          const res = await fetch(`http://localhost/capstone-project/backend/Users/get_user_details.php`, {
+          const res = await fetch(`/php/Users/get_user_details.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId })
@@ -1852,7 +1852,7 @@ export default function AdminMessagesPage() {
       return (
         <div className="relative">
           <img
-            src={photo.startsWith('http') ? photo : `http://localhost/capstone-project/backend/Uploads/${photo}`}
+            src={photo.startsWith('http') ? photo : `/php/Uploads/${photo}`}
             alt="User"
             className={`${size} rounded-full object-cover border border-gray-200 shadow-sm ${roleAvatarRingClasses(role)}`}
             onError={(e) => {
@@ -1893,7 +1893,7 @@ export default function AdminMessagesPage() {
           const uid = Number(localStorage.getItem('userId'));
           if (!uid) return;
           
-          const res = await fetch(`http://localhost/capstone-project/backend/Communication/get_users.php?user_id=${uid}`, {
+          const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
@@ -2244,7 +2244,7 @@ export default function AdminMessagesPage() {
                                           isRunningRef.current.conversation = chat.id;
                                           
                                           // Load conversation data first, then update chats array in one operation
-                                          const res = await fetch(`http://localhost/capstone-project/backend/Communication/get_conversation.php?user_id=${uid}&partner_id=${chat.id}`, {
+                                          const res = await fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${chat.id}`, {
                                             method: "GET",
                                             headers: { "Content-Type": "application/json" },
                                           });
@@ -2751,7 +2751,7 @@ export default function AdminMessagesPage() {
                                           return (
                                             <>
                                               <img
-                                                src={photo.startsWith('http') ? photo : `http://localhost/capstone-project/backend/Uploads/${photo}`}
+                                                src={photo.startsWith('http') ? photo : `/php/Uploads/${photo}`}
                                                 alt="Sender"
                                                 className="w-full h-full rounded-full object-cover"
                                                 onError={(e) => {
@@ -2810,8 +2810,8 @@ export default function AdminMessagesPage() {
                                           e.stopPropagation();
                                           const uid = Number(localStorage.getItem('userId'));
                                           const url = selectedType === 'group'
-                                            ? 'http://localhost/capstone-project/backend/Communication/unsent_group_message.php'
-                                            : 'http://localhost/capstone-project/backend/Communication/unsent_message.php';
+                                            ? '/php/Communication/unsent_group_message.php'
+                                            : '/php/Communication/unsent_message.php';
                                           const payload = selectedType === 'group'
                                             ? { group_message_id: Number(msg.id), sender_id: uid }
                                             : { message_id: Number(msg.id), sender_id: uid };
@@ -2874,8 +2874,8 @@ export default function AdminMessagesPage() {
                                           if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                                             const uid = Number(localStorage.getItem('userId'));
                                             const url = selectedType === 'group'
-                                              ? 'http://localhost/capstone-project/backend/Communication/edit_group_message.php'
-                                              : 'http://localhost/capstone-project/backend/Communication/edit_message.php';
+                                              ? '/php/Communication/edit_group_message.php'
+                                              : '/php/Communication/edit_message.php';
                                             const payload = selectedType === 'group'
                                               ? { group_message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() }
                                               : { message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() };
@@ -2929,8 +2929,8 @@ export default function AdminMessagesPage() {
                                           onClick={() => {
                                             const uid = Number(localStorage.getItem('userId'));
                                             const url = selectedType === 'group'
-                                              ? 'http://localhost/capstone-project/backend/Communication/edit_group_message.php'
-                                              : 'http://localhost/capstone-project/backend/Communication/edit_message.php';
+                                              ? '/php/Communication/edit_group_message.php'
+                                              : '/php/Communication/edit_message.php';
                                             const payload = selectedType === 'group'
                                               ? { group_message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() }
                                               : { message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() };
@@ -3008,7 +3008,7 @@ export default function AdminMessagesPage() {
                                                 if (!mid) return;
                                                 setShowReadsForId((cur) => (cur === msg.id ? null : msg.id));
                                                 if (!readsCache[mid]) {
-                                                  fetch(`http://localhost/capstone-project/backend/Communication/get_group_message_reads.php?group_message_id=${mid}`)
+                                                  fetch(`/php/Communication/get_group_message_reads.php?group_message_id=${mid}`)
                                                     .then((r) => r.json())
                                                     .then((res) => {
                                                       if (!res?.success) return;
@@ -3039,7 +3039,7 @@ export default function AdminMessagesPage() {
                                               if (!mid) return;
                                               setShowReadsForId((cur) => (cur === msg.id ? null : msg.id));
                                               if (!readsCache[mid]) {
-                                                fetch(`http://localhost/capstone-project/backend/Communication/get_group_message_reads.php?group_message_id=${mid}`)
+                                                fetch(`/php/Communication/get_group_message_reads.php?group_message_id=${mid}`)
                                                   .then((r) => r.json())
                                                   .then((res) => {
                                                     if (!res?.success) return;
@@ -3200,7 +3200,7 @@ export default function AdminMessagesPage() {
                     setArchiving(true);
                     const uid = Number(localStorage.getItem('userId'));
                     const partnerId = Number(selectedChat?.id);
-                    const res = await fetch('http://localhost/capstone-project/backend/Communication/archive_conversation.php', {
+                    const res = await fetch('/php/Communication/archive_conversation.php', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ user_id: uid, partner_id: partnerId })
@@ -3212,7 +3212,7 @@ export default function AdminMessagesPage() {
                     // Remove from recents
                     setRecent((prev) => prev.filter((r) => r.id !== String(partnerId)));
                     // Refresh archived list
-                    fetch(`http://localhost/capstone-project/backend/Communication/get_archived_conversations.php?user_id=${uid}`)
+                    fetch(`/php/Communication/get_archived_conversations.php?user_id=${uid}`)
                       .then((r) => r.json())
                       .then((arch) => {
                         if (arch?.success) {
@@ -3285,13 +3285,13 @@ export default function AdminMessagesPage() {
                 try {
                   const uid = Number(localStorage.getItem('userId'));
                   const partnerId = Number(selectedChat?.id);
-                  const res = await fetch('http://localhost/capstone-project/backend/Communication/unarchive_conversation.php', {
+                  const res = await fetch('/php/Communication/unarchive_conversation.php', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid, partner_id: partnerId })
                   });
                   const json = await res.json();
                   if (!json?.success) throw new Error(json?.error || 'Failed to restore');
                   // Refresh recents and archive lists
-                  fetch(`http://localhost/capstone-project/backend/Communication/get_recent_conversations.php?user_id=${uid}`).then(r => r.json()).then(rc => {
+                  fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`).then(r => r.json()).then(rc => {
                     if (rc?.success) {
                       const mapped = (rc.data || []).map((u) => {
                         const name = [u.user_firstname, u.user_middlename, u.user_lastname].filter(Boolean).join(' ');
@@ -3313,7 +3313,7 @@ export default function AdminMessagesPage() {
                       setRecent(mapped);
                     }
                   });
-                  fetch(`http://localhost/capstone-project/backend/Communication/get_archived_conversations.php?user_id=${uid}`).then(r => r.json()).then(ar => {
+                  fetch(`/php/Communication/get_archived_conversations.php?user_id=${uid}`).then(r => r.json()).then(ar => {
                     if (ar?.success) {
                       const mapped = (ar.data || []).map((u) => ({
                         id: String(u.user_id),

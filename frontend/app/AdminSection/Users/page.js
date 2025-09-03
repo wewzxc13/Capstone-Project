@@ -93,7 +93,7 @@ export default function AdminUsersPage() {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost/capstone-project/backend/Users/get_all_users.php', {
+        const response = await fetch('/php/Users/get_all_users.php', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -119,7 +119,7 @@ export default function AdminUsersPage() {
           console.log('=== END USERS DEBUG ===');
           
                     // Fetch advisory data to get teacher assignments
-          const advisoryResponse = await fetch('http://localhost/capstone-project/backend/Advisory/get_all_advisory_details.php', {
+          const advisoryResponse = await fetch('/php/Advisory/get_all_advisory_details.php', {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ export default function AdminUsersPage() {
                 const parentsWithChildren = await Promise.all(
                   updatedUsers.Parent.map(async (parent) => {
                     try {
-                      const childrenResponse = await fetch(`http://localhost/capstone-project/backend/Users/get_parent_students.php?parent_id=${parent.id}`, {
+                      const childrenResponse = await fetch(`/php/Users/get_parent_students.php?parent_id=${parent.id}`, {
                         method: 'GET',
                         headers: {
                           'Content-Type': 'application/json',
@@ -228,7 +228,7 @@ export default function AdminUsersPage() {
                 const parentsWithChildren = await Promise.all(
                   updatedUsers.Parent.map(async (parent) => {
                     try {
-                      const childrenResponse = await fetch(`http://localhost/capstone-project/backend/Users/get_parent_students.php?parent_id=${parent.id}`, {
+                      const childrenResponse = await fetch(`/php/Users/get_parent_students.php?parent_id=${parent.id}`, {
                         method: 'GET',
                         headers: {
                           'Content-Type': 'application/json',
@@ -288,7 +288,7 @@ export default function AdminUsersPage() {
               const parentsWithChildren = await Promise.all(
                 updatedUsers.Parent.map(async (parent) => {
                   try {
-                    const childrenResponse = await fetch(`http://localhost/capstone-project/backend/Users/get_parent_students.php?parent_id=${parent.id}`, {
+                    const childrenResponse = await fetch(`/php/Users/get_parent_students.php?parent_id=${parent.id}`, {
                       method: 'GET',
                       headers: {
                         'Content-Type': 'application/json',
@@ -487,7 +487,7 @@ export default function AdminUsersPage() {
     setArchiving(prev => ({ ...prev, [user.id]: true }));
     
     try {
-      const response = await fetch("http://localhost/capstone-project/backend/Users/archive_user.php", {
+      const response = await fetch("/php/Users/archive_user.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -508,7 +508,7 @@ export default function AdminUsersPage() {
         let action = "";
         if (user.role === "Student") {
           action = "Archived a student profile.";
-          await fetch("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+          await fetch("/php/Logs/create_system_log.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -520,7 +520,7 @@ export default function AdminUsersPage() {
           });
         } else {
           action = `Archived a ${user.role.toLowerCase()} account.`;
-          await fetch("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+          await fetch("/php/Logs/create_system_log.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -533,7 +533,7 @@ export default function AdminUsersPage() {
         }
         
         // Refresh the user list
-        const refreshResponse = await fetch('http://localhost/capstone-project/backend/Users/get_all_users.php', {
+        const refreshResponse = await fetch('/php/Users/get_all_users.php', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });

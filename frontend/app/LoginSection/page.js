@@ -51,7 +51,7 @@ export default function LoginSection() {
         </div>
       </div>
       {/* Logo and address for mobile */}
-      <div className="md:hidden w-full flex flex-col items-center pt-6 pb-2 bg-transparent z-20">
+      <div className="md:hidden w-full flex flex-col items-center pt-2 pb-0 bg-transparent z-20">
         <Image
           src="/assets/image/villelogo.png"
           width={110}
@@ -69,8 +69,8 @@ export default function LoginSection() {
         </p>
       </div>
       {/* Right Side - Login Form Section */}
-      <div className="w-full md:w-1/2 flex items-center justify-center bg-blue-200 relative min-h-[60vh] md:min-h-0">
-        <div className="bg-white p-4 md:p-10 rounded-2xl shadow-xl w-[98%] md:w-[500px] max-w-full mx-1 md:mx-4 animate-form-appear mt-4 md:mt-0">
+      <div className="w-full md:w-1/2 flex items-center justify-center bg-blue-200 relative min-h-[55vh] md:min-h-0">
+        <div className="bg-white p-2 md:p-10 rounded-2xl shadow-xl w-[98%] md:w-[500px] max-w-full mx-1 md:mx-4 animate-form-appear mt-1 md:mt-0">
           <LoginForm setIsSignup={setIsSignup} />
         </div>
       </div>

@@ -51,6 +51,8 @@ export default function ChangePassword({ onSuccess }) {
     setPasswordValidation(validation);
   }, [password]);
 
+  const allValid = Object.values(passwordValidation).every(Boolean);
+
   // Close password policy popover on outside click or Escape
   useEffect(() => {
     if (!showPolicy) return;
@@ -75,7 +77,7 @@ export default function ChangePassword({ onSuccess }) {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost/capstone-project/backend/changepassword.php", {
+      const response = await fetch("/php/changepassword.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -189,7 +191,7 @@ export default function ChangePassword({ onSuccess }) {
             <div className="mt-2 text-xs relative">
               <button
                 type="button"
-                className="text-red-600 hover:underline"
+                className={`${allValid ? 'text-green-600' : 'text-gray-600'} hover:underline`}
                 onClick={() => setShowPolicy((p) => !p)}
                 aria-haspopup="dialog"
                 aria-expanded={showPolicy}
@@ -204,7 +206,7 @@ export default function ChangePassword({ onSuccess }) {
                   ref={policyRef}
                   className="absolute z-20 mt-2 right-0 w-72 bg-white border border-gray-200 rounded-lg shadow-lg p-3"
                 >
-                  <p className="text-gray-600 mb-1">Password must contain:</p>
+                  <p className={`${allValid ? 'text-green-600' : 'text-gray-600'} mb-1`}>Password must contain:</p>
                   <div className="space-y-1">
                     <div className={`${passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-600'}`}>One lowercase letter (a-z)</div>
                     <div className={`${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-600'}`}>One uppercase letter (A-Z)</div>

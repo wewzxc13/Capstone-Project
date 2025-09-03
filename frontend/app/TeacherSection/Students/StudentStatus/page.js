@@ -52,16 +52,16 @@ export default function StudentStatus({ student, renderChart, onBack }) {
     const fetchData = async () => {
       try {
         const promises = [
-          fetch("http://localhost/capstone-project/backend/Advisory/get_attendance.php", {
+          fetch("/php/Advisory/get_attendance.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ advisory_id: student.advisory_id })
           }),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch("http://localhost/capstone-project/backend/Assessment/get_visual_feedback.php"),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch(`http://localhost/capstone-project/backend/Assessment/get_milestone_interpretation.php?student_id=${student.student_id}`)
+          fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
+          fetch(`/php/Assessment/get_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
+          fetch("/php/Assessment/get_visual_feedback.php"),
+          fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
+          fetch(`/php/Assessment/get_milestone_interpretation.php?student_id=${student.student_id}`)
         ];
 
         const responses = await Promise.all(promises);
@@ -598,7 +598,7 @@ export default function StudentStatus({ student, renderChart, onBack }) {
                         onClick={async () => {
                           if (!milestoneId) return;
                           try {
-                            const res = await fetch('http://localhost/capstone-project/backend/Assessment/update_milestone_interpretation.php', {
+                            const res = await fetch('/php/Assessment/update_milestone_interpretation.php', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({

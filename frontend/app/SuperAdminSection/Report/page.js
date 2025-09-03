@@ -216,7 +216,7 @@ export default function SuperAdminReportsPage() {
   const fetchAttendanceData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost/capstone-project/backend/Advisory/get_attendance_report_data.php', {
+      const response = await fetch('/php/Advisory/get_attendance_report_data.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -242,7 +242,7 @@ export default function SuperAdminReportsPage() {
      setLoading(true);
      try {
        // Fetch quarterly performance data (using averages for Progress Report)
-       const performanceResponse = await fetch('http://localhost/capstone-project/backend/Assessment/get_all_classes_quarterly_performance_averages.php', {
+       const performanceResponse = await fetch('/php/Assessment/get_all_classes_quarterly_performance_averages.php', {
          method: 'GET',
          headers: {
            'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ export default function SuperAdminReportsPage() {
        });
        
        // Fetch risk level data
-       const riskResponse = await fetch('http://localhost/capstone-project/backend/Assessment/get_risk_level_report_data.php', {
+       const riskResponse = await fetch('/php/Assessment/get_risk_level_report_data.php', {
          method: 'POST',
          headers: {
            'Content-Type': 'application/json',
@@ -313,7 +313,7 @@ export default function SuperAdminReportsPage() {
     setLoading(true);
     try {
       // Fetch risk level data
-      const riskResponse = await fetch('http://localhost/capstone-project/backend/Assessment/get_risk_level_report_data.php', {
+      const riskResponse = await fetch('/php/Assessment/get_risk_level_report_data.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -322,7 +322,7 @@ export default function SuperAdminReportsPage() {
       });
       
       // Fetch subject performance data
-      const subjectResponse = await fetch('http://localhost/capstone-project/backend/Assessment/get_subject_performance_data.php', {
+      const subjectResponse = await fetch('/php/Assessment/get_subject_performance_data.php', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

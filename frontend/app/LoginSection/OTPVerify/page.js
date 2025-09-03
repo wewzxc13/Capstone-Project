@@ -122,7 +122,7 @@ export default function OTPVerify() {
         formData.append("new_password", localStorage.getItem("pendingPassword"));
       }
 
-      const response = await fetch("http://localhost/capstone-project/backend/otpverify.php", {
+      const response = await fetch("/php/otpverify.php", {
         method: "POST",
         body: formData,
       });
@@ -139,7 +139,7 @@ export default function OTPVerify() {
           
           // Add a flag to prevent duplicate logging
           if (!localStorage.getItem("passwordChangeLogged")) {
-            fetch("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+            fetch("/php/Logs/create_system_log.php", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -191,7 +191,7 @@ export default function OTPVerify() {
     }
 
     try {
-      const response = await fetch("http://localhost/capstone-project/backend/send_otp.php", {
+      const response = await fetch("/php/send_otp.php", {
         method: "POST",
         body: formData,
       });

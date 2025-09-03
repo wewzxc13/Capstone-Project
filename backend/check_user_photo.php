@@ -16,8 +16,11 @@ try {
         echo "Photo field: '" . $user['user_photo'] . "'\n";
         echo "Photo field length: " . strlen($user['user_photo']) . "\n";
         
-        if (strpos($user['user_photo'], 'http://localhost/capstone-project/backend/Uploads/') === 0) {
-            echo "❌ Still contains full URL\n";
+        $photo = (string)$user['user_photo'];
+        $looksLikeUrl = preg_match('~^https?://~i', $photo);
+        $looksLikePath = (strpos($photo, '/Uploads/') !== false) || (strpos($photo, '/php/Uploads/') === 0);
+        if ($looksLikeUrl || $looksLikePath) {
+            echo "❌ Still contains full URL or path\n";
         } else {
             echo "✅ Contains filename only\n";
         }

@@ -269,10 +269,10 @@ export default function ViewUserPage() {
     let url = "";
     let body = {};
     if (role === "Student") {
-      url = "http://localhost/capstone-project/backend/Users/get_student_details.php";
+      url = "/php/Users/get_student_details.php";
       body = { student_id: userId };
     } else {
-      url = "http://localhost/capstone-project/backend/Users/get_user_details.php";
+      url = "/php/Users/get_user_details.php";
       body = { user_id: userId };
     }
     fetch(url, {
@@ -292,7 +292,7 @@ export default function ViewUserPage() {
             // Check if student is assigned to an advisory
             let className = "Not assigned yet";
             try {
-              const advisoryResponse = await fetch("http://localhost/capstone-project/backend/Advisory/get_advisory_details.php", {
+              const advisoryResponse = await fetch("/php/Advisory/get_advisory_details.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ student_id: userId }),
@@ -405,7 +405,7 @@ export default function ViewUserPage() {
 
   useEffect(() => {
     if (formData && formData.role === "Teacher" && formData.id) {
-      fetch("http://localhost/capstone-project/backend/Advisory/get_advisory_details.php", {
+      fetch("/php/Advisory/get_advisory_details.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teacher_id: formData.id }),
@@ -766,10 +766,10 @@ export default function ViewUserPage() {
     let url = "";
     if (role === "Student") {
       updateData.student_id = formData.id;
-      url = "http://localhost/capstone-project/backend/Users/update_student.php";
+      url = "/php/Users/update_student.php";
     } else {
       updateData.user_id = formData.id;
-      url = "http://localhost/capstone-project/backend/Users/update_user.php";
+      url = "/php/Users/update_user.php";
     }
     
     if (!changed) {
@@ -797,7 +797,7 @@ export default function ViewUserPage() {
         let action = "";
         if (role === "Student") {
           action = "Edited the details of a student profile.";
-          fetch("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+          fetch("/php/Logs/create_system_log.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -810,7 +810,7 @@ export default function ViewUserPage() {
         } else {
           let article = (role === "Admin") ? "an" : "a";
           action = `Edited the details of ${article} ${role.toLowerCase()} account.`;
-          fetch("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+          fetch("/php/Logs/create_system_log.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -846,7 +846,7 @@ export default function ViewUserPage() {
       if (role === "Parent") {
         try {
           // Get all students linked to this parent
-          const studentsResponse = await fetch(`http://localhost/capstone-project/backend/Users/get_parent_students.php?parent_id=${userId}`, {
+          const studentsResponse = await fetch(`/php/Users/get_parent_students.php?parent_id=${userId}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
@@ -857,7 +857,7 @@ export default function ViewUserPage() {
             // Unlink each student by setting parent_id and parent_profile_id to NULL
             // and set their status to 'Inactive'
             for (const student of studentsData.data.students) {
-              await fetch("http://localhost/capstone-project/backend/Users/update_student.php", {
+              await fetch("/php/Users/update_student.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -881,7 +881,7 @@ export default function ViewUserPage() {
       }
       
       // Proceed with normal archiving
-      const response = await fetch("http://localhost/capstone-project/backend/Users/archive_user.php", {
+      const response = await fetch("/php/Users/archive_user.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -928,7 +928,7 @@ export default function ViewUserPage() {
       let response;
       if (role === "Student") {
         // Restore student using update_student.php
-        response = await fetch("http://localhost/capstone-project/backend/Users/update_student.php", {
+        response = await fetch("/php/Users/update_student.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -939,7 +939,7 @@ export default function ViewUserPage() {
         });
       } else {
         // Restore user using update_user.php
-        response = await fetch("http://localhost/capstone-project/backend/Users/update_user.php", {
+        response = await fetch("/php/Users/update_user.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -1043,7 +1043,7 @@ export default function ViewUserPage() {
               {formData.photo ? (
                 <>
                   <img
-                    src={formData.photo.startsWith('http') ? formData.photo : `http://localhost/capstone-project/backend/Uploads/${formData.photo}`}
+                    src={formData.photo.startsWith('http') ? formData.photo : `/php/Uploads/${formData.photo}`}
                     alt="Profile"
                     className="w-20 h-20 rounded-full object-cover shadow-sm border-2 border-[#a8b0e0]"
                     onError={(e) => {
@@ -1054,7 +1054,7 @@ export default function ViewUserPage() {
                     }}
                     onLoad={() => {
                       console.log('Photo loaded successfully:', formData.photo);
-                      console.log('Photo URL used:', formData.photo.startsWith('http') ? formData.photo : `http://localhost/capstone-project/backend/Uploads/${formData.photo}`);
+                      console.log('Photo URL used:', formData.photo.startsWith('http') ? formData.photo : `/php/Uploads/${formData.photo}`);
                     }}
                   />
                   {/* Fallback icon that shows when photo fails to load */}

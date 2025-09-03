@@ -27,10 +27,8 @@ import { Line } from "react-chartjs-2";
 import '../../../lib/chart-config.js';
 
 const Dashboard = () => {
-  // API Configuration - change this based on your environment
-  const API_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? '/backend' 
-    : 'http://localhost/capstone-project/backend';
+  // API base goes through Next.js rewrite for LAN and localhost
+  const API_BASE_URL = '/php';
     
   const [parentData, setParentData] = useState(null);
   const [students, setStudents] = useState([]);

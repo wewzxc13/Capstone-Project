@@ -92,7 +92,7 @@ export default function SuperAdminSchedulePage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php")
+    fetch("/php/Schedule/get_schedule.php")
       .then((res) => res.json())
       .then((data) => {
         if (data.status === "success") {
@@ -114,13 +114,13 @@ export default function SuperAdminSchedulePage() {
   // Fetch routines and subjects when entering edit mode
   useEffect(() => {
     if (editMode) {
-      fetch("http://localhost/capstone-project/backend/Schedule/get_routines.php")
+      fetch("/php/Schedule/get_routines.php")
         .then((res) => res.json())
         .then((data) => {
           setRoutines(data.routines || []);
           console.log('Fetched routines:', data.routines);
         });
-      fetch("http://localhost/capstone-project/backend/Schedule/get_subjects.php")
+      fetch("/php/Schedule/get_subjects.php")
         .then((res) => res.json())
         .then((data) => {
           setSubjects(data.subjects || []);
@@ -131,13 +131,13 @@ export default function SuperAdminSchedulePage() {
 
   useEffect(() => {
     if (modalOpen) {
-      fetch("http://localhost/capstone-project/backend/Schedule/get_routines.php")
+      fetch("/php/Schedule/get_routines.php")
         .then((res) => res.json())
         .then((data) => {
           setRoutines(data.routines || []);
           console.log('Fetched routines:', data.routines);
         });
-      fetch("http://localhost/capstone-project/backend/Schedule/get_subjects.php")
+      fetch("/php/Schedule/get_subjects.php")
         .then((res) => res.json())
         .then((data) => {
           setSubjects(data.subjects || []);
@@ -152,7 +152,7 @@ export default function SuperAdminSchedulePage() {
   // Fetch subjects and routines when Add Activity modal is opened
   useEffect(() => {
     if (addActivityModalOpen) {
-      fetch("http://localhost/capstone-project/backend/Schedule/get_subjects.php")
+      fetch("/php/Schedule/get_subjects.php")
         .then((res) => res.json())
         .then((data) => {
           setSubjects(data.subjects || []);
@@ -161,7 +161,7 @@ export default function SuperAdminSchedulePage() {
           console.error('Failed to fetch subjects:', err);
         });
       
-      fetch("http://localhost/capstone-project/backend/Schedule/get_routines.php")
+      fetch("/php/Schedule/get_routines.php")
         .then((res) => res.json())
         .then((data) => {
           setRoutines(data.routines || []);
@@ -171,7 +171,7 @@ export default function SuperAdminSchedulePage() {
         });
         
       // Fetch usage data
-      fetch("http://localhost/capstone-project/backend/Schedule/get_schedule_item_usage.php")
+      fetch("/php/Schedule/get_schedule_item_usage.php")
         .then((res) => res.json())
         .then((data) => {
           if (data.status === 'success') {
@@ -336,10 +336,10 @@ export default function SuperAdminSchedulePage() {
   // In editMode useEffect, only fetch routines/subjects if pendingEdit is true
   useEffect(() => {
     if (pendingEdit) {
-      fetch("http://localhost/capstone-project/backend/Schedule/get_routines.php")
+      fetch("/php/Schedule/get_routines.php")
         .then((res) => res.json())
         .then((data) => setRoutines(data.routines || []));
-      fetch("http://localhost/capstone-project/backend/Schedule/get_subjects.php")
+      fetch("/php/Schedule/get_subjects.php")
         .then((res) => res.json())
         .then((data) => setSubjects(data.subjects || []));
     }
@@ -404,7 +404,7 @@ export default function SuperAdminSchedulePage() {
       updates
     };
     try {
-      const res = await fetch("http://localhost/capstone-project/backend/Schedule/update_schedule_items.php", {
+      const res = await fetch("/php/Schedule/update_schedule_items.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -412,7 +412,7 @@ export default function SuperAdminSchedulePage() {
       const data = await res.json();
       if (data.status === "success") {
         setLoading(true);
-        fetch("http://localhost/capstone-project/backend/Schedule/get_schedule.php")
+        fetch("/php/Schedule/get_schedule.php")
           .then((res) => res.json())
           .then((data) => {
             if (data.status === "success") {
@@ -1058,7 +1058,7 @@ export default function SuperAdminSchedulePage() {
               };
               console.log('Update payload:', payload);
               try {
-                const res = await fetch('http://localhost/capstone-project/backend/Schedule/update_schedule_item.php', {
+                const res = await fetch('/php/Schedule/update_schedule_item.php', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(payload)
@@ -1074,7 +1074,7 @@ export default function SuperAdminSchedulePage() {
                     setSavingModal(false);
                     setLoading(true);
                     // Refresh schedule
-                    fetch('http://localhost/capstone-project/backend/Schedule/get_schedule.php')
+                    fetch('/php/Schedule/get_schedule.php')
                       .then(res => res.json())
                       .then(data => {
                         if (data.status === 'success') {
@@ -1441,7 +1441,7 @@ export default function SuperAdminSchedulePage() {
             
             setSavingActivity(true);
             try {
-              const response = await fetch('http://localhost/capstone-project/backend/Schedule/add_schedule_item.php', {
+              const response = await fetch('/php/Schedule/add_schedule_item.php', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1461,13 +1461,13 @@ export default function SuperAdminSchedulePage() {
                 
                 // Refresh the lists
                 if (activityType === 'subject') {
-                  const subjectsResponse = await fetch("http://localhost/capstone-project/backend/Schedule/get_subjects.php");
+                  const subjectsResponse = await fetch("/php/Schedule/get_subjects.php");
                   const subjectsData = await subjectsResponse.json();
                   if (subjectsData.subjects) {
                     setSubjects(subjectsData.subjects);
                   }
                 } else {
-                  const routinesResponse = await fetch("http://localhost/capstone-project/backend/Schedule/get_routines.php");
+                  const routinesResponse = await fetch("/php/Schedule/get_routines.php");
                   const routinesData = await routinesResponse.json();
                   if (routinesData.routines) {
                     setRoutines(routinesData.routines);
@@ -1567,7 +1567,7 @@ export default function SuperAdminSchedulePage() {
               
               setSavingEdit(true);
               try {
-                const response = await fetch('http://localhost/capstone-project/backend/Schedule/edit_schedule_item.php', {
+                const response = await fetch('/php/Schedule/edit_schedule_item.php', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -1588,13 +1588,13 @@ export default function SuperAdminSchedulePage() {
                   
                   // Refresh the lists
                   if (editingItem.type === 'subject') {
-                    const subjectsResponse = await fetch("http://localhost/capstone-project/backend/Schedule/get_subjects.php");
+                    const subjectsResponse = await fetch("/php/Schedule/get_subjects.php");
                     const subjectsData = await subjectsResponse.json();
                     if (subjectsData.subjects) {
                       setSubjects(subjectsData.subjects);
                     }
                   } else {
-                    const routinesResponse = await fetch("http://localhost/capstone-project/backend/Schedule/get_routines.php");
+                    const routinesResponse = await fetch("/php/Schedule/get_routines.php");
                     const routinesData = await routinesResponse.json();
                     if (routinesData.routines) {
                       setRoutines(routinesData.routines);
@@ -1725,7 +1725,7 @@ export default function SuperAdminSchedulePage() {
                 onClick={async () => {
                   setSavingDelete(true);
                   try {
-                    const response = await fetch('http://localhost/capstone-project/backend/Schedule/delete_schedule_item.php', {
+                    const response = await fetch('/php/Schedule/delete_schedule_item.php', {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
@@ -1745,13 +1745,13 @@ export default function SuperAdminSchedulePage() {
                       
                       // Refresh the lists and usage data
                       if (deletingItem.type === 'subject') {
-                        const subjectsResponse = await fetch("http://localhost/capstone-project/backend/Schedule/get_subjects.php");
+                        const subjectsResponse = await fetch("/php/Schedule/get_subjects.php");
                         const subjectsData = await subjectsResponse.json();
                         if (subjectsData.subjects) {
                           setSubjects(subjectsData.subjects);
                         }
                       } else {
-                        const routinesResponse = await fetch("http://localhost/capstone-project/backend/Schedule/get_routines.php");
+                        const routinesResponse = await fetch("/php/Schedule/get_routines.php");
                         const routinesData = await routinesResponse.json();
                         if (routinesData.routines) {
                           setRoutines(routinesData.routines);
@@ -1759,7 +1759,7 @@ export default function SuperAdminSchedulePage() {
                       }
                       
                       // Refresh usage data
-                      const usageResponse = await fetch("http://localhost/capstone-project/backend/Schedule/get_schedule_item_usage.php");
+                      const usageResponse = await fetch("/php/Schedule/get_schedule_item_usage.php");
                       const usageData = await usageResponse.json();
                       if (usageData.status === 'success') {
                         setUsedSubjectIds(new Set(usageData.data.used_subject_ids.map(String)));

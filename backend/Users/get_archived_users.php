@@ -73,7 +73,7 @@ try {
             'birthdate' => $user['user_birthdate'],
             'status' => $user['user_status'],
             'role' => $user['role_name'] ?? 'Unknown Role',
-            'photo' => $user['user_photo'] ? 'http://localhost/capstone-project/backend/Uploads/' . $user['user_photo'] : null
+            'photo' => $user['user_photo'] ? $user['user_photo'] : null
         ];
 
         // Add user to appropriate role group
@@ -170,7 +170,7 @@ try {
             'levelName' => $levelName,
             'parent_id' => $student['parent_id'],
             'role' => 'Student',
-            'photo' => $student['stud_photo'] ? 'http://localhost/capstone-project/backend/Uploads/' . $student['stud_photo'] : null
+            'photo' => $student['stud_photo'] ? $student['stud_photo'] : null
         ];
 
         $response['users']['Student'][] = $studentData;

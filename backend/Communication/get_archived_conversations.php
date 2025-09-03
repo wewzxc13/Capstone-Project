@@ -61,12 +61,20 @@ try {
 
     // Process each user to include photo URLs
     foreach ($rows as &$row) {
-        // Add photo field with exact same logic as get_users.php
-        $row['user_photo'] = $row['user_photo'] ? 'http://localhost/capstone-project/backend/Uploads/' . $row['user_photo'] : 
-                     (($row['role_name'] === 'Admin') ? 'http://localhost/capstone-project/backend/Uploads/default_admin.png' :
-                      (($row['role_name'] === 'Teacher') ? 'http://localhost/capstone-project/backend/Uploads/default_teacher.png' :
-                      (($row['role_name'] === 'Parent') ? 'http://localhost/capstone-project/backend/Uploads/default_parent.png' : 
-                       'http://localhost/capstone-project/backend/Uploads/default_owner.png')));
+        if (!empty($row['user_photo'])) {
+            $parts = explode('/', (string)$row['user_photo']);
+            $row['user_photo'] = end($parts);
+        } else {
+            if ($row['role_name'] === 'Admin') {
+                $row['user_photo'] = 'default_admin.png';
+            } else if ($row['role_name'] === 'Teacher') {
+                $row['user_photo'] = 'default_teacher.png';
+            } else if ($row['role_name'] === 'Parent') {
+                $row['user_photo'] = 'default_parent.png';
+            } else {
+                $row['user_photo'] = 'default_owner.png';
+            }
+        }
     }
 
     $response['success'] = true;

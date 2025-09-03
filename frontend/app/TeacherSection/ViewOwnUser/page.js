@@ -270,7 +270,7 @@ export default function ViewOwnUserPage() {
       }
 
       try {
-        const response = await fetch('http://localhost/capstone-project/backend/Users/get_user_details.php', {
+        const response = await fetch('/php/Users/get_user_details.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: userId }),
@@ -305,7 +305,7 @@ export default function ViewOwnUserPage() {
               }
               
               // If it's just a filename, construct the full backend URL
-              return `http://localhost/capstone-project/backend/Uploads/${photo}`;
+              return `/php/Uploads/${photo}`;
             })()
           };
           
@@ -477,7 +477,7 @@ export default function ViewOwnUserPage() {
         try {
           const form = new FormData();
           form.append('photo', selectedPhoto);
-          const uploadRes = await fetch('http://localhost/capstone-project/backend/Users/upload_photo.php', {
+          const uploadRes = await fetch('/php/Users/upload_photo.php', {
             method: 'POST',
             body: form,
           });
@@ -514,7 +514,7 @@ export default function ViewOwnUserPage() {
           
           const form = new FormData();
           form.append('photo', file);
-          const uploadRes = await fetch('http://localhost/capstone-project/backend/Users/upload_photo.php', {
+          const uploadRes = await fetch('/php/Users/upload_photo.php', {
             method: 'POST',
             body: form,
           });
@@ -562,7 +562,7 @@ export default function ViewOwnUserPage() {
         }
       }
 
-      const response = await fetch('http://localhost/capstone-project/backend/Users/update_user.php', {
+      const response = await fetch('/php/Users/update_user.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -584,7 +584,7 @@ export default function ViewOwnUserPage() {
         // Update the photo in formData if a new photo was uploaded
         if (uploadedPhotoUrl !== undefined) {
           // Construct full URL for the uploaded photo
-          const fullPhotoUrl = `http://localhost/capstone-project/backend/Uploads/${uploadedPhotoUrl}`;
+          const fullPhotoUrl = `/php/Uploads/${uploadedPhotoUrl}`;
           setFormData(prev => ({ ...prev, user_photo: fullPhotoUrl }));
           // Update the user photo in UserContext for real-time display in Topbar
           updateUserPhoto(uploadedPhotoUrl);
@@ -592,7 +592,7 @@ export default function ViewOwnUserPage() {
           const userId = localStorage.getItem("userId");
           if (userId) {
             // Construct the full URL for the uploaded photo
-            const fullPhotoUrl = `http://localhost/capstone-project/backend/Uploads/${uploadedPhotoUrl}`;
+            const fullPhotoUrl = `/php/Uploads/${uploadedPhotoUrl}`;
             updateAnyUserPhoto(userId, fullPhotoUrl);
             console.log('Updated global photo map for user:', userId, 'with URL:', fullPhotoUrl);
           }
@@ -600,7 +600,7 @@ export default function ViewOwnUserPage() {
         } else if (dataToSend.user_photo && dataToSend.user_photo !== formData.user_photo) {
           // Handle case where preview photo was uploaded (different from original)
           // Construct full URL for the preview photo
-          const fullPhotoUrl = `http://localhost/capstone-project/backend/Uploads/${dataToSend.user_photo}`;
+          const fullPhotoUrl = `/php/Uploads/${dataToSend.user_photo}`;
           setFormData(prev => ({ ...prev, user_photo: fullPhotoUrl }));
           // Update the user photo in UserContext for real-time display in Topbar
           updateUserPhoto(dataToSend.user_photo);
@@ -608,7 +608,7 @@ export default function ViewOwnUserPage() {
           const userId = localStorage.getItem("userId");
           if (userId) {
             // Construct the full URL for the preview photo
-            const fullPhotoUrl = `http://localhost/capstone-project/backend/Uploads/${dataToSend.user_photo}`;
+            const fullPhotoUrl = `/php/Uploads/${dataToSend.user_photo}`;
             updateAnyUserPhoto(userId, fullPhotoUrl);
             console.log('Updated global photo map for user:', userId, 'with preview photo URL:', fullPhotoUrl);
           }
@@ -616,7 +616,7 @@ export default function ViewOwnUserPage() {
         }
 
         // System log for self-update (no notification)
-        fetch("http://localhost/capstone-project/backend/Logs/create_system_log.php", {
+        fetch("/php/Logs/create_system_log.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
