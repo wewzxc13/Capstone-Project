@@ -1,0 +1,336 @@
+UNIQUE DEBUG LINE AT TOP
+POST DATA: {"student_id":2,"advisory_id":1,"quarter_id":1,"user_id":"27"}
+DEBUG: Entered foreach for student 2
+DEBUG: Feedbacks found: 4, Subjects needed: 4
+{"advisory_id":1,"student_id":2,"quarter_id":1,"subjects":[2,4,6,1],"feedbacks":[{"subject_id":1,"visual_feedback_id":3},{"subject_id":2,"visual_feedback_id":1},{"subject_id":4,"visual_feedback_id":2},{"subject_id":6,"visual_feedback_id":3}],"shapeScores":[2.9995,4.6,3.7995,2.9995],"averageScore":3.6,"quarter_avg_score":78.261,"quarter_visual_feedback_id":2,"risk_id":1,"finalized_by":"27"}
+=== INSERT ATTEMPT START ===
+student_id: 2
+advisory_id: 1
+quarter_id: 1
+quarter_visual_feedback_id: 2
+risk_id: 1
+quarter_avg_score: 78.261
+finalized_by: '27'
+Insert SQL: INSERT INTO tbl_progress_cards (student_id, advisory_id, quarter_id, quarter_visual_feedback_id, risk_id, quarter_avg_score, is_finalized, finalized_by, report_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW()) ON DUPLICATE KEY UPDATE quarter_visual_feedback_id=VALUES(quarter_visual_feedback_id), risk_id=VALUES(risk_id), quarter_avg_score=VALUES(quarter_avg_score), is_finalized=1, finalized_by=VALUES(finalized_by), report_date=VALUES(report_date)
+Params: [2,1,1,2,1,78.261,"27"]
+OK: 1, Affected: 1
+=== INSERT ATTEMPT END ===
+
+=== NOTIFICATION CREATION START ===
+Student ID: 2, Quarter ID: 1, Teacher ID: 27
+Check Query: 
+                SELECT n.notification_id 
+                FROM tbl_notifications n
+                INNER JOIN tbl_notification_recipients nr ON n.notification_id = nr.notification_id
+                INNER JOIN tbl_progress_notification pn ON n.notification_id = pn.notification_id
+                WHERE n.created_by = ? 
+                AND nr.recipient_type = 'Teacher' 
+                AND nr.user_id = ?
+                AND pn.student_id = ?
+                AND pn.quarter_id = ?
+                AND n.notif_message LIKE '%[QUARTERLY PROGRESS]%'
+            
+Check Params: ["27","27",2,1]
+Existing notification found: NO
+Creating new notification
+Inserted into tbl_notifications, ID: 127
+Parent row: {"parent_id":6}
+Inserted parent recipient
+Inserted teacher recipient
+Inserted into tbl_progress_notification
+=== NOTIFICATION CREATION SUCCESS ===
+SUCCESS: Progress card(s) inserted/updated for: Mia Santiago Tan
+UNIQUE DEBUG LINE AT TOP
+POST DATA: {"student_id":2,"advisory_id":1,"quarter_id":2,"user_id":"27"}
+DEBUG: Entered foreach for student 2
+DEBUG: Feedbacks found: 4, Subjects needed: 4
+{"advisory_id":1,"student_id":2,"quarter_id":2,"subjects":[2,4,6,1],"feedbacks":[{"subject_id":1,"visual_feedback_id":4},{"subject_id":2,"visual_feedback_id":1},{"subject_id":4,"visual_feedback_id":4},{"subject_id":6,"visual_feedback_id":1}],"shapeScores":[2.1995,4.6,2.1995,4.6],"averageScore":3.4,"quarter_avg_score":73.913,"quarter_visual_feedback_id":2,"risk_id":1,"finalized_by":"27"}
+=== INSERT ATTEMPT START ===
+student_id: 2
+advisory_id: 1
+quarter_id: 2
+quarter_visual_feedback_id: 2
+risk_id: 1
+quarter_avg_score: 73.913
+finalized_by: '27'
+Insert SQL: INSERT INTO tbl_progress_cards (student_id, advisory_id, quarter_id, quarter_visual_feedback_id, risk_id, quarter_avg_score, is_finalized, finalized_by, report_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW()) ON DUPLICATE KEY UPDATE quarter_visual_feedback_id=VALUES(quarter_visual_feedback_id), risk_id=VALUES(risk_id), quarter_avg_score=VALUES(quarter_avg_score), is_finalized=1, finalized_by=VALUES(finalized_by), report_date=VALUES(report_date)
+Params: [2,1,2,2,1,73.913,"27"]
+OK: 1, Affected: 1
+=== INSERT ATTEMPT END ===
+
+=== NOTIFICATION CREATION START ===
+Student ID: 2, Quarter ID: 2, Teacher ID: 27
+Check Query: 
+                SELECT n.notification_id 
+                FROM tbl_notifications n
+                INNER JOIN tbl_notification_recipients nr ON n.notification_id = nr.notification_id
+                INNER JOIN tbl_progress_notification pn ON n.notification_id = pn.notification_id
+                WHERE n.created_by = ? 
+                AND nr.recipient_type = 'Teacher' 
+                AND nr.user_id = ?
+                AND pn.student_id = ?
+                AND pn.quarter_id = ?
+                AND n.notif_message LIKE '%[QUARTERLY PROGRESS]%'
+            
+Check Params: ["27","27",2,2]
+Existing notification found: NO
+Creating new notification
+Inserted into tbl_notifications, ID: 128
+Parent row: {"parent_id":6}
+Inserted parent recipient
+Inserted teacher recipient
+Inserted into tbl_progress_notification
+=== NOTIFICATION CREATION SUCCESS ===
+SUCCESS: Progress card(s) inserted/updated for: Mia Santiago Tan
+UNIQUE DEBUG LINE AT TOP
+POST DATA: {"student_id":2,"advisory_id":1,"quarter_id":3,"user_id":"27"}
+DEBUG: Entered foreach for student 2
+DEBUG: Feedbacks found: 4, Subjects needed: 4
+{"advisory_id":1,"student_id":2,"quarter_id":3,"subjects":[2,4,6,1],"feedbacks":[{"subject_id":1,"visual_feedback_id":1},{"subject_id":2,"visual_feedback_id":1},{"subject_id":4,"visual_feedback_id":3},{"subject_id":6,"visual_feedback_id":3}],"shapeScores":[4.6,4.6,2.9995,2.9995],"averageScore":3.8,"quarter_avg_score":82.609,"quarter_visual_feedback_id":2,"risk_id":1,"finalized_by":"27"}
+=== INSERT ATTEMPT START ===
+student_id: 2
+advisory_id: 1
+quarter_id: 3
+quarter_visual_feedback_id: 2
+risk_id: 1
+quarter_avg_score: 82.609
+finalized_by: '27'
+Insert SQL: INSERT INTO tbl_progress_cards (student_id, advisory_id, quarter_id, quarter_visual_feedback_id, risk_id, quarter_avg_score, is_finalized, finalized_by, report_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW()) ON DUPLICATE KEY UPDATE quarter_visual_feedback_id=VALUES(quarter_visual_feedback_id), risk_id=VALUES(risk_id), quarter_avg_score=VALUES(quarter_avg_score), is_finalized=1, finalized_by=VALUES(finalized_by), report_date=VALUES(report_date)
+Params: [2,1,3,2,1,82.609,"27"]
+OK: 1, Affected: 1
+=== INSERT ATTEMPT END ===
+
+=== NOTIFICATION CREATION START ===
+Student ID: 2, Quarter ID: 3, Teacher ID: 27
+Check Query: 
+                SELECT n.notification_id 
+                FROM tbl_notifications n
+                INNER JOIN tbl_notification_recipients nr ON n.notification_id = nr.notification_id
+                INNER JOIN tbl_progress_notification pn ON n.notification_id = pn.notification_id
+                WHERE n.created_by = ? 
+                AND nr.recipient_type = 'Teacher' 
+                AND nr.user_id = ?
+                AND pn.student_id = ?
+                AND pn.quarter_id = ?
+                AND n.notif_message LIKE '%[QUARTERLY PROGRESS]%'
+            
+Check Params: ["27","27",2,3]
+Existing notification found: NO
+Creating new notification
+Inserted into tbl_notifications, ID: 129
+Parent row: {"parent_id":6}
+Inserted parent recipient
+Inserted teacher recipient
+Inserted into tbl_progress_notification
+=== NOTIFICATION CREATION SUCCESS ===
+SUCCESS: Progress card(s) inserted/updated for: Mia Santiago Tan
+UNIQUE DEBUG LINE AT TOP
+POST DATA: {"student_id":2,"advisory_id":1,"quarter_id":4,"user_id":"27"}
+DEBUG: Entered foreach for student 2
+DEBUG: Feedbacks found: 4, Subjects needed: 4
+{"advisory_id":1,"student_id":2,"quarter_id":4,"subjects":[2,4,6,1],"feedbacks":[{"subject_id":1,"visual_feedback_id":4},{"subject_id":2,"visual_feedback_id":4},{"subject_id":4,"visual_feedback_id":1},{"subject_id":6,"visual_feedback_id":2}],"shapeScores":[2.1995,2.1995,4.6,3.7995],"averageScore":3.2,"quarter_avg_score":69.565,"quarter_visual_feedback_id":3,"risk_id":2,"finalized_by":"27"}
+=== INSERT ATTEMPT START ===
+student_id: 2
+advisory_id: 1
+quarter_id: 4
+quarter_visual_feedback_id: 3
+risk_id: 2
+quarter_avg_score: 69.565
+finalized_by: '27'
+Insert SQL: INSERT INTO tbl_progress_cards (student_id, advisory_id, quarter_id, quarter_visual_feedback_id, risk_id, quarter_avg_score, is_finalized, finalized_by, report_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW()) ON DUPLICATE KEY UPDATE quarter_visual_feedback_id=VALUES(quarter_visual_feedback_id), risk_id=VALUES(risk_id), quarter_avg_score=VALUES(quarter_avg_score), is_finalized=1, finalized_by=VALUES(finalized_by), report_date=VALUES(report_date)
+Params: [2,1,4,3,2,69.565,"27"]
+OK: 1, Affected: 1
+=== INSERT ATTEMPT END ===
+
+=== NOTIFICATION CREATION START ===
+Student ID: 2, Quarter ID: 4, Teacher ID: 27
+Check Query: 
+                SELECT n.notification_id 
+                FROM tbl_notifications n
+                INNER JOIN tbl_notification_recipients nr ON n.notification_id = nr.notification_id
+                INNER JOIN tbl_progress_notification pn ON n.notification_id = pn.notification_id
+                WHERE n.created_by = ? 
+                AND nr.recipient_type = 'Teacher' 
+                AND nr.user_id = ?
+                AND pn.student_id = ?
+                AND pn.quarter_id = ?
+                AND n.notif_message LIKE '%[QUARTERLY PROGRESS]%'
+            
+Check Params: ["27","27",2,4]
+Existing notification found: NO
+Creating new notification
+Inserted into tbl_notifications, ID: 130
+Parent row: {"parent_id":6}
+Inserted parent recipient
+Inserted teacher recipient
+Inserted into tbl_progress_notification
+=== NOTIFICATION CREATION SUCCESS ===
+SUCCESS: Progress card(s) inserted/updated for: Mia Santiago Tan
+UNIQUE DEBUG LINE AT TOP
+POST DATA: {"student_id":15,"advisory_id":1,"quarter_id":1,"user_id":"27"}
+DEBUG: Entered foreach for student 15
+DEBUG: Feedbacks found: 4, Subjects needed: 4
+{"advisory_id":1,"student_id":15,"quarter_id":1,"subjects":[2,4,6,1],"feedbacks":[{"subject_id":1,"visual_feedback_id":2},{"subject_id":2,"visual_feedback_id":1},{"subject_id":4,"visual_feedback_id":1},{"subject_id":6,"visual_feedback_id":1}],"shapeScores":[3.7995,4.6,4.6,4.6],"averageScore":4.4,"quarter_avg_score":95.652,"quarter_visual_feedback_id":1,"risk_id":1,"finalized_by":"27"}
+=== INSERT ATTEMPT START ===
+student_id: 15
+advisory_id: 1
+quarter_id: 1
+quarter_visual_feedback_id: 1
+risk_id: 1
+quarter_avg_score: 95.652
+finalized_by: '27'
+Insert SQL: INSERT INTO tbl_progress_cards (student_id, advisory_id, quarter_id, quarter_visual_feedback_id, risk_id, quarter_avg_score, is_finalized, finalized_by, report_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW()) ON DUPLICATE KEY UPDATE quarter_visual_feedback_id=VALUES(quarter_visual_feedback_id), risk_id=VALUES(risk_id), quarter_avg_score=VALUES(quarter_avg_score), is_finalized=1, finalized_by=VALUES(finalized_by), report_date=VALUES(report_date)
+Params: [15,1,1,1,1,95.652,"27"]
+OK: 1, Affected: 1
+=== INSERT ATTEMPT END ===
+
+=== NOTIFICATION CREATION START ===
+Student ID: 15, Quarter ID: 1, Teacher ID: 27
+Check Query: 
+                SELECT n.notification_id 
+                FROM tbl_notifications n
+                INNER JOIN tbl_notification_recipients nr ON n.notification_id = nr.notification_id
+                INNER JOIN tbl_progress_notification pn ON n.notification_id = pn.notification_id
+                WHERE n.created_by = ? 
+                AND nr.recipient_type = 'Teacher' 
+                AND nr.user_id = ?
+                AND pn.student_id = ?
+                AND pn.quarter_id = ?
+                AND n.notif_message LIKE '%[QUARTERLY PROGRESS]%'
+            
+Check Params: ["27","27",15,1]
+Existing notification found: NO
+Creating new notification
+Inserted into tbl_notifications, ID: 132
+Parent row: {"parent_id":30}
+Inserted parent recipient
+Inserted teacher recipient
+Inserted into tbl_progress_notification
+=== NOTIFICATION CREATION SUCCESS ===
+SUCCESS: Progress card(s) inserted/updated for: Jen Cabug
+UNIQUE DEBUG LINE AT TOP
+POST DATA: {"student_id":15,"advisory_id":1,"quarter_id":2,"user_id":"27"}
+DEBUG: Entered foreach for student 15
+DEBUG: Feedbacks found: 4, Subjects needed: 4
+{"advisory_id":1,"student_id":15,"quarter_id":2,"subjects":[2,4,6,1],"feedbacks":[{"subject_id":1,"visual_feedback_id":1},{"subject_id":2,"visual_feedback_id":2},{"subject_id":4,"visual_feedback_id":1},{"subject_id":6,"visual_feedback_id":2}],"shapeScores":[4.6,3.7995,4.6,3.7995],"averageScore":4.2,"quarter_avg_score":91.304,"quarter_visual_feedback_id":1,"risk_id":1,"finalized_by":"27"}
+=== INSERT ATTEMPT START ===
+student_id: 15
+advisory_id: 1
+quarter_id: 2
+quarter_visual_feedback_id: 1
+risk_id: 1
+quarter_avg_score: 91.304
+finalized_by: '27'
+Insert SQL: INSERT INTO tbl_progress_cards (student_id, advisory_id, quarter_id, quarter_visual_feedback_id, risk_id, quarter_avg_score, is_finalized, finalized_by, report_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW()) ON DUPLICATE KEY UPDATE quarter_visual_feedback_id=VALUES(quarter_visual_feedback_id), risk_id=VALUES(risk_id), quarter_avg_score=VALUES(quarter_avg_score), is_finalized=1, finalized_by=VALUES(finalized_by), report_date=VALUES(report_date)
+Params: [15,1,2,1,1,91.304,"27"]
+OK: 1, Affected: 1
+=== INSERT ATTEMPT END ===
+
+=== NOTIFICATION CREATION START ===
+Student ID: 15, Quarter ID: 2, Teacher ID: 27
+Check Query: 
+                SELECT n.notification_id 
+                FROM tbl_notifications n
+                INNER JOIN tbl_notification_recipients nr ON n.notification_id = nr.notification_id
+                INNER JOIN tbl_progress_notification pn ON n.notification_id = pn.notification_id
+                WHERE n.created_by = ? 
+                AND nr.recipient_type = 'Teacher' 
+                AND nr.user_id = ?
+                AND pn.student_id = ?
+                AND pn.quarter_id = ?
+                AND n.notif_message LIKE '%[QUARTERLY PROGRESS]%'
+            
+Check Params: ["27","27",15,2]
+Existing notification found: NO
+Creating new notification
+Inserted into tbl_notifications, ID: 133
+Parent row: {"parent_id":30}
+Inserted parent recipient
+Inserted teacher recipient
+Inserted into tbl_progress_notification
+=== NOTIFICATION CREATION SUCCESS ===
+SUCCESS: Progress card(s) inserted/updated for: Jen Cabug
+UNIQUE DEBUG LINE AT TOP
+POST DATA: {"student_id":15,"advisory_id":1,"quarter_id":3,"user_id":"27"}
+DEBUG: Entered foreach for student 15
+DEBUG: Feedbacks found: 4, Subjects needed: 4
+{"advisory_id":1,"student_id":15,"quarter_id":3,"subjects":[2,4,6,1],"feedbacks":[{"subject_id":1,"visual_feedback_id":1},{"subject_id":2,"visual_feedback_id":1},{"subject_id":4,"visual_feedback_id":1},{"subject_id":6,"visual_feedback_id":1}],"shapeScores":[4.6,4.6,4.6,4.6],"averageScore":4.6,"quarter_avg_score":100,"quarter_visual_feedback_id":1,"risk_id":1,"finalized_by":"27"}
+=== INSERT ATTEMPT START ===
+student_id: 15
+advisory_id: 1
+quarter_id: 3
+quarter_visual_feedback_id: 1
+risk_id: 1
+quarter_avg_score: 100.0
+finalized_by: '27'
+Insert SQL: INSERT INTO tbl_progress_cards (student_id, advisory_id, quarter_id, quarter_visual_feedback_id, risk_id, quarter_avg_score, is_finalized, finalized_by, report_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW()) ON DUPLICATE KEY UPDATE quarter_visual_feedback_id=VALUES(quarter_visual_feedback_id), risk_id=VALUES(risk_id), quarter_avg_score=VALUES(quarter_avg_score), is_finalized=1, finalized_by=VALUES(finalized_by), report_date=VALUES(report_date)
+Params: [15,1,3,1,1,100,"27"]
+OK: 1, Affected: 1
+=== INSERT ATTEMPT END ===
+
+=== NOTIFICATION CREATION START ===
+Student ID: 15, Quarter ID: 3, Teacher ID: 27
+Check Query: 
+                SELECT n.notification_id 
+                FROM tbl_notifications n
+                INNER JOIN tbl_notification_recipients nr ON n.notification_id = nr.notification_id
+                INNER JOIN tbl_progress_notification pn ON n.notification_id = pn.notification_id
+                WHERE n.created_by = ? 
+                AND nr.recipient_type = 'Teacher' 
+                AND nr.user_id = ?
+                AND pn.student_id = ?
+                AND pn.quarter_id = ?
+                AND n.notif_message LIKE '%[QUARTERLY PROGRESS]%'
+            
+Check Params: ["27","27",15,3]
+Existing notification found: NO
+Creating new notification
+Inserted into tbl_notifications, ID: 134
+Parent row: {"parent_id":30}
+Inserted parent recipient
+Inserted teacher recipient
+Inserted into tbl_progress_notification
+=== NOTIFICATION CREATION SUCCESS ===
+SUCCESS: Progress card(s) inserted/updated for: Jen Cabug
+UNIQUE DEBUG LINE AT TOP
+POST DATA: {"student_id":15,"advisory_id":1,"quarter_id":4,"user_id":"27"}
+DEBUG: Entered foreach for student 15
+DEBUG: Feedbacks found: 4, Subjects needed: 4
+{"advisory_id":1,"student_id":15,"quarter_id":4,"subjects":[2,4,6,1],"feedbacks":[{"subject_id":1,"visual_feedback_id":3},{"subject_id":2,"visual_feedback_id":1},{"subject_id":4,"visual_feedback_id":1},{"subject_id":6,"visual_feedback_id":2}],"shapeScores":[2.9995,4.6,4.6,3.7995],"averageScore":4,"quarter_avg_score":86.957,"quarter_visual_feedback_id":2,"risk_id":1,"finalized_by":"27"}
+=== INSERT ATTEMPT START ===
+student_id: 15
+advisory_id: 1
+quarter_id: 4
+quarter_visual_feedback_id: 2
+risk_id: 1
+quarter_avg_score: 86.957
+finalized_by: '27'
+Insert SQL: INSERT INTO tbl_progress_cards (student_id, advisory_id, quarter_id, quarter_visual_feedback_id, risk_id, quarter_avg_score, is_finalized, finalized_by, report_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW()) ON DUPLICATE KEY UPDATE quarter_visual_feedback_id=VALUES(quarter_visual_feedback_id), risk_id=VALUES(risk_id), quarter_avg_score=VALUES(quarter_avg_score), is_finalized=1, finalized_by=VALUES(finalized_by), report_date=VALUES(report_date)
+Params: [15,1,4,2,1,86.957,"27"]
+OK: 1, Affected: 1
+=== INSERT ATTEMPT END ===
+
+=== NOTIFICATION CREATION START ===
+Student ID: 15, Quarter ID: 4, Teacher ID: 27
+Check Query: 
+                SELECT n.notification_id 
+                FROM tbl_notifications n
+                INNER JOIN tbl_notification_recipients nr ON n.notification_id = nr.notification_id
+                INNER JOIN tbl_progress_notification pn ON n.notification_id = pn.notification_id
+                WHERE n.created_by = ? 
+                AND nr.recipient_type = 'Teacher' 
+                AND nr.user_id = ?
+                AND pn.student_id = ?
+                AND pn.quarter_id = ?
+                AND n.notif_message LIKE '%[QUARTERLY PROGRESS]%'
+            
+Check Params: ["27","27",15,4]
+Existing notification found: NO
+Creating new notification
+Inserted into tbl_notifications, ID: 135
+Parent row: {"parent_id":30}
+Inserted parent recipient
+Inserted teacher recipient
+Inserted into tbl_progress_notification
+=== NOTIFICATION CREATION SUCCESS ===
+SUCCESS: Progress card(s) inserted/updated for: Jen Cabug

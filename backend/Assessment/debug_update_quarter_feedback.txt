@@ -1,0 +1,42 @@
+Received: student_id=13, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":null},{"visual_feedback_id":1}]
+Total=4.6, Count=1
+Average=4.6
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1
+Received: student_id=13, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":2},{"visual_feedback_id":1}]
+Total=8.399, Count=2
+Average=4.2
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1
+Received: student_id=13, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":2},{"visual_feedback_id":1},{"visual_feedback_id":1}]
+Total=12.999, Count=3
+Average=4.333
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1
+Received: student_id=13, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":2},{"visual_feedback_id":1},{"visual_feedback_id":1},{"visual_feedback_id":2}]
+Total=16.798, Count=4
+Average=4.2
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1
+Received: student_id=13, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":2},{"visual_feedback_id":1},{"visual_feedback_id":1},{"visual_feedback_id":2},{"visual_feedback_id":1}]
+Total=21.398, Count=5
+Average=4.28
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1
+Received: student_id=13, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":2},{"visual_feedback_id":1},{"visual_feedback_id":1},{"visual_feedback_id":2},{"visual_feedback_id":1},{"visual_feedback_id":1}]
+Total=25.998, Count=6
+Average=4.333
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1
+Received: student_id=13, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":2},{"visual_feedback_id":1},{"visual_feedback_id":1},{"visual_feedback_id":2},{"visual_feedback_id":1},{"visual_feedback_id":1},{"visual_feedback_id":1}]
+Total=30.598, Count=7
+Average=4.371
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1

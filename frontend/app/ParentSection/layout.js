@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import ParentSidebar from "../Sidebar/ParentSidebar";
 import Topbar from "../Topbar/Topbar";
 import { usePathname } from "next/navigation";
@@ -42,8 +43,8 @@ export default function ParentSectionLayout({ children }) {
   return (
     <ProtectedRoute role="Parent">
       <div className="flex h-screen bg-[#f4f9ff] overflow-hidden select-none caret-transparent">
-        {/* Desktop collapse/expand toggle */}
-        {!isChangePassword && (
+        {/* Desktop collapse/expand toggle (hidden on Message and ChangePassword) */}
+        {!isChangePassword && !isMessagePage && (
           <button
             className={`hidden md:flex fixed top-6 z-40 ${isSidebarOpen ? "left-64 -translate-x-1/2" : "left-20 -translate-x-1/2"} transform bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none`}
             onClick={() => setIsSidebarOpen((o) => !o)}

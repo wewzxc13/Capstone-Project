@@ -2080,7 +2080,7 @@ export default function AdminMessagesPage() {
                     {!isLoadingConversations && !isSearchFocused && (
                       (recent.length === 0 && chats.length === 0) ? (
                         <div className="flex flex-col items-center justify-center text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6">
-                          <div className="w-10 h-10 rounded-full bg-[#1E2A79] text-white flex items-center justify-center font-bold mb-2">U</div>
+                          <div className="w-10 h-10 rounded-full bg-[#1E2A79] text-white flex items-center justify-center font-bold mb-2"><FaUser /></div>
                           <p className="text-sm font-medium">No conversations yet</p>
                           <p className="text-xs">Start messaging someone to see them here.</p>
                         </div>
@@ -2200,7 +2200,7 @@ export default function AdminMessagesPage() {
                           <p className="text-xs text-gray-500 px-2">Search Results - All Active Users</p>
                           {filteredUsers.length === 0 ? (
                             <div className="flex flex-col items-center justify-center text-center text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6">
-                              <div className="w-10 h-10 rounded-full bg-[#1E2A79] text-white flex items-center justify-center font-bold mb-2">U</div>
+                              <div className="w-10 h-10 rounded-full bg-[#1E2A79] text-white flex items-center justify-center font-bold mb-2"><FaUser /></div>
                               <p className="text-sm font-medium">No users found</p>
                               <p className="text-xs">Try a different search.</p>
                             </div>
