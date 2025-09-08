@@ -4,6 +4,24 @@ import React, { useEffect, useState } from "react";
 import { FaCalendarAlt, FaUser } from "react-icons/fa";
 import { useUser } from "../../Context/UserContext";
 
+// Helper function to construct full photo URL from filename
+function getPhotoUrl(filename) {
+  if (!filename) return null;
+  
+  // If it's already a full URL (like a blob URL for preview), return as is
+  if (filename.startsWith('http://') || filename.startsWith('https://') || filename.startsWith('blob:')) {
+    return filename;
+  }
+  
+  // If it already starts with /php/Uploads/, return as is
+  if (filename.startsWith('/php/Uploads/')) {
+    return filename;
+  }
+  
+  // If it's a filename, construct the full backend URL
+  return `/php/Uploads/${filename}`;
+}
+
 function groupByTime(schedule, days) {
   const result = {};
   days.forEach((day) => {
@@ -193,25 +211,25 @@ export default function Schedule() {
              {/* Student Tabs - Only show if parent has 2+ active students */}
                {students.filter(s => s.schoolStatus === 'Active').length > 1 && (
          <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-4">
-           <div className="px-4 py-2 border-b border-gray-200">
-             <div className="flex gap-2">
+           <div className="px-2 sm:px-4 py-2 border-b border-gray-200 overflow-x-auto pb-2">
+            <div className="flex gap-2 sm:gap-3">
                               {students.filter(s => s.schoolStatus === 'Active').map((student) => (
                  <button
                    key={student.id}
-                   className={`px-3 py-2 rounded-lg focus:outline-none transition-all duration-200 flex items-center gap-2 min-w-[160px] flex-shrink-0 ${
+                   className={`px-2 sm:px-3 py-2 rounded-lg focus:outline-none transition-all duration-200 flex items-center gap-1 sm:gap-2 min-w-[140px] sm:min-w-[170px] flex-shrink-0 ${
                      selectedStudent?.id === student.id
-                       ? 'bg-[#2c2f6f] text-white shadow-lg'
-                       : 'bg-white text-[#2c2f6f] border-2 border-gray-200 hover:border-[#2c2f6f] hover:bg-[#f3f7fd]'
+                       ? 'bg-[#2c2f6f] text-white shadow-lg transform scale-105'
+                       : 'bg-white text-[#2c2f6f] border-2 border-gray-200 hover:border-[#2c2f6f] hover:bg-[#f3f7fd] hover:shadow-md'
                    }`}
                    onClick={() => handleStudentTabClick(student)}
                  >
                    {/* Student Photo */}
-                   <div className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden ${
+                   <div className={`w-6 h-6 rounded-full flex items-center justify-center overflow-hidden ${
                      selectedStudent?.id === student.id ? 'bg-white' : 'bg-[#2c2f6f]'
                    }`}>
                      {student.photo ? (
                        <img
-                         src={student.photo}
+                         src={getPhotoUrl(student.photo)}
                          alt="Profile"
                          className="w-full h-full object-cover rounded-full"
                          onError={(e) => {
@@ -222,15 +240,15 @@ export default function Schedule() {
                          }}
                        />
                      ) : null}
-                     <FaUser className={`w-4 h-4 ${selectedStudent?.id === student.id ? 'text-[#2c2f6f]' : 'text-white'}`} style={{ display: student.photo ? 'none' : 'flex' }} />
+                     <FaUser className={`w-3 h-3 ${selectedStudent?.id === student.id ? 'text-[#2c2f6f]' : 'text-white'}`} style={{ display: student.photo ? 'none' : 'flex' }} />
                    </div>
 
                    {/* Student Info */}
                    <div className="text-left">
-                     <div className="font-semibold text-xs">
+                    <div className="font-semibold text-[11px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
                        {student.lastName ? `${student.lastName}, ${student.firstName} ${student.middleName || ''}`.trim() : student.name}
                      </div>
-                     <div className="text-xs opacity-80">
+                    <div className="text-[11px] sm:text-xs opacity-80 truncate max-w-[100px] sm:max-w-none">
                        {student.levelName || 'Class N/A'}
                      </div>
                    </div>
@@ -276,17 +294,17 @@ export default function Schedule() {
                </div>
              ) : (
                <div className="overflow-x-auto">
-                 <table className="min-w-full text-sm text-left text-gray-800">
+                <table className="min-w-full text-xs sm:text-sm text-left text-gray-800">
                    <thead className="bg-[#232c67] text-white">
                      <tr>
-                       <th className="px-5 py-3 text-base font-semibold border-r border-[#1a1f4d]">
+                      <th className="px-3 sm:px-5 py-3 text-sm sm:text-base font-semibold border-r border-[#1a1f4d]">
                          <div className="flex items-center gap-2">
                            <FaCalendarAlt className="text-sm" />
                            Time
                          </div>
                        </th>
                        {classInfo.days.map((day) => (
-                         <th key={day} className="px-5 py-3 text-base font-semibold border-r border-[#1a1f4d] last:border-r-0">
+                        <th key={day} className="px-3 sm:px-5 py-3 text-sm sm:text-base font-semibold border-r border-[#1a1f4d] last:border-r-0">
                            <div className="text-center">
                              <div className="font-bold">{day}</div>
                              <div className="text-xs font-normal text-[#a8b0e0] mt-1">
@@ -325,14 +343,14 @@ export default function Schedule() {
                      ) : (
                        groupByTime(schedule.schedule, classInfo.days).map((row, idx) => (
                          <tr key={idx} className={`${idx % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50 transition-colors`}>
-                           <td className="px-5 py-3 font-semibold text-sm border-r border-gray-200 bg-gray-100">
+                          <td className="px-3 sm:px-5 py-3 font-semibold text-xs sm:text-sm border-r border-gray-200 bg-gray-100">
                              <div className="flex items-center gap-2">
                                <div className="w-2 h-2 bg-[#232c67] rounded-full"></div>
                                {row.time}
                              </div>
                            </td>
                            {classInfo.days.map((day) => (
-                             <td key={day} className="px-5 py-3 text-sm border-r border-gray-200 last:border-r-0">
+                            <td key={day} className="px-3 sm:px-5 py-3 text-xs sm:text-sm border-r border-gray-200 last:border-r-0">
                                <div className="text-center">
                                  <span className="font-medium">
                                    {(Array.isArray(row[day]) && row[day].length > 0)

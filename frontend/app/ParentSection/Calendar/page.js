@@ -93,6 +93,7 @@ export default function ParentCalendarPage() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
   // Function to close all dropdowns
   const closeAllDropdowns = () => {
@@ -123,6 +124,18 @@ export default function ParentCalendarPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setUserId(localStorage.getItem('userId'));
+    }
+  }, []);
+
+  // Handle window resize for responsive calendar height
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
     }
   }, []);
 
@@ -420,11 +433,62 @@ export default function ParentCalendarPage() {
 
   return (
     <ProtectedRoute role="Parent">
-      <div className="flex-1 p-4 bg-gray-50">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+      <style jsx>{`
+        .rbc-agenda-view {
+          overflow-x: auto !important;
+        }
+        .rbc-agenda-view table {
+          width: 100% !important;
+          table-layout: fixed !important;
+        }
+        .rbc-agenda-view .rbc-agenda-time-cell {
+          width: 30% !important;
+          max-width: 30% !important;
+          min-width: 120px !important;
+        }
+        .rbc-agenda-view .rbc-agenda-event-cell {
+          width: 70% !important;
+          max-width: 70% !important;
+          min-width: 200px !important;
+        }
+        .rbc-agenda-view .rbc-agenda-event-cell > div {
+          width: 100% !important;
+          overflow-x: auto !important;
+          overflow-y: hidden !important;
+          white-space: nowrap !important;
+        }
+        .rbc-today {
+          background-color: transparent !important;
+        }
+        .rbc-today .rbc-day-bg {
+          background-color: transparent !important;
+        }
+        .rbc-current-time-indicator {
+          background-color: transparent !important;
+        }
+        .rbc-off-range-bg {
+          background-color: transparent !important;
+        }
+        .rbc-toolbar button:hover {
+          background-color: transparent !important;
+        }
+        .rbc-toolbar button:focus {
+          background-color: transparent !important;
+          box-shadow: none !important;
+        }
+        .rbc-toolbar button:active {
+          background-color: transparent !important;
+        }
+        .rbc-toolbar button.rbc-active {
+          background-color: #232c67 !important;
+          color: white !important;
+        }
+      `}</style>
+         <div className="flex-1 p-4 bg-gray-50">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="flex flex-col lg:flex-row gap-3 lg:gap-5 p-3 lg:p-5">
-            <div className="flex-1">
-              <div className="p-2 sm:p-4">
+            <div className="flex-1 order-2 lg:order-1">
+              <div className="p-1 sm:p-2 lg:p-4">
                 <Calendar
                   localizer={localizer}
                   events={calendarEvents.filter(event => 
@@ -432,7 +496,11 @@ export default function ParentCalendarPage() {
                   )}
                   startAccessor="start"
                   endAccessor="end"
-                  style={{ height: 420 }}
+                  style={{ 
+                    height: windowWidth < 640 ? 350 : windowWidth < 1024 ? 400 : 420,
+                    minHeight: 350,
+                    width: '100%'
+                  }}
                   selectable={false}
                   date={currentViewDate}
                   onNavigate={date => setCurrentViewDate(date)}
@@ -512,13 +580,13 @@ export default function ParentCalendarPage() {
                               flexDirection: 'column',
                               alignItems: 'flex-start',
                               justifyContent: 'flex-start',
-                              padding: '4px 4px 0 6px',
+                              padding: windowWidth < 640 ? '2px 2px 0 4px' : '4px 4px 0 6px',
                               minHeight: 0,
                               background: cellBg,
-                              borderRadius: 8,
+                              borderRadius: windowWidth < 640 ? 6 : 8,
                               border: '1px solid #e0e7ef',
                               boxShadow: '0 1px 3px rgba(60,60,100,0.06)',
-                              margin: 1,
+                              margin: windowWidth < 640 ? 0.5 : 1,
                               transition: 'background 0.2s',
                               cursor: 'default',
                             }}
@@ -528,16 +596,25 @@ export default function ParentCalendarPage() {
                                 ...dayNumberStyle,
                                 pointerEvents: 'none',
                                 position: 'absolute',
-                                top: 4,
-                                right: 4,
+                                top: windowWidth < 640 ? 2 : 4,
+                                right: windowWidth < 640 ? 2 : 4,
                                 zIndex: 20,
                                 margin: 0,
                                 alignSelf: undefined,
+                                fontSize: windowWidth < 640 ? 14 : 16,
+                                padding: windowWidth < 640 ? '1px 4px' : '1px 6px',
                               }}
                             >
                               {value.getDate()}
                             </div>
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 28, pointerEvents: 'auto' }}>
+                            <div style={{ 
+                              flex: 1, 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center', 
+                              minHeight: windowWidth < 640 ? 20 : 28, 
+                              pointerEvents: 'auto' 
+                            }}>
                               <CalendarMonthCellIcons
                                 date={value}
                                 events={cellEvents}
@@ -553,30 +630,51 @@ export default function ParentCalendarPage() {
                       dateHeader: () => null
                     },
                     event: ({ event, view }) => (view === 'agenda' ? (
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 8,
+                        width: '100%',
+                        padding: '4px 0',
+                        whiteSpace: 'nowrap',
+                        overflowX: 'auto'
+                      }}>
                         <span
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            width: 28,
-                            height: 28,
-                            minWidth: 28,
-                            minHeight: 28,
+                            width: 20,
+                            height: 20,
+                            minWidth: 20,
+                            minHeight: 20,
                             borderRadius: '50%',
                             backgroundColor: event.color || getColorForMeeting(event.id),
                             color: '#fff',
-                            marginRight: 8,
-                            marginTop: 2,
+                            marginRight: 6,
                             flexShrink: 0
                           }}
                         >
-                          <FaCalendarAlt style={{ color: '#fff', fontSize: 16 }} />
+                          <FaCalendarAlt style={{ color: '#fff', fontSize: 12 }} />
                         </span>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: 500, wordBreak: 'break-word' }}>{event.title}</span>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center',
+                          minWidth: 0,
+                          flex: 1,
+                          whiteSpace: 'nowrap'
+                        }}>
+                          <span style={{ 
+                            fontWeight: 500, 
+                            marginRight: event.agenda ? '8px' : '0'
+                          }}>
+                            {event.title}
+                          </span>
                           {event.agenda && (
-                            <span style={{ color: '#555', fontWeight: 400, wordBreak: 'break-word' }}>
+                            <span style={{ 
+                              color: '#555', 
+                              fontWeight: 400
+                            }}>
                               - {event.agenda}
                             </span>
                           )}
@@ -585,30 +683,52 @@ export default function ParentCalendarPage() {
                     ) : null),
                     agenda: {
                       event: ({ event }) => (
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 8,
+                          width: '100%',
+                          padding: '4px 0',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          overflowX: 'auto'
+                        }}>
                           <span
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              width: 28,
-                              height: 28,
-                              minWidth: 28,
-                              minHeight: 28,
+                              width: 20,
+                              height: 20,
+                              minWidth: 20,
+                              minHeight: 20,
                               borderRadius: '50%',
                               backgroundColor: event.color || getColorForMeeting(event.id),
                               color: '#fff',
-                              marginRight: 8,
-                              marginTop: 2,
+                              marginRight: 6,
                               flexShrink: 0
                             }}
                           >
-                            <FaCalendarAlt style={{ color: '#fff', fontSize: 16 }} />
+                            <FaCalendarAlt style={{ color: '#fff', fontSize: 12 }} />
                           </span>
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontWeight: 500, wordBreak: 'break-word' }}>{event.title}</span>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            minWidth: 0,
+                            flex: 1,
+                            whiteSpace: 'nowrap'
+                          }}>
+                            <span style={{ 
+                              fontWeight: 500, 
+                              marginRight: event.agenda ? '8px' : '0'
+                            }}>
+                              {event.title}
+                            </span>
                             {event.agenda && (
-                              <span style={{ color: '#555', fontWeight: 400, wordBreak: 'break-word' }}>
+                              <span style={{ 
+                                color: '#555', 
+                                fontWeight: 400
+                              }}>
                                 - {event.agenda}
                               </span>
                             )}
@@ -616,32 +736,44 @@ export default function ParentCalendarPage() {
                         </div>
                       ),
                       header: ({ label }) => (
-                        label === 'Event' ? <span>Meeting Details</span> : <span>{label}</span>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          width: '100%'
+                        }}>
+                          <span style={{ 
+                            fontWeight: 600, 
+                            fontSize: '14px',
+                            color: '#374151'
+                          }}>
+                            {label === 'Event' ? 'Meeting Details' : label}
+                          </span>
+                        </div>
                       )
                     }
                   }}
                 />
               </div>
             </div>
-            <aside className="w-full lg:w-80 mt-4 lg:mt-0">
+            <aside className="w-full lg:w-80 mt-0 lg:mt-0 order-first lg:order-last">
               <div className="bg-gray-50 rounded-xl border border-gray-200">
-                <div className="bg-[#232c67] px-5 py-3 border-b border-gray-200 rounded-t-xl">
+                <div className="bg-[#232c67] px-3 sm:px-5 py-3 border-b border-gray-200 rounded-t-xl">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-white">
+                    <h2 className="text-base sm:text-lg font-semibold text-white">
                       Schedule Details
                     </h2>
-                    <div className="relative dropdown-container ml-4">
+                    <div className="relative dropdown-container ml-2 sm:ml-4">
                       <button
                         onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                        className="flex items-center gap-2 px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors touch-manipulation active:scale-95 min-h-[40px]"
                       >
-                        <FaCalendarAlt className="text-sm text-gray-600" />
+                        <FaCalendarAlt className="text-xs sm:text-sm text-gray-600" />
                         <span>{statusFilter}</span>
-                        <FaChevronDown className={`text-sm transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                        <FaChevronDown className={`text-xs sm:text-sm transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
                       
                       {isStatusDropdownOpen && (
-                        <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                        <div className="absolute right-0 mt-1 w-32 sm:w-36 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
                           <div className="py-1">
                             {['Scheduled', 'Completed', 'Cancelled'].map((option) => (
                               <button
@@ -650,7 +782,7 @@ export default function ParentCalendarPage() {
                                   setStatusFilter(option);
                                   setIsStatusDropdownOpen(false);
                                 }}
-                                className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors ${
+                                className={`w-full text-left px-2 sm:px-3 py-3 text-xs sm:text-sm font-medium transition-colors touch-manipulation active:scale-95 min-h-[44px] ${
                                   statusFilter === option 
                                     ? "bg-[#232c67] text-white hover:bg-gray-100 hover:text-black" 
                                     : "text-gray-900 hover:bg-gray-100 hover:text-black"
@@ -665,10 +797,13 @@ export default function ParentCalendarPage() {
                     </div>
                   </div>
                 </div>
-                <div className="p-4">
+                <div className="p-2 sm:p-4">
                   <div
-                    className="space-y-2 sm:space-y-2 max-h-[320px] overflow-y-auto"
-                    style={{ minHeight: "100px" }}
+                    className="space-y-2 overflow-y-auto"
+                    style={{ 
+                      minHeight: "100px",
+                      maxHeight: "320px" // Show approximately 4 meetings by default
+                    }}
                   >
                     {events
                       .filter(event => {
@@ -680,7 +815,7 @@ export default function ParentCalendarPage() {
                       .sort((a, b) => new Date(b.start || b.meeting_start) - new Date(a.start || a.meeting_start))
                       .slice(0, 100)
                       .length === 0 ? (
-                      <div className="text-gray-400 italic text-center py-8">
+                      <div className="text-gray-400 italic text-center py-6 sm:py-8 text-sm">
                         {statusFilter === 'Scheduled' && 'No meetings scheduled.'}
                         {statusFilter === 'Completed' && 'No meetings completed.'}
                         {statusFilter === 'Cancelled' && 'No meetings cancelled.'}
@@ -698,55 +833,65 @@ export default function ParentCalendarPage() {
                         .map((event, i) => (
                         <div
                           key={i}
-                          className="bg-white p-3 rounded-lg shadow-sm flex items-center gap-2 border border-gray-200 hover:shadow-md transition cursor-pointer"
+                          className="bg-white p-2 sm:p-3 rounded-lg shadow-sm flex items-start sm:items-center gap-2 border border-gray-200 hover:shadow-md transition cursor-pointer touch-manipulation active:scale-95"
                           style={{
-                            borderLeft: `${String(event.created_by) === String(userId) ? '6px solid #232c67' : '4px solid ' + (event.color || getColorForMeeting(event.id))}`,
+                            borderLeft: `${String(event.created_by) === String(userId) ? '4px solid #232c67' : '3px solid ' + (event.color || getColorForMeeting(event.id))}`,
                             boxShadow: '0 1px 3px rgba(60,60,100,0.06)',
-                            marginBottom: 6,
+                            marginBottom: 4,
                             background: '#fff',
+                            minHeight: '44px', // Minimum touch target size
                           }}
                           onClick={() => handleSelectEvent(event)}
                         >
-                          <div className="text-xl" style={{ color: event.color || getColorForMeeting(event.id) }}>
+                          <div className="text-lg sm:text-xl flex-shrink-0 mt-0.5 sm:mt-0" style={{ color: event.color || getColorForMeeting(event.id) }}>
                             <FaCalendarAlt />
                           </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-800 text-xs" style={{ fontWeight: String(event.created_by) === String(userId) ? 700 : 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-                              {event.title || event.meeting_title}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-800 text-xs sm:text-sm" style={{ 
+                              fontWeight: String(event.created_by) === String(userId) ? 700 : 500, 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 4,
+                              wordBreak: 'break-word'
+                            }}>
+                              <span className="truncate">{event.title || event.meeting_title}</span>
                               {String(event.created_by) === String(userId) && (
                                 <span style={{
                                   background: '#232c67',
                                   color: '#fff',
-                                  borderRadius: '6px',
-                                  fontSize: '10px',
-                                  padding: '1px 6px',
-                                  marginLeft: '3px',
+                                  borderRadius: '4px',
+                                  fontSize: '8px',
+                                  padding: '1px 4px',
+                                  marginLeft: '2px',
                                   fontWeight: 600,
                                   letterSpacing: '0.5px',
                                   display: 'inline-block',
+                                  flexShrink: 0
                                 }}>You</span>
                               )}
                             </div>
-                            <div className="text-xs text-gray-500">
-                              {(event.date) ? event.date : ''}
-                              {event.time && (() => {
-                                // If time is already in the correct format (e.g., "9:00 AM - 10:00 AM"), use it directly
-                                if (event.time.includes('AM') || event.time.includes('PM')) {
-                                  return ` | ${event.time}`;
-                                }
-                                
-                                // Otherwise, try to format it
-                                try {
-                                  const [start, end] = event.time.split(" - ");
-                                  if (start && end) {
-                                    return ` | ${formatTimeToAMPM(start)} - ${formatTimeToAMPM(end)}`;
+                            <div className="text-xs text-gray-500 mt-1">
+                              <div className="truncate">
+                                {(event.date) ? event.date : ''}
+                                {event.time && (() => {
+                                  // If time is already in the correct format (e.g., "9:00 AM - 10:00 AM"), use it directly
+                                  if (event.time.includes('AM') || event.time.includes('PM')) {
+                                    return ` | ${event.time}`;
                                   }
-                                  return ` | ${event.time}`;
-                                } catch (error) {
-                                  console.error('Error formatting time:', event.time, error);
-                                  return ` | ${event.time}`;
-                                }
-                              })()}
+                                  
+                                  // Otherwise, try to format it
+                                  try {
+                                    const [start, end] = event.time.split(" - ");
+                                    if (start && end) {
+                                      return ` | ${formatTimeToAMPM(start)} - ${formatTimeToAMPM(end)}`;
+                                    }
+                                    return ` | ${event.time}`;
+                                  } catch (error) {
+                                    console.error('Error formatting time:', event.time, error);
+                                    return ` | ${event.time}`;
+                                  }
+                                })()}
+                              </div>
                             </div>
                             <span
                               className={`mt-1 inline-block px-1.5 py-0.5 rounded-full text-xs font-semibold ${
@@ -774,29 +919,29 @@ export default function ParentCalendarPage() {
       </div>
       {/* Modal for viewing event details */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[100]">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md overflow-hidden">
-            <div className="bg-[#232c67] px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">Meeting Details</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md max-h-[90vh] overflow-hidden">
+            <div className="bg-[#232c67] px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <div className="flex items-center justify-center">
+                <h2 className="text-base sm:text-lg font-semibold text-white">Meeting Details</h2>
               </div>
             </div>
-            <div className="p-8">
-              <div className="grid grid-cols-2 gap-8 text-sm items-start">
-                <div className="flex flex-col gap-2">
+            <div className="p-4 sm:p-6 max-h-[calc(90vh-80px)] overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm">
+                <div className="flex flex-col gap-3">
                   <div>
-                    <p className="font-bold mb-1">Title</p>
-                    <div className="mb-2">{selectedEvent.title || selectedEvent.meeting_title}</div>
+                    <p className="font-bold mb-1 text-gray-800">Title</p>
+                    <div className="mb-2 text-gray-700 break-words">{selectedEvent.title || selectedEvent.meeting_title}</div>
                   </div>
                   {(selectedEvent.agenda || selectedEvent.meeting_agenda) && (
                     <div>
-                      <p className="font-bold mb-1 mt-2">Agenda</p>
-                      <div className="mb-2 whitespace-pre-line">{selectedEvent.agenda || selectedEvent.meeting_agenda}</div>
+                      <p className="font-bold mb-1 text-gray-800">Agenda</p>
+                      <div className="mb-2 text-gray-700 whitespace-pre-line break-words">{selectedEvent.agenda || selectedEvent.meeting_agenda}</div>
                     </div>
                   )}
                   <div>
-                    <p className="font-bold mb-1 mt-2">When:</p>
-                    <div>
+                    <p className="font-bold mb-1 text-gray-800">When:</p>
+                    <div className="text-gray-700">
                       {selectedEvent.date
                         ? selectedEvent.date
                         : (() => {
@@ -807,7 +952,7 @@ export default function ParentCalendarPage() {
                             } catch { return ""; }
                           })()}
                     </div>
-                    <div>
+                    <div className="text-gray-700">
                       {selectedEvent.time
                         ? selectedEvent.time
                         : (() => {
@@ -822,10 +967,10 @@ export default function ParentCalendarPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                   <div>
-                    <p className="font-bold mb-1">Meeting Type</p>
-                    <div className="mb-2 text-gray-600">
+                    <p className="font-bold mb-1 text-gray-800">Meeting Type</p>
+                    <div className="mb-2 text-gray-700">
                       {selectedEvent.advisory_id && selectedEvent.student_id ? 'Class Advisory Meeting' : 'General Meeting'}
                     </div>
                   </div>
@@ -834,20 +979,20 @@ export default function ParentCalendarPage() {
                   {selectedEvent.advisory_id && selectedEvent.student_id && (
                     <>
                       <div>
-                        <p className="font-bold mb-1">Lead Teacher</p>
-                        <div className="mb-2 text-gray-600">
+                        <p className="font-bold mb-1 text-gray-800">Lead Teacher</p>
+                        <div className="mb-2 text-gray-700 break-words">
                           {selectedEvent.lead_teacher_name || "Not specified"}
                         </div>
                       </div>
                       <div>
-                        <p className="font-bold mb-1">Assistant Teacher</p>
-                        <div className="mb-2 text-gray-600">
+                        <p className="font-bold mb-1 text-gray-800">Assistant Teacher</p>
+                        <div className="mb-2 text-gray-700 break-words">
                           {selectedEvent.assistant_teacher_name || "Not specified"}
                         </div>
                       </div>
                       <div>
-                        <p className="font-bold mb-1">Student</p>
-                        <div className="mb-2 text-gray-600">
+                        <p className="font-bold mb-1 text-gray-800">Student</p>
+                        <div className="mb-2 text-gray-700 break-words">
                           {selectedEvent.student_name || "Not specified"}
                         </div>
                       </div>
@@ -856,7 +1001,7 @@ export default function ParentCalendarPage() {
                 </div>
               </div>
               {/* Status Label and Close Button */}
-              <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="mt-4 pt-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center justify-center">
                   <span
                     className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium ${
@@ -873,7 +1018,7 @@ export default function ParentCalendarPage() {
 
                 <button
                   onClick={() => setSelectedEvent(null)}
-                  className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 sm:px-6 py-3 sm:py-2.5 rounded-lg font-medium transition-colors w-full sm:w-auto justify-center touch-manipulation active:scale-95 min-h-[44px]"
                 >
                   <FaTimes className="text-sm" />
                   Close

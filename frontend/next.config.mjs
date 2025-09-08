@@ -13,7 +13,7 @@ const nextConfig = {
     return [
       {
         source: '/php/:path*',
-        destination: 'http://192.168.254.151/capstone-project/backend/:path*',
+        destination: 'http://localhost/capstone-project/backend/:path*',
       },
     ];
   },

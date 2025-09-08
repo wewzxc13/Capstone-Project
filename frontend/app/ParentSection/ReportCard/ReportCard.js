@@ -63,6 +63,34 @@ export default function StudentProgress({ formData: initialFormData }) {
     { id: 5, name: 'Final' },
   ];
 
+  // Helper function to construct full photo URL from filename
+  function getPhotoUrl(filename) {
+    if (!filename) {
+      console.log('🔍 getPhotoUrl: No filename provided');
+      return null;
+    }
+    
+    // If it's already a full URL (like a blob URL for preview), return as is
+    if (filename.startsWith('http://') || filename.startsWith('https://') || filename.startsWith('blob:')) {
+      console.log('🔍 getPhotoUrl: Already a full URL:', filename);
+      return filename;
+    }
+    
+    // If it already starts with /php/Uploads/, return as is
+    if (filename.startsWith('/php/Uploads/')) {
+      console.log('🔍 getPhotoUrl: Already has /php/Uploads/ prefix:', filename);
+      return filename;
+    }
+    
+    // If it's a filename, construct the full backend URL
+    const fullUrl = `/php/Uploads/${filename}`;
+    console.log('🔍 getPhotoUrl: Converting filename to full URL:', {
+      filename: filename,
+      fullUrl: fullUrl
+    });
+    return fullUrl;
+  }
+
   // Global error handler for images to prevent 404 errors in Network tab
   useEffect(() => {
     const handleImageError = (event) => {
@@ -818,16 +846,16 @@ export default function StudentProgress({ formData: initialFormData }) {
     
     if (dataPoints.every(v => v === null)) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 text-gray-400 italic border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
-          <FaChartLine className="text-4xl mb-4 text-gray-300" />
-          <p className="text-lg font-medium">No chart data available</p>
-          <p className="text-sm text-gray-500 mt-2">Quarterly performance data will appear here</p>
+        <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-gray-400 italic border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 p-4">
+          <FaChartLine className="text-3xl sm:text-4xl mb-4 text-gray-300" />
+          <p className="text-base sm:text-lg font-medium text-center">No chart data available</p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-2 text-center">Quarterly performance data will appear here</p>
         </div>
       );
     }
     
     return (
-      <div className="h-64 w-full bg-white rounded-lg border border-gray-200 p-4">
+      <div className="h-48 sm:h-64 w-full bg-white rounded-lg border border-gray-200 p-2 sm:p-4">
         <Line
           data={{
             labels: xLabels,
@@ -927,12 +955,12 @@ export default function StudentProgress({ formData: initialFormData }) {
     <ProtectedRoute role="Parent">
       {/* Student Selection Tabs - Only show if parent has 2+ active students */}
                 {students.filter(s => s.schoolStatus === 'Active').length > 1 && (
-        <div className="bg-white px-4 py-1 border-b border-gray-200">
-          <div className="flex gap-3">
+        <div className="bg-white px-2 sm:px-4 py-1 border-b border-gray-200">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2">
                             {students.filter(s => s.schoolStatus === 'Active').map(s => (
               <button
                 key={s.id}
-                className={`px-3 py-2 rounded-lg focus:outline-none transition-all duration-200 flex items-center gap-2 min-w-[170px] ${
+                className={`px-2 sm:px-3 py-2 rounded-lg focus:outline-none transition-all duration-200 flex items-center gap-1 sm:gap-2 min-w-[140px] sm:min-w-[170px] flex-shrink-0 ${
                   selectedStudentId === s.id 
                     ? 'bg-[#2c2f6f] text-white shadow-lg transform scale-105' 
                     : 'bg-white text-[#2c2f6f] border-2 border-gray-200 hover:border-[#2c2f6f] hover:bg-[#f3f7fd] hover:shadow-md'
@@ -943,8 +971,8 @@ export default function StudentProgress({ formData: initialFormData }) {
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${selectedStudentId === s.id ? 'bg-white' : 'bg-[#2c2f6f]'}`}>
                   {(() => {
                     // TEMPORARY: Use direct photo first, then fallback to UserContext
-                    const directPhoto = s.photo;
-                    const realTimePhoto = getStudentPhoto(s.id) || s.photo;
+                    const directPhoto = s.photo || s.stud_photo || s.user_photo;
+                    const realTimePhoto = getStudentPhoto(s.id) || s.photo || s.stud_photo || s.user_photo;
                     
                     // Debug logging for photo retrieval
                     console.log('Student tab photo rendering for student:', s.id, {
@@ -959,36 +987,36 @@ export default function StudentProgress({ formData: initialFormData }) {
                     if (directPhoto) {
                       return (
                         <img
-                          src={directPhoto}
+                          src={getPhotoUrl(directPhoto)}
                           alt="Profile"
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            console.log('Direct photo failed to load for student:', s.name, 'Photo URL:', directPhoto);
+                            console.log('Direct photo failed to load for student:', s.name, 'Photo URL:', getPhotoUrl(directPhoto));
                             e.target.style.display = 'none';
                             if (e.target.nextSibling) {
                               e.target.nextSibling.style.display = 'flex';
                             }
                           }}
                           onLoad={() => {
-                            console.log('Direct photo loaded successfully for student:', s.name, 'Photo URL:', directPhoto);
+                            console.log('Direct photo loaded successfully for student:', s.name, 'Photo URL:', getPhotoUrl(directPhoto));
                           }}
                         />
                       );
                     } else if (realTimePhoto) {
                       return (
                         <img
-                          src={realTimePhoto}
+                          src={getPhotoUrl(realTimePhoto)}
                           alt="Profile"
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            console.log('Real-time photo failed to load for student:', s.name, 'Photo URL:', realTimePhoto);
+                            console.log('Real-time photo failed to load for student:', s.name, 'Photo URL:', getPhotoUrl(realTimePhoto));
                             e.target.style.display = 'none';
                             if (e.target.nextSibling) {
                               e.target.nextSibling.style.display = 'flex';
                             }
                           }}
                           onLoad={() => {
-                            console.log('Real-time photo loaded successfully for student:', s.name, 'Photo URL:', realTimePhoto);
+                            console.log('Real-time photo loaded successfully for student:', s.name, 'Photo URL:', getPhotoUrl(realTimePhoto));
                           }}
                         />
                       );
@@ -1004,10 +1032,10 @@ export default function StudentProgress({ formData: initialFormData }) {
                 
                 {/* Right side - Student name and class level */}
                 <div className="flex flex-col items-start text-left">
-                  <div className="font-semibold text-xs leading-tight">
+                  <div className="font-semibold text-xs leading-tight truncate max-w-[100px] sm:max-w-none">
                     {s.lastName ? `${s.lastName}, ${s.firstName} ${s.middleName || ''}`.trim() : s.name}
                   </div>
-                  <div className="text-xs opacity-80 leading-tight">
+                  <div className="text-xs opacity-80 leading-tight truncate max-w-[100px] sm:max-w-none">
                     {s.levelName || 'Class N/A'}
                   </div>
                 </div>
@@ -1019,54 +1047,75 @@ export default function StudentProgress({ formData: initialFormData }) {
 
       {/* Student Info Blue Header - Show when a student is selected */}
       {selectedStudent && (
-        <div className="bg-[#232c67] flex flex-row items-center w-full px-4 py-1.5 gap-4 rounded-lg mx-4 mb-4">
+        <div className="bg-[#232c67] flex flex-col sm:flex-row items-start sm:items-center w-full px-2 sm:px-4 py-2 sm:py-1.5 gap-2 sm:gap-4 rounded-lg mx-2 sm:mx-4 mb-4">
           {/* Left side with avatar and name - 40% */}
-          <div className="flex items-center gap-3 w-[40%]">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-[40%]">
             {(() => {
-              // Get real-time photo from UserContext, fallback to student.photo if not available
-              const realTimePhoto = getStudentPhoto(selectedStudent.id) || selectedStudent.photo;
+              // Get real-time photo from UserContext, fallback to student photo fields if not available
+              const realTimePhoto = getStudentPhoto(selectedStudent.id) || selectedStudent.photo || selectedStudent.stud_photo || selectedStudent.user_photo;
               
               // Debug logging for photo retrieval
               console.log('Main header photo rendering for student:', selectedStudent.id, {
                 studentName: selectedStudent.name,
                 realTimePhoto: getStudentPhoto(selectedStudent.id),
                 fallbackPhoto: selectedStudent.photo,
-                finalPhoto: realTimePhoto
+                finalPhoto: realTimePhoto,
+                realTimePhotoType: typeof realTimePhoto,
+                realTimePhotoStartsWith: realTimePhoto ? realTimePhoto.substring(0, 20) : 'null'
               });
               
               if (realTimePhoto) {
+                const finalPhotoUrl = getPhotoUrl(realTimePhoto);
+                console.log('🔍 BLUE HEADER PHOTO DEBUG:', {
+                  studentId: selectedStudent.id,
+                  studentName: selectedStudent.name,
+                  realTimePhoto: realTimePhoto,
+                  finalPhotoUrl: finalPhotoUrl,
+                  realTimePhotoType: typeof realTimePhoto,
+                  realTimePhotoLength: realTimePhoto ? realTimePhoto.length : 0
+                });
+                
                 return (
                   <>
                     <img
-                      src={realTimePhoto}
+                      src={finalPhotoUrl}
                       alt="Profile"
-                      className="w-16 h-16 rounded-full object-cover shadow-sm border-4 border-white"
+                      className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover shadow-sm border-2 sm:border-4 border-white"
                       onError={(e) => {
-                        console.log('Photo failed to load for student:', selectedStudent.name, 'Photo URL:', realTimePhoto);
+                        console.log('❌ BLUE HEADER PHOTO FAILED:', {
+                          student: selectedStudent.name,
+                          originalPhoto: realTimePhoto,
+                          finalUrl: finalPhotoUrl,
+                          error: e
+                        });
                         e.target.style.display = 'none';
                         if (e.target.nextSibling) {
                           e.target.nextSibling.style.display = 'flex';
                         }
                       }}
                       onLoad={() => {
-                        console.log('Photo loaded successfully for student:', selectedStudent.name, 'Photo URL:', realTimePhoto);
+                        console.log('✅ BLUE HEADER PHOTO SUCCESS:', {
+                          student: selectedStudent.name,
+                          originalPhoto: realTimePhoto,
+                          finalUrl: finalPhotoUrl
+                        });
                       }}
                     />
                     {/* Fallback icon that shows when photo fails to load */}
-                    <div className="flex items-center justify-center w-16 aspect-square bg-blue-200 rounded-full hidden">
-                      <FaUser className="text-white text-xl" />
+                    <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-blue-200 rounded-full hidden">
+                      <FaUser className="text-white text-lg sm:text-xl" />
                     </div>
                   </>
                 );
               } else {
                 return (
-                  <div className="flex items-center justify-center w-16 aspect-square bg-blue-200 rounded-full">
-                    <FaUser className="text-white text-xl" />
+                  <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-blue-200 rounded-full">
+                    <FaUser className="text-white text-lg sm:text-xl" />
                   </div>
                 );
               }
             })()}
-            <span className="font-bold text-white text-2xl whitespace-nowrap">
+            <span className="font-bold text-white text-lg sm:text-2xl whitespace-nowrap truncate max-w-[200px] sm:max-w-none">
               {selectedStudent ? (
                 studentDetailsLoading ? (
                   <div className="flex items-center gap-2">
@@ -1083,10 +1132,10 @@ export default function StudentProgress({ formData: initialFormData }) {
           </div>
           
                      {/* Right side with student details in two rows - 60% */}
-           <div className="flex flex-col gap-2 w-[60%]">
+           <div className="flex flex-col gap-2 w-full sm:w-[60%]">
              {/* First row - Schedule, Gender, Handedness, Date of Birth */}
-             <div className="flex items-center gap-4">
-               <span className="text-white text-base font-bold">
+             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+               <span className="text-white text-sm sm:text-base font-bold">
                  <span className="text-white">Schedule:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -1095,7 +1144,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                    )}
                  </span>
                </span>
-               <span className="text-white text-base font-bold">
+               <span className="text-white text-sm sm:text-base font-bold">
                  <span className="text-white">Gender:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -1104,7 +1153,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                    )}
                  </span>
                </span>
-               <span className="text-white text-base font-bold">
+               <span className="text-white text-sm sm:text-base font-bold">
                  <span className="text-white">Handedness:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -1113,7 +1162,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                    )}
                  </span>
                </span>
-               <span className="text-white text-base font-bold">
+               <span className="text-white text-sm sm:text-base font-bold">
                  <span className="text-white">Date of Birth:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -1125,8 +1174,8 @@ export default function StudentProgress({ formData: initialFormData }) {
              </div>
              
              {/* Second row - Lead Teacher and Assistant Teacher */}
-             <div className="flex items-center gap-4">
-               <span className="text-white text-base font-bold">
+             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+               <span className="text-white text-sm sm:text-base font-bold">
                  <span className="text-white">Lead Teacher:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -1135,7 +1184,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                    )}
                  </span>
                </span>
-               <span className="text-white text-base font-bold">
+               <span className="text-white text-sm sm:text-base font-bold">
                  <span className="text-white">Assistant Teacher:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -1151,8 +1200,8 @@ export default function StudentProgress({ formData: initialFormData }) {
 
       {/* Assessment/Status Navigation Tabs */}
       {selectedStudent && (
-        <div className="bg-white px-4 py-1 border-b border-gray-200">
-          <div className="flex gap-5">
+        <div className="bg-white px-2 sm:px-4 py-1 border-b border-gray-200">
+          <div className="flex gap-3 sm:gap-5">
             <button
               onClick={() => setActiveTabSafely("Assessment")}
               className={`text-[#2c2f6f] border-b-2 font-semibold pb-1 transition-colors ${
@@ -1245,10 +1294,10 @@ export default function StudentProgress({ formData: initialFormData }) {
           {/* Scrollable Content Area */}
           <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 360px)' }}>
             {/* Main Content Grid */}
-            <div className="grid grid-cols-5 gap-2 bg-white px-1 pt-1 pb-1">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 bg-white px-1 sm:px-1 pt-1 pb-1">
               {activeTab === "Assessment" ? (
                 assessmentLoading ? (
-                  <div className="col-span-5 flex flex-col items-center justify-center py-12">
+                  <div className="col-span-1 lg:col-span-5 flex flex-col items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
                     <p className="text-lg font-medium text-gray-700">Loading assessment data...</p>
                     <p className="text-sm text-gray-500 mt-2">Please wait while we fetch the latest information</p>
@@ -1256,22 +1305,23 @@ export default function StudentProgress({ formData: initialFormData }) {
                 ) : (
                   <>
                     {/* Left: Quarterly Assessment and Attendance (3 columns) */}
-                    <div className="col-span-3 space-y-4">
+                    <div className="col-span-1 lg:col-span-3 space-y-4">
                       {/* Quarterly Assessment Section */}
                       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-2 border border-blue-100">
-                        <div className="flex items-center gap-3 mb-1">
-                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <FaTable className="text-blue-600 text-lg" />
+                        <div className="flex items-center gap-2 sm:gap-3 mb-1">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <FaTable className="text-blue-600 text-sm sm:text-lg" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-900">Quarterly Assessment</h3>
-                            <p className="text-sm text-gray-600">Subject performance across quarters</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Quarterly Assessment</h3>
+                            <p className="text-xs sm:text-sm text-gray-600">Subject performance across quarters</p>
                           </div>
                         </div>
                         
                         {/* Assessment Table */}
                         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                          <table className="w-full text-sm">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm min-w-[600px]">
                               <thead>
                                 <tr>
                                   <th className="border-b border-gray-200 px-4 py-1.5 bg-gray-50 text-left font-semibold text-gray-700">Subjects</th>
@@ -1435,17 +1485,18 @@ export default function StudentProgress({ formData: initialFormData }) {
                               </tr>
                             </tbody>
                           </table>
+                          </div>
                         </div>
                       </div>
                       {/* Attendance Section */}
                       <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-2 border border-green-100">
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                            <FaChartBar className="text-green-600 text-lg" />
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <FaChartBar className="text-green-600 text-sm sm:text-lg" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-900">Record of Attendance</h3>
-                            <p className="text-sm text-gray-600">Monthly attendance tracking</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Record of Attendance</h3>
+                            <p className="text-xs sm:text-sm text-gray-600">Monthly attendance tracking</p>
                           </div>
                         </div>
                         
@@ -1453,7 +1504,8 @@ export default function StudentProgress({ formData: initialFormData }) {
                           const attendanceSummary = getAttendanceSummary();
                           return attendanceSummary ? (
                              <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
-                              <table className="w-full text-sm">
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm min-w-[500px]">
                                 <thead>
                                   <tr className="bg-gray-50">
                                     <th className="border-b border-gray-200 px-4 py-2 text-left font-semibold text-gray-700">Category</th>
@@ -1501,6 +1553,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                   </tr>
                                 </tbody>
                               </table>
+                              </div>
                             </div>
                           ) : (
                             <div className="text-center py-8">
@@ -1516,21 +1569,22 @@ export default function StudentProgress({ formData: initialFormData }) {
                     </div>
                     
                     {/* Right: Assessment Legend, Risk Level, and Comments (2 columns) */}
-                    <div className="col-span-2 space-y-4">
+                    <div className="col-span-1 lg:col-span-2 space-y-4">
                       {/* Assessment Legend Section */}
                       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2">
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <FaTable className="text-purple-600 text-lg" />
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <FaTable className="text-purple-600 text-sm sm:text-lg" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-900">Assessment Legend</h3>
-                            <p className="text-sm text-gray-600">Performance indicators and meanings</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Assessment Legend</h3>
+                            <p className="text-xs sm:text-sm text-gray-600">Performance indicators and meanings</p>
                           </div>
                         </div>
                         
                         <div className="overflow-hidden">
-                          <table className="w-full text-sm">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm min-w-[400px]">
                             <thead>
                               <tr className="bg-gray-50">
                                 <th className="border-b border-gray-200 px-4 py-3 text-left font-semibold text-gray-700">Shapes</th>
@@ -1566,6 +1620,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                               )}
                             </tbody>
                           </table>
+                          </div>
                         </div>
                       </div>
 
@@ -1686,7 +1741,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                 )
               ) : activeTab === "Status" ? (
                 statusLoading ? (
-                  <div className="col-span-5 flex flex-col items-center justify-center py-12">
+                  <div className="col-span-1 lg:col-span-5 flex flex-col items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
                     <p className="text-lg font-medium text-gray-700">Loading status data...</p>
                     <p className="text-sm text-gray-500 mt-2">Please wait while we fetch the latest information</p>
@@ -1694,7 +1749,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                 ) : (
                   <>
                     {/* Left: Progress Circles (2 columns) */}
-                    <div className="col-span-2 space-y-8">
+                    <div className="col-span-1 lg:col-span-2 space-y-8">
                       {/* Final Subject Averages Section - Only show when there's overall progress */}
                       {(() => {
                         const hasOverall = hasOverallProgress();
@@ -1713,7 +1768,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                           </div>
                           
                           {finalSubjectProgress.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               {[...finalSubjectProgress].sort((a, b) => (a.subject_name || '').localeCompare(b.subject_name || '')).map((row, idx) => {
                                 const percent = Math.round(Number(row.finalsubj_avg_score));
                                 const uniqueColors = [
@@ -1728,31 +1783,31 @@ export default function StudentProgress({ formData: initialFormData }) {
                                 ];
                                 const color = uniqueColors[idx % uniqueColors.length];
                                 return (
-                                  <div key={row.subject_id} className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="relative w-16 h-16">
+                                  <div key={row.subject_id} className="flex items-center gap-2 sm:gap-4 p-2 sm:p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="relative w-12 h-12 sm:w-16 sm:h-16">
                                       <svg className="absolute top-0 left-0 w-full h-full">
                                         <circle
-                                          cx="32"
-                                          cy="32"
-                                          r="28"
+                                          cx="24"
+                                          cy="24"
+                                          r="20"
                                           stroke="#e5e7eb"
-                                          strokeWidth="4"
+                                          strokeWidth="3"
                                           fill="none"
                                         />
                                         <circle
-                                          cx="32"
-                                          cy="32"
-                                          r="28"
+                                          cx="24"
+                                          cy="24"
+                                          r="20"
                                           stroke={color.border}
-                                          strokeWidth="4"
+                                          strokeWidth="3"
                                           fill="none"
-                                          strokeDasharray={`${(2 * Math.PI * 28 * percent) / 100} ${2 * Math.PI * 28}`}
+                                          strokeDasharray={`${(2 * Math.PI * 20 * percent) / 100} ${2 * Math.PI * 20}`}
                                           strokeLinecap="round"
-                                          transform="rotate(-90 32 32)"
+                                          transform="rotate(-90 24 24)"
                                         />
                                       </svg>
                                       <div className="absolute inset-0 flex items-center justify-center">
-                                        <span className="text-sm font-bold text-gray-900">{percent}%</span>
+                                        <span className="text-xs sm:text-sm font-bold text-gray-900">{percent}%</span>
                                       </div>
                                     </div>
                                     <div className="flex-1">
@@ -1839,7 +1894,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                     </div>
                     
                     {/* Right: Chart and Summary (3 columns) */}
-                    <div className="col-span-3 flex flex-col h-full space-y-4">
+                    <div className="col-span-1 lg:col-span-3 flex flex-col h-full space-y-4">
                       {/* Message for students without overall progress - Centered */}
                       {(() => {
                         const hasOverall = hasOverallProgress();

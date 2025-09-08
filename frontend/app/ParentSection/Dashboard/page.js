@@ -535,24 +535,26 @@ const Dashboard = () => {
   ];
 
   return (
-    <div>
+    <div className="px-2 sm:px-0">
       {/* Stat Cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+      <section className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4">
         {stats.map((stat, i) => (
           <div
             key={i}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 hover:shadow-md transition-shadow relative overflow-hidden"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 sm:p-3 hover:shadow-md transition-shadow relative overflow-hidden"
           >
             {/* Navy blue accent bar on top */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-[#232c67]"></div>
             
-            <div className="flex items-center gap-3">
-              <div className={`rounded-full p-2 ${stat.iconBg} border-2 border-[#232c67]/20`}>
-                {stat.icon}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`rounded-full p-1.5 sm:p-2 ${stat.iconBg} border-2 border-[#232c67]/20`}>
+                <div className="text-sm sm:text-base">
+                  {stat.icon}
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-[#232c67] mb-0.5">{stat.label}</p>
-                <h2 className="text-xl font-bold text-[#232c67]">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-[#232c67] mb-0.5 truncate">{stat.label}</p>
+                <h2 className="text-lg sm:text-xl font-bold text-[#232c67]">
                   {stat.value}
                 </h2>
               </div>
@@ -564,62 +566,64 @@ const Dashboard = () => {
      
 
       {/* Main Content Container - Chart and Meetings Combined */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 sm:p-3">
         {/* Content Row - Chart and Meetings content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
           {/* Progress Chart Content */}
-          <div className="col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             {/* Chart Header */}
             <div className="mb-3">
-              <h3 className="text-xl font-semibold text-gray-800 mb-1">Progress of Children</h3>
-              <p className="text-sm text-gray-600">Quarterly performance overview</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-1">Progress of Children</h3>
+              <p className="text-xs sm:text-sm text-gray-600">Quarterly performance overview</p>
               
-                          {/* Chart Controls */}
-            {progressData.datasets.length > 0 ? (
-              <div className="flex justify-center mt-3">
-                <div className="flex items-center px-3 py-1.5 gap-3 border border-gray-200 bg-gray-50 rounded-lg">
-                  {progressData.datasets.map((dataset) => (
-                    <span
-                      key={dataset.label}
-                      className={`flex items-center gap-2 text-sm select-none px-3 py-1.5 rounded-md cursor-pointer transition-colors ${
-                        visible[dataset.label]
-                          ? "text-white font-medium bg-[#232c67] shadow-sm border border-[#232c67]"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
-                      onClick={() => toggleLine(dataset.label)}
-                    >
+              {/* Chart Controls */}
+              {progressData.datasets.length > 0 ? (
+                <div className="flex justify-center mt-3">
+                  <div className="flex flex-wrap items-center px-2 sm:px-3 py-1.5 gap-1.5 sm:gap-3 border border-gray-200 bg-gray-50 rounded-lg max-w-full overflow-x-auto">
+                    {progressData.datasets.map((dataset) => (
                       <span
-                        className="inline-block w-3 h-3 rounded-full"
-                        style={{
-                          backgroundColor: dataset.borderColor
-                        }}
-                      />
-                      {dataset.label.split(' ')[0]} {/* Show first name only */}
-                    </span>
-                  ))}
+                        key={dataset.label}
+                        className={`flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm select-none px-2 sm:px-3 py-1 sm:py-1.5 rounded-md cursor-pointer transition-colors whitespace-nowrap ${
+                          visible[dataset.label]
+                            ? "text-white font-medium bg-[#232c67] shadow-sm border border-[#232c67]"
+                            : "text-gray-500 hover:text-gray-700"
+                        }`}
+                        onClick={() => toggleLine(dataset.label)}
+                      >
+                        <span
+                          className="inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0"
+                          style={{
+                            backgroundColor: dataset.borderColor
+                          }}
+                        />
+                        <span className="truncate max-w-16 sm:max-w-none">
+                          {dataset.label.split(' ')[0]} {/* Show first name only */}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex justify-center mt-3">
-                <div className="text-center text-sm text-gray-500">
-                  {students.length > 0 ? (
-                    <>
-                      <p className="font-medium text-gray-700">Children are linked but inactive</p>
-                      <p className="text-xs mt-1 text-gray-500">Your children's accounts are currently inactive. Contact the school administration for assistance.</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-medium text-gray-700">No children assigned to your account yet</p>
-                      <p className="text-xs mt-1 text-gray-500">Contact the school administration to link children to your account</p>
-                    </>
-                  )}
+              ) : (
+                <div className="flex justify-center mt-3">
+                  <div className="text-center text-xs sm:text-sm text-gray-500 px-2">
+                    {students.length > 0 ? (
+                      <>
+                        <p className="font-medium text-gray-700">Children are linked but inactive</p>
+                        <p className="text-xs mt-1 text-gray-500">Your children's accounts are currently inactive. Contact the school administration for assistance.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium text-gray-700">No children assigned to your account yet</p>
+                        <p className="text-xs mt-1 text-gray-500">Contact the school administration to link children to your account</p>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
 
             {/* Chart Container */}
-            <div className="h-72">
+            <div className="h-64 sm:h-72">
               {progressLoading ? (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2c2f6f] mr-3"></div>
@@ -705,8 +709,9 @@ const Dashboard = () => {
                       x: {
                         ticks: { 
                           font: { size: 12, weight: '500' },
-                          maxRotation: 0,
-                          padding: 20,
+                          maxRotation: 45,
+                          minRotation: 45,
+                          padding: 10,
                           color: '#6b7280'
                         },
                         grid: { 
@@ -718,7 +723,7 @@ const Dashboard = () => {
                           text: 'Quarter',
                           font: { size: 14, weight: '600' },
                           color: '#2c2f6f',
-                          padding: { bottom: 10 }
+                          padding: { top: 28 }
                         }
                       },
                     },
@@ -727,61 +732,61 @@ const Dashboard = () => {
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
-                  <div className="flex flex-col items-center justify-center p-6">
-                    <div className="relative mb-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-[#1e2a79] to-[#232c67] rounded-full flex items-center justify-center">
-                        <FaChild className="text-3xl text-white" />
+                                      <div className="flex flex-col items-center justify-center p-4 sm:p-6">
+                      <div className="relative mb-3 sm:mb-4">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-[#1e2a79] to-[#232c67] rounded-full flex items-center justify-center">
+                          <FaChild className="text-2xl sm:text-3xl text-white" />
+                        </div>
                       </div>
-                   
+                      {students.length > 0 ? (
+                        <>
+                          <h4 className="text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2 text-center">Children Linked But Inactive</h4>
+                          <p className="text-xs text-gray-500 text-center max-w-40 sm:max-w-48 leading-relaxed px-2">
+                            Your children are linked to your account but their accounts are currently inactive
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <h4 className="text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2 text-center">No Children Assigned Yet</h4>
+                          <p className="text-xs text-gray-500 text-center max-w-40 sm:max-w-48 leading-relaxed px-2">
+                            Once children are linked to your account, their progress will appear here
+                          </p>
+                        </>
+                      )}
+                      <div className="mt-2 sm:mt-3 flex gap-1">
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-200 rounded-full animate-pulse"></div>
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-300 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      </div>
                     </div>
-                    {students.length > 0 ? (
-                      <>
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2 text-center">Children Linked But Inactive</h4>
-                        <p className="text-xs text-gray-500 text-center max-w-48 leading-relaxed">
-                          Your children are linked to your account but their accounts are currently inactive
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2 text-center">No Children Assigned Yet</h4>
-                        <p className="text-xs text-gray-500 text-center max-w-48 leading-relaxed">
-                          Once children are linked to your account, their progress will appear here
-                        </p>
-                      </>
-                    )}
-                    <div className="mt-3 flex gap-1">
-                      <div className="w-2 h-2 bg-blue-200 rounded-full animate-pulse"></div>
-                      <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Upcoming Meetings Content */}
-          <div>
+          <div className="mt-4 lg:mt-0">
             {/* Meetings Header with Navy Blue Background */}
-            <div className="bg-[#232c67] p-3 rounded-t-lg -mt-3 -mx-3 mb-3">
-              <div className="flex items-center gap-3">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <FaCalendarAlt className="text-white text-lg" />
-                  Upcoming Meetings
+            <div className="bg-[#232c67] p-2 sm:p-3 rounded-t-lg -mt-2 sm:-mt-3 -mx-2 sm:-mx-3 mb-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-1.5 sm:gap-2">
+                  <FaCalendarAlt className="text-white text-sm sm:text-lg" />
+                  <span className="hidden sm:inline">Upcoming Meetings</span>
+                  <span className="sm:hidden">Meetings</span>
                 </h3>
                 {!meetingsLoading && upcomingMeetings.length > 0 && (
-                  <span className="text-xs text-white bg-white/20 px-3 py-1.5 rounded-full font-medium border border-white/30">
+                  <span className="text-xs text-white bg-white/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-medium border border-white/30">
                     {upcomingMeetings.length} Meeting{upcomingMeetings.length !== 1 ? 's' : ''}
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="max-h-72 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="max-h-64 sm:max-h-72 overflow-y-auto pr-1 sm:pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {meetingsLoading ? (
                 // Loading skeleton for meetings
                 Array.from({ length: 3 }).map((_, idx) => (
-                  <div key={idx} className="p-3 rounded-lg border border-gray-100">
+                  <div key={idx} className="p-2 sm:p-3 rounded-lg border border-gray-100">
                     <div className="animate-pulse">
                       <div className="h-3 bg-gray-200 rounded w-3/4 mb-1"></div>
                       <div className="h-2 bg-gray-200 rounded w-1/2 mb-1"></div>
@@ -794,44 +799,44 @@ const Dashboard = () => {
                   <div
                     key={meeting.id}
                     onClick={() => window.location.href = '/ParentSection/Calendar'}
-                    className={`p-2 rounded-lg cursor-pointer hover:shadow-md transition-all duration-200 bg-white border border-gray-100`}
+                    className={`p-2 sm:p-3 rounded-lg cursor-pointer hover:shadow-md transition-all duration-200 bg-white border border-gray-100`}
                     style={{
-                      borderLeft: `${String(meeting.created_by) === String(localStorage.getItem('userId') || '1') ? '6px solid #232c67' : '4px solid ' + meeting.color}`,
+                      borderLeft: `${String(meeting.created_by) === String(localStorage.getItem('userId') || '1') ? '4px solid #232c67' : '3px solid ' + meeting.color}`,
                       boxShadow: '0 1px 3px rgba(60,60,100,0.06)',
                       marginBottom: 6,
                       background: '#fff',
                     }}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="text-sm font-semibold text-[#2c2f6f]">
+                    <div className="flex items-start justify-between mb-1.5 sm:mb-2">
+                      <h4 className="text-xs sm:text-sm font-semibold text-[#2c2f6f] leading-tight pr-2">
                         {meeting.title}
                       </h4>
                       {String(meeting.created_by) === String(localStorage.getItem('userId') || '1') && (
-                        <span className="inline-block px-2 py-0.5 text-xs rounded-md bg-[#232c67] text-white font-medium">
+                        <span className="inline-block px-1.5 sm:px-2 py-0.5 text-xs rounded-md bg-[#232c67] text-white font-medium flex-shrink-0">
                           You
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
                       <span className="text-xs text-gray-600">{meeting.date}</span>
-                      <span className="text-xs text-gray-400">|</span>
+                      <span className="hidden sm:inline text-xs text-gray-400">|</span>
                       <span className="text-xs text-gray-500">{meeting.time}</span>
                     </div>
-                    <p className="text-xs text-gray-700 leading-relaxed">{meeting.agenda}</p>
+                    <p className="text-xs text-gray-700 leading-relaxed line-clamp-2">{meeting.agenda}</p>
                   </div>
                 ))
               ) : (
-                <div className="p-4 rounded-lg border border-gray-200 text-center">
-                  <div className="w-8 h-8 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center">
-                    <FaBell className="text-gray-400 text-sm" />
+                <div className="p-3 sm:p-4 rounded-lg border border-gray-200 text-center">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center">
+                    <FaBell className="text-gray-400 text-xs sm:text-sm" />
                   </div>
-                  <h4 className="text-sm font-medium text-gray-500 mb-1">
+                  <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-1">
                     No upcoming meetings
                   </h4>
                   <p className="text-xs text-gray-400">No scheduled or rescheduled meetings found</p>
                   <button
                     onClick={() => window.location.href = '/ParentSection/Calendar'}
-                    className="mt-3 px-4 py-2 text-sm font-medium text-[#232c67] bg-[#232c67]/5 hover:bg-[#232c67]/10 border border-[#232c67]/20 rounded-lg transition-colors duration-200"
+                    className="mt-2 sm:mt-3 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-[#232c67] bg-[#232c67]/5 hover:bg-[#232c67]/10 border border-[#232c67]/20 rounded-lg transition-colors duration-200"
                   >
                     View Calendar
                   </button>
@@ -841,13 +846,14 @@ const Dashboard = () => {
             
             {/* View All Meetings Button */}
             {upcomingMeetings.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200">
                 <button
                   onClick={() => window.location.href = '/ParentSection/Calendar'}
-                  className="w-full px-3 py-2 text-sm font-medium text-[#232c67] bg-[#232c67]/5 hover:bg-[#232c67]/10 border border-[#232c67]/20 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-[#232c67] bg-[#232c67]/5 hover:bg-[#232c67]/10 border border-[#232c67]/20 rounded-lg transition-colors duration-200 flex items-center justify-center gap-1.5 sm:gap-2"
                 >
-                  <FaCalendarAlt className="text-sm" />
-                  View All Meetings in Calendar
+                  <FaCalendarAlt className="text-xs sm:text-sm" />
+                  <span className="hidden sm:inline">View All Meetings in Calendar</span>
+                  <span className="sm:hidden">View Calendar</span>
                 </button>
               </div>
             )}

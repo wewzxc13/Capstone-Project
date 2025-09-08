@@ -1060,12 +1060,12 @@ export default function ParentDetails() {
           </div>
         </div>
         {/* Editable Form */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-[calc(100vh-350px)] flex flex-col">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-auto md:h-[calc(100vh-350px)] flex flex-col">
           <div className="p-6 border-b border-gray-200 flex-shrink-0">
             <h3 className="text-lg font-bold text-gray-900">Profile Details</h3>
             <p className="text-sm text-gray-600">View and edit your profile information</p>
           </div>
-          <div className="p-6 flex-1 overflow-y-auto">
+          <div className="p-6 flex-1 overflow-y-auto md:overflow-y-auto overflow-y-visible">
           <form className="space-y-6 text-sm">
             {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

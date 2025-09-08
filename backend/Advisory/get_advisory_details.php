@@ -286,13 +286,31 @@ try {
     
     $parents = [];
     if (count($parent_ids) > 0) {
-        // Remove duplicates from parent_ids
-        $parent_ids = array_unique($parent_ids);
+        // Remove duplicates from parent_ids and reindex the array
+        $parent_ids = array_values(array_unique($parent_ids));
         
-        $in = str_repeat('?,', count($parent_ids) - 1) . '?';
-        $stmt = $conn->prepare("SELECT * FROM tbl_users WHERE user_id IN ($in) AND user_status = 'Active'");
-        $stmt->execute($parent_ids);
-        $parents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Create placeholders for IN clause
+        $placeholders = str_repeat('?,', count($parent_ids) - 1) . '?';
+        $stmt = $conn->prepare("SELECT * FROM tbl_users WHERE user_id IN ($placeholders) AND user_status = 'Active'");
+        
+        // Debug: Log the query and parameters
+        error_log("Parent query placeholders: " . $placeholders);
+        error_log("Parent IDs for query: " . json_encode($parent_ids));
+        error_log("Number of placeholders: " . substr_count($placeholders, '?'));
+        error_log("Number of parent IDs: " . count($parent_ids));
+        
+        // Ensure parent_ids array has numeric values only
+        $parent_ids = array_filter($parent_ids, function($id) {
+            return is_numeric($id) && $id > 0;
+        });
+        $parent_ids = array_values($parent_ids); // Reindex after filtering
+        
+        if (count($parent_ids) > 0) {
+            $placeholders = str_repeat('?,', count($parent_ids) - 1) . '?';
+            $stmt = $conn->prepare("SELECT * FROM tbl_users WHERE user_id IN ($placeholders) AND user_status = 'Active'");
+            $stmt->execute($parent_ids);
+            $parents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
         
         // Debug: Log parents found
         error_log("Parents found in database: " . count($parents));

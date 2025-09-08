@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./Context/Providers";
 import { metadata } from "./metadata";
+import PerformanceMonitor from "../components/PerformanceMonitor";
 
 export const viewport = {
   width: "device-width",
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <PerformanceMonitor />
         <Providers>{children}</Providers>
       </body>
     </html>

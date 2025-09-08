@@ -25,41 +25,47 @@ export function UserProvider({ children }) {
     total: 0
   });
 
+  // Normalize any photo value to a usable URL
+  // - Accepts plain filename (e.g., "img_xyz.png")
+  // - Accepts already-prefixed path ("/php/Uploads/img_xyz.png")
+  // - Accepts absolute URLs (http/https) and blob URLs
+  const normalizePhotoUrl = (raw) => {
+    if (!raw || typeof raw !== 'string') return "";
+
+    const value = raw.trim();
+    if (value.length === 0) return "";
+
+    // If already absolute or blob URL, keep as-is
+    if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('blob:')) {
+      return value;
+    }
+
+    // If already points to our uploads path, ensure it has a single leading slash
+    if (value.startsWith('/php/Uploads/')) return value;
+    if (value.startsWith('php/Uploads/')) return `/${value}`;
+
+    // Some records might accidentally store with double prefix; de-dupe conservatively
+    if (value.startsWith('/php/Uploads/php/Uploads/')) {
+      return value.replace('/php/Uploads/php/Uploads/', '/php/Uploads/');
+    }
+
+    // Otherwise treat it as a filename residing in backend/Uploads
+    return `/php/Uploads/${value}`;
+  };
+
   const updateUserData = (newData) => {
     setUserData(prev => ({ ...prev, ...newData }));
   };
 
   const updateUserPhoto = (newPhoto) => {
-    if (!newPhoto) {
-      setUserData(prev => ({ ...prev, user_photo: "" }));
-      return;
-    }
-    
-    // If it's already a full URL, use as is
-    if (newPhoto.startsWith('http://') || newPhoto.startsWith('https://')) {
-      setUserData(prev => ({ ...prev, user_photo: newPhoto }));
-      return;
-    }
-    
-    // If it's just a filename, construct the full backend URL
-    const fullPhotoUrl = `/php/Uploads/${newPhoto}`;
+    const fullPhotoUrl = normalizePhotoUrl(newPhoto);
     setUserData(prev => ({ ...prev, user_photo: fullPhotoUrl }));
   };
 
   // New function: Update any user's photo by ID
   const updateAnyUserPhoto = (userId, newPhoto) => {
     if (!userId) return;
-    
-    let photoUrl = "";
-    if (newPhoto) {
-      // If it's already a full URL, use as is
-      if (newPhoto.startsWith('http://') || newPhoto.startsWith('https://')) {
-        photoUrl = newPhoto;
-      } else {
-        // If it's just a filename, construct the full backend URL
-        photoUrl = `/php/Uploads/${newPhoto}`;
-      }
-    }
+    const photoUrl = normalizePhotoUrl(newPhoto);
     
     console.log('updateAnyUserPhoto called:', {
       userId,
@@ -79,17 +85,7 @@ export function UserProvider({ children }) {
   // New function: Update any student's photo by ID
   const updateAnyStudentPhoto = (studentId, newPhoto) => {
     if (!studentId) return;
-    
-    let photoUrl = "";
-    if (newPhoto) {
-      // If it's already a full URL, use as is
-      if (newPhoto.startsWith('http://') || newPhoto.startsWith('https://')) {
-        photoUrl = newPhoto;
-      } else {
-        // If it's just a filename, construct the full backend URL
-        photoUrl = `/php/Uploads/${newPhoto}`;
-      }
-    }
+    const photoUrl = normalizePhotoUrl(newPhoto);
     
     console.log('updateAnyStudentPhoto called:', {
       studentId,
@@ -168,6 +164,8 @@ export function UserProvider({ children }) {
       studentId,
       key: `student_${studentId}`,
       foundPhoto: photo,
+      photoType: typeof photo,
+      photoStartsWith: photo ? photo.substring(0, 20) : 'empty',
       mapSize: allUsersPhotos.size,
       allKeys: Array.from(allUsersPhotos.keys())
     });
@@ -183,9 +181,7 @@ export function UserProvider({ children }) {
       if (users[role]) {
         users[role].forEach(user => {
           if (user.photo) {
-            const finalUrl = (typeof user.photo === 'string' && (user.photo.startsWith('http://') || user.photo.startsWith('https://') || user.photo.startsWith('/php/Uploads/')))
-              ? user.photo
-              : `/php/Uploads/${user.photo}`;
+            const finalUrl = normalizePhotoUrl(user.photo);
             photoMap.set(user.id.toString(), finalUrl);
           }
         });
@@ -195,11 +191,17 @@ export function UserProvider({ children }) {
     // Process students
     if (users.Student) {
       users.Student.forEach(student => {
-        if (student.photo) {
-          const finalUrl = (typeof student.photo === 'string' && (student.photo.startsWith('http://') || student.photo.startsWith('https://') || student.photo.startsWith('/php/Uploads/')))
-            ? student.photo
-            : `/php/Uploads/${student.photo}`;
+        // Check multiple possible photo field names
+        const photoField = student.photo || student.stud_photo || student.user_photo;
+        if (photoField) {
+          const finalUrl = normalizePhotoUrl(photoField);
           photoMap.set(`student_${student.id}`, finalUrl);
+          console.log('Student photo processed:', {
+            studentId: student.id,
+            studentName: student.name,
+            photoField: photoField,
+            finalUrl: finalUrl
+          });
         }
       });
     }
@@ -229,9 +231,7 @@ export function UserProvider({ children }) {
     if (students) {
       students.forEach(student => {
         if (student.photo) {
-          const finalUrl = (typeof student.photo === 'string' && (student.photo.startsWith('http://') || student.photo.startsWith('https://') || student.photo.startsWith('/php/Uploads/')))
-            ? student.photo
-            : `/php/Uploads/${student.photo}`;
+          const finalUrl = normalizePhotoUrl(student.photo);
           photoMap.set(`student_${student.student_id}`, finalUrl);
         }
       });
@@ -241,9 +241,7 @@ export function UserProvider({ children }) {
     if (parents) {
       parents.forEach(parent => {
         if (parent.photo) {
-          const finalUrl = (typeof parent.photo === 'string' && (parent.photo.startsWith('http://') || parent.photo.startsWith('https://') || parent.photo.startsWith('/php/Uploads/')))
-            ? parent.photo
-            : `/php/Uploads/${parent.photo}`;
+          const finalUrl = normalizePhotoUrl(parent.photo);
           photoMap.set(parent.user_id.toString(), finalUrl);
         }
       });
@@ -292,18 +290,7 @@ export function UserProvider({ children }) {
           const data = await response.json();
           if (data.status === "success" && data.user) {
             const displayName = lsFullName || data.user.fullName || "";
-            const photoUrl = (() => {
-              const photo = data.user.photo || data.user.user_photo || "";
-              if (!photo) return "";
-              
-              // If it's already a full URL, return as is
-              if (photo.startsWith('http://') || photo.startsWith('https://')) {
-                return photo;
-              }
-              
-              // If it's just a filename, construct the full backend URL
-              return `/php/Uploads/${photo}`;
-            })();
+            const photoUrl = normalizePhotoUrl(data.user.photo || data.user.user_photo || "");
             
             setUserData({
               fullName: displayName,

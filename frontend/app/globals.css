@@ -1,4 +1,4 @@
-@import "tw-animate-css";
+/* @import "tw-animate-css"; - Commented out to reduce initial CSS bundle size */
 
 @custom-variant dark (&:is(.dark *));
 

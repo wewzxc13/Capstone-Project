@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { FaBell, FaCog, FaArrowLeft, FaUser } from "react-icons/fa";
+import { FaBell, FaCog, FaArrowLeft, FaUser, FaBars } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useUser } from "../Context/UserContext";
 
-export default function Topbar({ title = "Dashboard", notifications = null, onBack }) {
+export default function Topbar({ title = "Dashboard", notifications = null, onBack, onOpenSidebar }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const { userData } = useUser();
@@ -1992,8 +1992,18 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
     : "User";
 
     return (
-      <div className="mb-6 rounded-2xl bg-gradient-to-r from-[#E9F3FF] to-[#CFE3FC] border border-blue-100 shadow-sm px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 select-none caret-transparent">
+      <div className="sticky top-0 z-50 mb-6 -mt-6 rounded-none bg-gradient-to-r from-[#E9F3FF] to-[#CFE3FC] border border-blue-100 shadow-sm px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 select-none caret-transparent -mx-6">
       <div className="flex items-center w-full select-none">
+        {onOpenSidebar && (
+          <button
+            className="md:hidden mr-3 p-2.5 rounded-full bg-white/90 hover:bg-white shadow-sm border border-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#232c67]/50"
+            onClick={onOpenSidebar}
+            aria-label="Open sidebar"
+            title="Open sidebar"
+          >
+            <FaBars className="text-[#232c67] text-lg" />
+          </button>
+        )}
         {onBack && (
           <button
             className="mr-3 p-2.5 rounded-full bg-white/90 hover:bg-white shadow-sm border border-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#232c67]/50"
@@ -2008,7 +2018,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
       </div>
         <div className="flex items-center gap-2 sm:gap-3 relative select-none caret-transparent">
         <button
-          className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-sm border border-blue-100 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#232c67]/50"
+          className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-sm border border-blue-100 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#232c67]/50 min-h-[44px] min-w-[44px] flex items-center justify-center"
           onClick={handleNotificationBellClick}
           aria-label="Notifications"
           title="Notifications"
@@ -2022,8 +2032,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         </button>
         {isNotificationOpen && (
           <div
-            className="absolute right-0 mt-3 w-[400px] max-h-[500px] overflow-y-auto bg-white/95 backdrop-blur-sm shadow-xl rounded-2xl p-4 z-50 text-sm space-y-3 border border-blue-100 notification-dropdown select-none"
-            style={{ top: '100%' }}
+            className="fixed sm:absolute left-4 right-4 sm:right-0 sm:left-auto top-24 sm:mt-3 w-auto sm:w-[420px] max-h-[70vh] overflow-y-auto bg-white/95 backdrop-blur-sm shadow-xl rounded-2xl p-4 z-50 text-sm space-y-3 border border-blue-100 notification-dropdown select-none"
             onClick={e => e.stopPropagation()}
           >
             <h4 className="text-base font-semibold text-[#2c2f6f]">Notifications</h4>
@@ -2052,7 +2061,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
               <div className="space-y-3">
                 {getCombinedLogs().map((item, idx) => (
                   <div 
-                    className="flex items-start gap-3 bg-white rounded-xl p-2.5"
+                    className="flex items-start gap-3 bg-white rounded-xl p-3 border border-gray-100"
                     key={idx}
                   >
                     <span className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
@@ -2063,16 +2072,16 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
                       'bg-[#232c67]'
                     }`} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-500">{formatLogTimestamp(item.timestamp)}</p>
-                      <p className={`text-sm ${item.type === 'warning' ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>{item.msg}</p>
+                      <p className="text-xs text-gray-500 mb-1">{formatLogTimestamp(item.timestamp)}</p>
+                      <p className={`text-sm leading-relaxed break-words ${item.type === 'warning' ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>{item.msg}</p>
                       {/* Show seen status for Admin/Super Admin and read status for Teachers/Parents */}
                       {(userData.role === "Admin" || userData.role === "SuperAdmin" || userData.role === "Super Admin") && 
                        item.log && item.log.admin_seen && (
-                        <p className="text-xs text-green-600 mt-1">✓ Read</p>
+                        <p className="text-xs text-green-600 mt-2">✓ Read</p>
                       )}
                       {(userData.role === "Teacher" || userData.role === "Parent") && 
                        item.log && item.log.is_read && (
-                        <p className="text-xs text-green-600 mt-1">✓ Read</p>
+                        <p className="text-xs text-green-600 mt-2">✓ Read</p>
                       )}
                     </div>
                   </div>
@@ -2083,7 +2092,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         )}
         <div className="relative select-none">
           <button
-            className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-sm border border-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#232c67]/50"
+            className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-sm border border-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#232c67]/50 min-h-[44px] min-w-[44px] flex items-center justify-center"
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             aria-label="Settings"
             title="Settings"
@@ -2091,25 +2100,27 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
             <FaCog className="text-[#232c67]" />
           </button>
           {isProfileOpen && (
-            <div className="absolute right-0 mt-2 bg-white shadow-xl rounded-2xl border border-blue-100 w-40 sm:w-48 z-50 profile-dropdown select-none">
-              <p className="px-4 py-2 font-semibold text-xs sm:text-sm text-gray-700">Settings</p>
+            <div 
+              className="profile-dropdown fixed sm:absolute right-4 sm:right-0 top-28 sm:top-auto sm:mt-2 bg-white shadow-xl rounded-2xl border border-blue-100 w-64 sm:w-48 z-[1000] select-none"
+            >
+              <p className="px-4 py-3 font-semibold text-xs sm:text-sm text-gray-700 border-b border-gray-100">Settings</p>
               {userData.role !== "Parent" && (
                 <button 
                   onClick={handleProfileUpdate}
-                  className="block w-full px-4 py-2 text-left hover:bg-gray-50 text-xs sm:text-sm"
+                  className="block w-full px-4 py-3 text-left hover:bg-gray-50 active:bg-gray-100 text-xs sm:text-sm min-h-[44px] flex items-center"
                 >
                   Profile Update
                 </button>
               )}
               <button
                 onClick={handleChangePassword}
-                className="block w-full px-4 py-2 text-left hover:bg-gray-50 text-xs sm:text-sm"
+                className="block w-full px-4 py-3 text-left hover:bg-gray-50 active:bg-gray-100 text-xs sm:text-sm min-h-[44px] flex items-center"
               >
                 Change Password
               </button>
               <button
                 onClick={handleLogout}
-                className="block w-full px-4 py-2 text-left hover:bg-gray-50 text-red-500 text-xs sm:text-sm"
+                className="block w-full px-4 py-3 text-left hover:bg-gray-50 active:bg-gray-100 text-red-500 text-xs sm:text-sm min-h-[44px] flex items-center"
               >
                 Logout
               </button>

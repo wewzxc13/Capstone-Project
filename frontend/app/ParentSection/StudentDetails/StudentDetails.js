@@ -1081,12 +1081,12 @@ const StudentDetails = () => {
 
       {/* Tab Navigation for Students - Only show if parent has 2+ active students */}
       {students.filter(s => s.schoolStatus === 'Active').length > 1 && (
-        <div className="bg-white px-8 pt-6 pb-4 border-b border-gray-200">
-          <div className="flex gap-3">
+        <div className="bg-white px-2 sm:px-4 pt-6 pb-4 border-b border-gray-200 overflow-x-auto pb-2">
+          <div className="flex gap-2 sm:gap-3">
             {students.filter(s => s.schoolStatus === 'Active').map(s => (
             <button
               key={s.id}
-              className={`px-6 py-3 rounded-lg focus:outline-none transition-all duration-200 flex items-start gap-3 min-w-[200px] ${
+              className={`px-2 sm:px-3 py-2 rounded-lg focus:outline-none transition-all duration-200 flex items-center gap-1 sm:gap-2 min-w-[140px] sm:min-w-[170px] flex-shrink-0 ${
                 selectedStudentId === s.id 
                   ? editing 
                     ? 'bg-[#2c2f6f] text-white shadow-lg transform scale-105 cursor-default' // Selected and editing - no hover effects
@@ -1100,7 +1100,7 @@ const StudentDetails = () => {
               title={editing ? 'Cannot switch students while editing' : `Switch to ${s.firstName || s.name}`}
             >
               {/* Left side - Student Photo or Fallback Icon */}
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${selectedStudentId === s.id ? 'bg-white' : 'bg-[#2c2f6f]'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${selectedStudentId === s.id ? 'bg-white' : 'bg-[#2c2f6f]'}`}>
                 {/* Debug logging for navigation tab photos */}
                 {console.log(`Navigation tab photo for ${s.firstName || s.name}:`, {
                   stud_photo: s.stud_photo,
@@ -1129,16 +1129,16 @@ const StudentDetails = () => {
                 ) : null}
                 {/* Fallback icon that shows when no photo or photo fails to load */}
                 <div className={`w-full h-full rounded-full flex items-center justify-center ${selectedStudentId === s.id ? 'bg-white' : 'bg-[#2c2f6f]'} ${s.stud_photo || s.photo ? 'hidden' : ''}`}>
-                  <FaUser className={`w-4 h-4 ${selectedStudentId === s.id ? 'text-[#2c2f6f]' : 'text-white'}`} />
+                  <FaUser className={`w-3 h-3 ${selectedStudentId === s.id ? 'text-[#2c2f6f]' : 'text-white'}`} />
                 </div>
               </div>
               
               {/* Right side - Student name and class level */}
               <div className="flex flex-col items-start text-left">
-                <div className="font-semibold text-sm leading-tight">
+                <div className="font-semibold text-xs sm:text-sm leading-tight truncate max-w-[100px] sm:max-w-none">
                   {s.lastName ? `${s.lastName}, ${s.firstName} ${s.middleName || ''}`.trim() : s.name}
                 </div>
-                <div className="text-xs opacity-80 leading-tight">
+                <div className="text-xs opacity-80 leading-tight truncate max-w-[100px] sm:max-w-none">
                   {s.levelName || 'Class N/A'}
                   {editing && selectedStudentId === s.id && (
                     <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
@@ -1211,9 +1211,13 @@ const StudentDetails = () => {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#2c2f6f] mb-1">Gender</label>
-                <div className="flex gap-6 text-sm text-[#2c2f6f]">
+                <div className="flex flex-wrap items-center gap-3 text-sm text-[#2c2f6f]">
                   {['Male', 'Female'].map(option => (
-                    <label key={option} className={`flex items-center gap-2 ${editing ? 'cursor-pointer' : 'cursor-default'}`}>
+                    <label key={option} className={`flex items-center gap-2 px-2 py-1 rounded-md border ${
+                      (editing ? 'cursor-pointer' : 'cursor-default')
+                    } ${
+                      (editing ? 'border-gray-300' : 'border-transparent')
+                    }`}>
                       <input
                         type="radio"
                         name="gender"
@@ -1222,7 +1226,7 @@ const StudentDetails = () => {
                         onChange={editing ? handleStudentChange : undefined}
                         readOnly={!editing}
                         disabled={!editing && !studentData?.gender}
-                        className={editing ? 'cursor-pointer' : 'cursor-default'}
+                        className={(editing ? 'cursor-pointer' : 'cursor-default') + ' accent-[#2c2f6f]'}
                       />
                       {option}
                     </label>
@@ -1443,8 +1447,8 @@ const StudentDetails = () => {
             {/* Father's Details */}
             <div className="mb-4">
               <h5 className="text-sm font-semibold text-[#2c2f6f] mb-2">Father's Details</h5>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="col-span-2 sm:col-span-1">
                   <label className="block text-sm font-semibold text-[#2c2f6f] mb-1">Father's Name</label>
                   <input type="text" name="father_name" value={editing ? (editParentProfile?.father_name ?? '') : (parentProfile?.father_name || 'Not specified')} onChange={editing ? handleParentChange : undefined} readOnly={!editing} className={`${getInputClassName('father_name', validationErrors, editing ? editParentProfile?.father_name : parentProfile?.father_name, editing)} caret-[#1E2A79]`} />
                   {validationErrors.father_name && <div className="text-red-500 text-xs mt-1">{validationErrors.father_name}</div>}
@@ -1464,8 +1468,8 @@ const StudentDetails = () => {
             {/* Mother's Details */}
             <div>
               <h5 className="text-sm font-semibold text-[#2c2f6f] mb-2">Mother's Details</h5>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="col-span-2 sm:col-span-1">
                   <label className="block text-sm font-semibold text-[#2c2f6f] mb-1">Mother's Name</label>
                   <input type="text" name="mother_name" value={editing ? (editParentProfile?.mother_name ?? '') : (parentProfile?.mother_name || 'Not specified')} onChange={editing ? handleParentChange : undefined} readOnly={!editing} className={`${getInputClassName('mother_name', validationErrors, editing ? editParentProfile?.mother_name : parentProfile?.mother_name, editing)} caret-[#1E2A79]`} />
                   {validationErrors.mother_name && <div className="text-red-500 text-xs mt-1">{validationErrors.mother_name}</div>}

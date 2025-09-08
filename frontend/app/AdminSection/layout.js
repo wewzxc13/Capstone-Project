@@ -31,6 +31,8 @@ export default function AdminLayout({ children }) {
   const [userRole, setUserRole] = useState("");
   // Desktop sidebar open/close state
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // Signal to programmatically open mobile sidebar from Topbar
+  const [mobileSidebarOpenTick, setMobileSidebarOpenTick] = useState(0);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -63,7 +65,7 @@ export default function AdminLayout({ children }) {
         {/* Desktop collapse/expand toggle */}
         {showSidebar && (
           <button
-            className={`hidden md:flex fixed top-6 z-40 ${isSidebarOpen ? "left-64 -translate-x-1/2" : "left-20 -translate-x-1/2"} transform bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none`}
+            className={`hidden md:flex fixed top-6 z-[200] ${isSidebarOpen ? "left-64 -translate-x-1/2" : "left-20 -translate-x-1/2"} transform bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none`}
             onClick={() => setIsSidebarOpen((o) => !o)}
             aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
@@ -71,11 +73,16 @@ export default function AdminLayout({ children }) {
             <FaBars size={20} className="text-[#232c67]" />
           </button>
         )}
-        {showSidebar && <AdminSidebar isSidebarOpen={isSidebarOpen} />}
+        {showSidebar && <AdminSidebar isSidebarOpen={isSidebarOpen} mobileOpenSignal={mobileSidebarOpenTick} showInternalHamburger={false} />}
         <div className="flex-1 flex flex-col overflow-y-auto">
           <main className="flex-1 p-6 select-none caret-transparent">
             {showTopbar && (
-              <Topbar title={title} userName={userName} userRole={userRole} />
+              <Topbar 
+                title={title} 
+                userName={userName} 
+                userRole={userRole}
+                onOpenSidebar={() => setMobileSidebarOpenTick((t) => t + 1)}
+              />
             )}
             {children}
           </main>

@@ -1,8 +1,14 @@
 "use client";
 
 import { FaBell, FaCog, FaPhone, FaEnvelope, FaUser, FaCalendarAlt, FaChartLine, FaUsers, FaBook, FaExclamationTriangle } from "react-icons/fa";
-import { Line, Bar } from "react-chartjs-2";
-import '../../../lib/chart-config.js';
+import dynamic from "next/dynamic";
+
+// Dynamically import chart components to reduce initial bundle size
+const Line = dynamic(() => import("react-chartjs-2").then(mod => ({ default: mod.Line })), { ssr: false });
+const Bar = dynamic(() => import("react-chartjs-2").then(mod => ({ default: mod.Bar })), { ssr: false });
+
+// Dynamically import chart config
+const loadChartConfig = () => import('../../../lib/chart-config.js');
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation';
 import { useUser } from "../../Context/UserContext";
@@ -156,6 +162,9 @@ export default function TeacherDashboard() {
     if (!teacher_id) return;
     
     setTeacherId(teacher_id);
+    
+    // Load chart config dynamically
+    loadChartConfig();
     
     // Global error handler for images to prevent 404 errors in Network tab
     const handleImageError = (event) => {

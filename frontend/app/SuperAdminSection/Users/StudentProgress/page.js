@@ -10,6 +10,34 @@ import "react-toastify/dist/ReactToastify.css";
 import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "../../../Context/UserContext";
 
+// Helper function to construct full photo URL from filename
+function getPhotoUrl(filename) {
+  if (!filename) {
+    console.log('🔍 getPhotoUrl: No filename provided');
+    return null;
+  }
+  
+  // If it's already a full URL (like a blob URL for preview), return as is
+  if (filename.startsWith('http://') || filename.startsWith('https://') || filename.startsWith('blob:')) {
+    console.log('🔍 getPhotoUrl: Already a full URL:', filename);
+    return filename;
+  }
+  
+  // If it already starts with /php/Uploads/, return as is
+  if (filename.startsWith('/php/Uploads/')) {
+    console.log('🔍 getPhotoUrl: Already has /php/Uploads/ prefix:', filename);
+    return filename;
+  }
+  
+  // If it's a filename, construct the full backend URL
+  const fullUrl = `/php/Uploads/${filename}`;
+  console.log('🔍 getPhotoUrl: Converting filename to full URL:', {
+    filename: filename,
+    fullUrl: fullUrl
+  });
+  return fullUrl;
+}
+
 export default function StudentProgress({ formData: initialFormData }) {
   const [activeTab, setActiveTab] = useState("Class Overview");
   const [isEditing, setIsEditing] = useState(false);
@@ -639,16 +667,16 @@ export default function StudentProgress({ formData: initialFormData }) {
     
     if (dataPoints.every(v => v === null)) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 text-gray-400 italic border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
-          <FaChartLine className="text-4xl mb-4 text-gray-300" />
-          <p className="text-lg font-medium">No chart data available</p>
-          <p className="text-sm text-gray-500 mt-2">Quarterly performance data will appear here</p>
+        <div className="flex flex-col items-center justify-center h-48 md:h-64 text-gray-400 italic border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 p-4">
+          <FaChartLine className="text-3xl md:text-4xl mb-4 text-gray-300" />
+          <p className="text-base md:text-lg font-medium text-center">No chart data available</p>
+          <p className="text-xs md:text-sm text-gray-500 mt-2 text-center">Quarterly performance data will appear here</p>
         </div>
       );
     }
     
     return (
-      <div className="h-64 w-full bg-white rounded-lg border border-gray-200 p-4">
+      <div className="h-48 md:h-64 w-full bg-white rounded-lg border border-gray-200 p-2 md:p-4">
         <Line
           data={{
             labels: xLabels,
@@ -1112,51 +1140,83 @@ export default function StudentProgress({ formData: initialFormData }) {
             {/* Teaching Staff */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-gray-700 mb-3">Teaching Staff</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  {advisory?.lead_teacher_photo ? (
-                    <img
-                      src={advisory.lead_teacher_photo}
-                      alt="Lead Teacher"
-                      className="w-12 h-12 rounded-full object-cover shadow-sm"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        if (e.target.nextSibling) {
-                          e.target.nextSibling.style.display = 'flex';
-                        }
-                      }}
-                    />
-                  ) : null}
-                  {/* Fallback icon that shows when photo fails to load */}
-                  <div className={`w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg shadow-sm ${advisory?.lead_teacher_photo ? 'hidden' : 'flex'}`}>
-                    <FaChalkboardTeacher />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Lead Teacher</p>
-                    <p className="text-sm text-gray-600">{leadTeacher || "Not assigned"}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                  {(() => {
+                    // Get teacher photo from advisory data
+                    const teacherPhoto = advisory?.lead_teacher_photo;
+                    const photoUrl = teacherPhoto ? getPhotoUrl(teacherPhoto) : null;
+                    
+                    if (photoUrl) {
+                      return (
+                        <>
+                          <img
+                            src={photoUrl}
+                            alt="Lead Teacher"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-sm flex-shrink-0"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              if (e.target.nextSibling) {
+                                e.target.nextSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                          {/* Fallback icon that shows when photo fails to load */}
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs sm:text-sm shadow-sm hidden flex-shrink-0">
+                            <FaChalkboardTeacher />
+                          </div>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs sm:text-sm shadow-sm flex-shrink-0">
+                          <FaChalkboardTeacher />
+                        </div>
+                      );
+                    }
+                  })()}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">Lead Teacher</p>
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">{leadTeacher || "Not assigned"}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  {advisory?.assistant_teacher_photo ? (
-                    <img
-                      src={advisory.assistant_teacher_photo}
-                      alt="Assistant Teacher"
-                      className="w-12 h-12 rounded-full object-cover shadow-sm"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        if (e.target.nextSibling) {
-                          e.target.nextSibling.style.display = 'flex';
-                        }
-                      }}
-                    />
-                  ) : null}
-                  {/* Fallback icon that shows when photo fails to load */}
-                  <div className={`w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm ${advisory?.assistant_teacher_photo ? 'hidden' : 'flex'}`}>
-                    <FaChalkboardTeacher />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Assistant Teacher</p>
-                    <p className="text-sm text-gray-600">{assistantTeacher || "Not assigned"}</p>
+                <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                  {(() => {
+                    // Get teacher photo from advisory data
+                    const teacherPhoto = advisory?.assistant_teacher_photo;
+                    const photoUrl = teacherPhoto ? getPhotoUrl(teacherPhoto) : null;
+                    
+                    if (photoUrl) {
+                      return (
+                        <>
+                          <img
+                            src={photoUrl}
+                            alt="Assistant Teacher"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-sm flex-shrink-0"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              if (e.target.nextSibling) {
+                                e.target.nextSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                          {/* Fallback icon that shows when photo fails to load */}
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xs sm:text-sm shadow-sm hidden flex-shrink-0">
+                            <FaChalkboardTeacher />
+                          </div>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xs sm:text-sm shadow-sm flex-shrink-0">
+                          <FaChalkboardTeacher />
+                        </div>
+                      );
+                    }
+                  })()}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">Assistant Teacher</p>
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">{assistantTeacher || "Not assigned"}</p>
                   </div>
                 </div>
               </div>
@@ -1166,20 +1226,20 @@ export default function StudentProgress({ formData: initialFormData }) {
           {/* Right Column - Student List Header and List */}
           <div className="space-y-4">
             {/* Student List Header with Counts */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
               <h4 className="text-sm font-semibold text-gray-700">Student List</h4>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 rounded-full">
-                  <FaMars className="text-blue-600 text-sm" />
-                  <span className="text-sm font-medium text-blue-900">Male: {maleCount}</span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-blue-50 rounded-full">
+                  <FaMars className="text-blue-600 text-xs sm:text-sm" />
+                  <span className="text-xs sm:text-sm font-medium text-blue-900">Male: {maleCount}</span>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-pink-50 rounded-full">
-                  <FaVenus className="text-pink-600 text-sm" />
-                  <span className="text-sm font-medium text-pink-900">Female: {femaleCount}</span>
+                <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-pink-50 rounded-full">
+                  <FaVenus className="text-pink-600 text-xs sm:text-sm" />
+                  <span className="text-xs sm:text-sm font-medium text-pink-900">Female: {femaleCount}</span>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-green-50 rounded-full">
-                  <FaUsers className="text-green-600 text-sm" />
-                  <span className="text-sm font-medium text-green-900">Total: {totalCount}</span>
+                <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-green-50 rounded-full">
+                  <FaUsers className="text-green-600 text-xs sm:text-sm" />
+                  <span className="text-xs sm:text-sm font-medium text-green-900">Total: {totalCount}</span>
                 </div>
               </div>
             </div>
@@ -1246,7 +1306,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                        return sorted.map((student, index) => (
                          <div 
                            key={`${student.student_id}-${index}`} 
-                           className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                           className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                            onClick={() => setSelectedStudent(student)}
                          >
                            {(() => {
@@ -1259,7 +1319,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                    <img
                                      src={realTimePhoto}
                                      alt="Profile"
-                                     className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                     className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
                                      onError={(e) => {
                                        e.target.style.display = 'none';
                                        if (e.target.nextSibling) {
@@ -1268,32 +1328,34 @@ export default function StudentProgress({ formData: initialFormData }) {
                                      }}
                                    />
                                    {/* Fallback icon that shows when photo fails to load */}
-                                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center hidden">
-                                     <FaUser className="text-blue-600 text-sm" />
+                                   <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center hidden flex-shrink-0">
+                                     <FaUser className="text-blue-600 text-xs sm:text-sm" />
                                    </div>
                                  </>
                                );
                              } else {
                                return (
-                                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                   <FaUser className="text-blue-600 text-sm" />
+                                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                   <FaUser className="text-blue-600 text-xs sm:text-sm" />
                                  </div>
                                );
                              }
                            })()}
-                           <div className="flex-1">
-                             <p className="text-sm font-medium text-gray-900">
+                           <div className="flex-1 min-w-0">
+                             <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                                {student.stud_lastname}, {student.stud_firstname} {student.stud_middlename || ''}
                              </p>
-                             <p className="text-sm text-gray-500">
+                             <p className="text-xs sm:text-sm text-gray-500 truncate">
                                {student.stud_schedule_class || "No session"}
                              </p>
                            </div>
-                           {student.stud_gender === "Male" ? (
-                             <FaMars className="text-blue-600 text-sm" />
-                           ) : (
-                             <FaVenus className="text-pink-600 text-sm" />
-                           )}
+                           <div className="flex-shrink-0">
+                             {student.stud_gender === "Male" ? (
+                               <FaMars className="text-blue-600 text-xs sm:text-sm" />
+                             ) : (
+                               <FaVenus className="text-pink-600 text-xs sm:text-sm" />
+                             )}
+                           </div>
                          </div>
                        ));
                      })()}
@@ -1315,9 +1377,9 @@ export default function StudentProgress({ formData: initialFormData }) {
 
                                           {/* Selected Student Info - Only show on Assessment/Status tabs, not on Class Overview */}
            {selectedStudent && activeTab !== "Class Overview" && (
-             <div className="bg-[#232c67] flex flex-row items-center w-full px-8 py-6 gap-10 rounded-lg">
+             <div className="bg-[#232c67] flex flex-col md:flex-row items-start md:items-center w-full px-4 md:px-8 py-3 md:py-6 gap-3 md:gap-10 rounded-lg">
                {/* Left side with avatar and name - 40% */}
-               <div className="flex items-center gap-4 w-[40%]">
+               <div className="flex items-center gap-3 md:gap-4 w-full md:w-[40%]">
                  {(() => {
                    // Get real-time photo from UserContext, fallback to student.photo if not available
                    const realTimePhoto = getStudentPhoto(selectedStudent.student_id) || selectedStudent.photo;
@@ -1328,7 +1390,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                          <img
                            src={realTimePhoto}
                            alt="Profile"
-                           className="w-20 h-20 rounded-full object-cover shadow-md border-2 border-white"
+                           className="w-12 h-12 md:w-20 md:h-20 rounded-full object-cover shadow-md border-2 border-white"
                            onError={(e) => {
                              e.target.style.display = 'none';
                              if (e.target.nextSibling) {
@@ -1337,20 +1399,20 @@ export default function StudentProgress({ formData: initialFormData }) {
                            }}
                          />
                          {/* Fallback icon that shows when photo fails to load */}
-                         <div className="w-20 h-20 bg-blue-200 rounded-full flex items-center justify-center hidden">
-                           <FaUser className="text-white text-2xl" />
+                         <div className="w-12 h-12 md:w-20 md:h-20 bg-blue-200 rounded-full flex items-center justify-center hidden">
+                           <FaUser className="text-white text-lg md:text-2xl" />
                          </div>
                        </>
                      );
                    } else {
                      return (
-                       <div className="w-20 h-20 bg-blue-200 rounded-full flex items-center justify-center">
-                         <FaUser className="text-white text-2xl" />
+                       <div className="w-12 h-12 md:w-20 md:h-20 bg-blue-200 rounded-full flex items-center justify-center">
+                         <FaUser className="text-white text-lg md:text-2xl" />
                        </div>
                      );
                    }
                  })()}
-                 <span className="font-bold text-white text-3xl whitespace-nowrap">
+                 <span className="font-bold text-white text-lg md:text-3xl whitespace-nowrap truncate max-w-[220px] md:max-w-none">
                    {selectedStudent ? 
                      `${selectedStudent.stud_lastname}, ${selectedStudent.stud_firstname} ${selectedStudent.stud_middlename || ''}` : 
                      "Select a student to view progress"
@@ -1359,26 +1421,26 @@ export default function StudentProgress({ formData: initialFormData }) {
                </div>
                
                {/* Right side with student details in two rows - 60% */}
-               <div className="flex flex-col gap-4 w-[60%]">
+               <div className="flex flex-col gap-2 md:gap-4 w-full md:w-[60%]">
                  {/* First row - Schedule, Gender, Handedness */}
-                 <div className="flex items-center gap-8">
-                   <span className="text-white text-lg font-bold">
+                 <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-8">
+                   <span className="text-white text-sm md:text-lg font-bold">
                      <span className="text-white">Schedule:</span> <span className="font-normal ml-2">{selectedStudent.stud_schedule_class || "N/A"}</span>
                    </span>
-                   <span className="text-white text-lg font-bold">
+                   <span className="text-white text-sm md:text-lg font-bold">
                      <span className="text-white">Gender:</span> <span className="font-normal ml-2">{selectedStudent.stud_gender || "N/A"}</span>
                    </span>
-                   <span className="text-white text-lg font-bold">
+                   <span className="text-white text-sm md:text-lg font-bold">
                      <span className="text-white">Handedness:</span> <span className="font-normal ml-2">{selectedStudent.stud_handedness || "N/A"}</span>
                    </span>
                  </div>
                  
                  {/* Second row - Date of Birth and Parent */}
-                 <div className="flex items-center gap-8">
-                   <span className="text-white text-lg font-bold">
+                 <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-8">
+                   <span className="text-white text-sm md:text-lg font-bold">
                      <span className="text-white">Date of Birth:</span> <span className="font-normal ml-2">{formatDateOfBirth(selectedStudent.stud_birthdate)}</span>
                    </span>
-                   <span className="text-white text-lg font-bold">
+                   <span className="text-white text-sm md:text-lg font-bold">
                      <span className="text-white">Parent:</span> <span className="font-normal ml-2">
                        {selectedStudent.parent_lastname && selectedStudent.parent_firstname ? 
                          `${selectedStudent.parent_lastname}, ${selectedStudent.parent_firstname} ${selectedStudent.parent_middlename || ''}`.trim() : 
@@ -1396,9 +1458,9 @@ export default function StudentProgress({ formData: initialFormData }) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                      {/* Sticky Student Info Section for Assessment/Status tabs */}
            {selectedStudent && (
-             <div className="bg-[#232c67] flex flex-row items-center w-full px-6 py-4 gap-6 sticky top-0 z-10">
+             <div className="bg-[#232c67] flex flex-col sm:flex-row items-start sm:items-center w-full px-2 sm:px-6 py-2 sm:py-4 gap-2 sm:gap-6 sticky top-0 z-10">
                {/* Left side with avatar and name - 40% */}
-               <div className="flex items-center gap-3 w-[40%]">
+               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-[40%]">
                  {(() => {
                    // Get real-time photo from UserContext, fallback to student.photo if not available
                    const realTimePhoto = getStudentPhoto(selectedStudent.student_id) || selectedStudent.photo;
@@ -1409,7 +1471,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                          <img
                            src={realTimePhoto}
                            alt="Profile"
-                           className="w-16 h-16 rounded-full object-cover shadow-md border-2 border-white"
+                           className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover shadow-md border-2 border-white"
                            onError={(e) => {
                              e.target.style.display = 'none';
                              if (e.target.nextSibling) {
@@ -1418,20 +1480,20 @@ export default function StudentProgress({ formData: initialFormData }) {
                            }}
                          />
                          {/* Fallback icon that shows when photo fails to load */}
-                         <div className="w-16 h-16 bg-blue-200 rounded-full flex items-center justify-center hidden">
-                           <FaUser className="text-white text-lg" />
+                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-200 rounded-full flex items-center justify-center hidden">
+                           <FaUser className="text-white text-lg sm:text-xl" />
                          </div>
                        </>
                      );
                    } else {
                      return (
-                       <div className="w-16 h-16 bg-blue-200 rounded-full flex items-center justify-center">
-                         <FaUser className="text-white text-lg" />
+                       <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-200 rounded-full flex items-center justify-center">
+                         <FaUser className="text-white text-lg sm:text-xl" />
                        </div>
                      );
                    }
                  })()}
-                 <span className="font-bold text-white text-xl whitespace-nowrap">
+                 <span className="font-bold text-white text-lg sm:text-xl whitespace-nowrap truncate max-w-[200px] sm:max-w-none">
                    {selectedStudent ? 
                      `${selectedStudent.stud_lastname}, ${selectedStudent.stud_firstname} ${selectedStudent.stud_middlename || ''}` : 
                      "Select a student to view progress"
@@ -1440,22 +1502,22 @@ export default function StudentProgress({ formData: initialFormData }) {
                </div>
                
                {/* Right side with student details in two rows - 60% */}
-               <div className="flex flex-col gap-2 w-[60%]">
+               <div className="flex flex-col gap-2 w-full sm:w-[60%]">
                  {/* First row - Schedule, Gender, Handedness */}
-                 <div className="flex items-center gap-6">
-                   <span className="text-white text-base font-bold">
+                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
+                   <span className="text-white text-sm sm:text-base font-bold">
                      <span className="text-white">Schedule:</span> <span className="font-normal ml-2">{selectedStudent.stud_schedule_class || "N/A"}</span>
                    </span>
-                   <span className="text-white text-base font-bold">
+                   <span className="text-white text-sm sm:text-base font-bold">
                      <span className="text-white">Gender:</span> <span className="font-normal ml-2">{selectedStudent.stud_gender || "N/A"}</span>
                    </span>
-                   <span className="text-white text-base font-bold">
+                   <span className="text-white text-sm sm:text-base font-bold">
                      <span className="text-white">Handedness:</span> <span className="font-normal ml-2">{selectedStudent.stud_handedness || "N/A"}</span>
                    </span>
                  </div>
                  
                  {/* Second row - Date of Birth and Parent */}
-                 <div className="flex items-center gap-6">
+                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
                    <span className="text-white text-sm font-bold">
                      <span className="text-white">Date of Birth:</span> <span className="font-normal ml-2">{formatDateOfBirth(selectedStudent.stud_birthdate)}</span>
                    </span>
@@ -1475,7 +1537,7 @@ export default function StudentProgress({ formData: initialFormData }) {
         {/* Scrollable Content Area */}
         <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
           {/* Main Content Grid */}
-          <div className="grid grid-cols-5 gap-8 bg-white px-8 pt-8 pb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-8 bg-white px-2 md:px-8 pt-2 md:pt-8 pb-2 md:pb-8">
             {activeTab === "Assessment" ? (
               assessmentLoading ? (
                 <div className="col-span-5 flex flex-col items-center justify-center py-12">
@@ -1501,7 +1563,8 @@ export default function StudentProgress({ formData: initialFormData }) {
                     
                       {/* Assessment Table */}
                     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                        <table className="w-full text-sm">
+                        <div className="overflow-x-auto">
+                        <table className="w-full text-sm min-w-[600px]">
                           <thead>
                             <tr>
                               <th className="border-b border-gray-200 px-4 py-1.5 bg-gray-50 text-left font-semibold text-gray-700">Subjects</th>
@@ -1657,23 +1720,25 @@ export default function StudentProgress({ formData: initialFormData }) {
 
                           </tbody>
                         </table>
+                        </div>
                       </div>
                   </div>
 
                   {/* Attendance Section */}
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <FaChartBar className="text-green-600 text-lg" />
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-2 md:p-4 border border-green-100">
+                    <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-4">
+                      <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <FaChartBar className="text-green-600 text-sm md:text-lg" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Record of Attendance</h3>
-                        <p className="text-sm text-gray-600">Monthly attendance tracking</p>
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900">Record of Attendance</h3>
+                        <p className="text-xs md:text-sm text-gray-600">Monthly attendance tracking</p>
                       </div>
                     </div>
                     
                     <div className="bg-white rounded-lg border border-gray-200">
-                        <table className="w-full text-sm">
+                        <div className="overflow-x-auto">
+                        <table className="w-full text-sm min-w-[600px]">
                           <thead>
                             <tr className="bg-green-50">
                               <th className="border-b border-gray-200 px-2 py-3 text-left font-semibold text-gray-700 w-[120px]">Category</th>
@@ -1716,26 +1781,28 @@ export default function StudentProgress({ formData: initialFormData }) {
                             })()}
                           </tbody>
                         </table>
+                        </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Right: Legend and Comments (2 columns) */}
-                <div className="col-span-2 space-y-8">
+                <div className="col-span-1 md:col-span-2 space-y-4 md:space-y-8">
                   {/* Legend Section */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <FaTable className="text-purple-600 text-lg" />
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2 md:p-4">
+                    <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-4">
+                      <div className="w-8 h-8 md:w-10 md:h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <FaTable className="text-purple-600 text-sm md:text-lg" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Assessment Legend</h3>
-                        <p className="text-sm text-gray-600">Performance indicators and meanings</p>
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900">Assessment Legend</h3>
+                        <p className="text-xs md:text-sm text-gray-600">Performance indicators and meanings</p>
                       </div>
                     </div>
                     
                     <div className="overflow-hidden">
-                        <table className="w-full text-sm">
+                        <div className="overflow-x-auto">
+                        <table className="w-full text-sm min-w-[400px]">
                           <thead>
                             <tr className="bg-gray-50">
                               <th className="border-b border-gray-200 px-4 py-3 text-left font-semibold text-gray-700">Shapes</th>
@@ -1771,18 +1838,19 @@ export default function StudentProgress({ formData: initialFormData }) {
                             )}
                           </tbody>
                         </table>
+                        </div>
                     </div>
                   </div>
 
                   {/* Risk Level Legend */}
-                  <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border border-red-100">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                        <FaExclamationTriangle className="text-red-600 text-lg" />
+                  <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-2 md:p-4 border border-red-100">
+                    <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-4">
+                      <div className="w-8 h-8 md:w-10 md:h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                        <FaExclamationTriangle className="text-red-600 text-sm md:text-lg" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Risk Level</h3>
-                        <p className="text-sm text-gray-600">Performance risk indicators</p>
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900">Risk Level</h3>
+                        <p className="text-xs md:text-sm text-gray-600">Performance risk indicators</p>
                       </div>
                     </div>
                     

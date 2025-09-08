@@ -40,3 +40,21 @@ Total=30.598, Count=7
 Average=4.371
 Shape lookup result: {"visual_feedback_id":1}
 Updated tbl_quarter_feedback with visual_feedback_id=1
+Received: student_id=21, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":5}]
+Total=1.399, Count=1
+Average=1.399
+Shape lookup result: {"visual_feedback_id":5}
+Updated tbl_quarter_feedback with visual_feedback_id=5
+Received: student_id=21, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":5},{"visual_feedback_id":5}]
+Total=2.798, Count=2
+Average=1.399
+Shape lookup result: {"visual_feedback_id":5}
+Updated tbl_quarter_feedback with visual_feedback_id=5
+Received: student_id=21, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":4},{"visual_feedback_id":5}]
+Total=3.598, Count=2
+Average=1.799
+Shape lookup result: {"visual_feedback_id":5}
+Updated tbl_quarter_feedback with visual_feedback_id=5

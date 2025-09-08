@@ -192,6 +192,7 @@ export default function AdminCalendarPage() {
 
   // Add state to track if permissions are still being checked
   const [permissionsLoading, setPermissionsLoading] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
   // Function to close all dropdowns
   const closeAllDropdowns = () => {
@@ -236,6 +237,18 @@ export default function AdminCalendarPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setUserId(localStorage.getItem('userId'));
+    }
+  }, []);
+
+  // Handle window resize for responsive calendar height
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
     }
   }, []);
 
@@ -880,17 +893,72 @@ export default function AdminCalendarPage() {
 
   return (
     <ProtectedRoute role="Admin">
-      <div className="flex-1 p-4 bg-gray-50">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+       <style jsx>{`
+        .rbc-agenda-view {
+          overflow-x: auto !important;
+        }
+        .rbc-agenda-view table {
+          width: 100% !important;
+          table-layout: fixed !important;
+        }
+        .rbc-agenda-view .rbc-agenda-time-cell {
+          width: 30% !important;
+          max-width: 30% !important;
+          min-width: 120px !important;
+        }
+        .rbc-agenda-view .rbc-agenda-event-cell {
+          width: 70% !important;
+          max-width: 70% !important;
+          min-width: 200px !important;
+        }
+        .rbc-agenda-view .rbc-agenda-event-cell > div {
+          width: 100% !important;
+          overflow-x: auto !important;
+          overflow-y: hidden !important;
+          white-space: nowrap !important;
+        }
+        .rbc-today {
+          background-color: transparent !important;
+        }
+        .rbc-today .rbc-day-bg {
+          background-color: transparent !important;
+        }
+        .rbc-current-time-indicator {
+          background-color: transparent !important;
+        }
+        .rbc-off-range-bg {
+          background-color: transparent !important;
+        }
+        .rbc-toolbar button:hover {
+          background-color: transparent !important;
+        }
+        .rbc-toolbar button:focus {
+          background-color: transparent !important;
+          box-shadow: none !important;
+        }
+        .rbc-toolbar button:active {
+          background-color: transparent !important;
+        }
+        .rbc-toolbar button.rbc-active {
+          background-color: #232c67 !important;
+          color: white !important;
+        }
+      `}</style>
+    
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="flex flex-col lg:flex-row gap-3 lg:gap-5 p-3 lg:p-5">
-          <div className="flex-1">
-              <div className="p-2 sm:p-4">
+            <div className="flex-1 order-2 lg:order-1">
+              <div className="p-1 sm:p-2 lg:p-4">
               <Calendar
                 localizer={localizer}
                 events={calendarEvents.filter(e => e.status !== 'Cancelled')}
                 startAccessor="start"
                 endAccessor="end"
-                style={{ height: 420 }}
+                style={{ 
+                  height: windowWidth < 640 ? 350 : windowWidth < 1024 ? 400 : 420,
+                  minHeight: 350,
+                  width: '100%'
+                }}
                 selectable={false}
                 date={currentViewDate}
                 onNavigate={date => setCurrentViewDate(date)}
@@ -937,9 +1005,9 @@ export default function AdminCalendarPage() {
                         (cellY === todayY && cellM === todayM && cellD >= todayD);
                       let dayNumberStyle = {
                         fontWeight: 600,
-                        fontSize: 16,
+                        fontSize: windowWidth < 640 ? 14 : 16,
                         borderRadius: 4,
-                        padding: '1px 6px',
+                        padding: windowWidth < 640 ? '1px 4px' : '1px 6px',
                         zIndex: 2,
                         marginBottom: 4,
                         marginTop: 1,
@@ -976,13 +1044,13 @@ export default function AdminCalendarPage() {
                             flexDirection: 'column',
                             alignItems: 'flex-start',
                             justifyContent: 'flex-start',
-                            padding: '4px 4px 0 6px',
+                            padding: windowWidth < 640 ? '2px 2px 0 4px' : '4px 4px 0 6px',
                             minHeight: 0,
                             background: cellBg,
-                            borderRadius: 8,
+                            borderRadius: windowWidth < 640 ? 6 : 8,
                             border: '1px solid #e0e7ef',
                             boxShadow: '0 1px 3px rgba(60,60,100,0.06)',
-                            margin: 1,
+                            margin: windowWidth < 640 ? 0.5 : 1,
                             transition: 'background 0.2s',
                             cursor: 'default',
                           }}
@@ -992,11 +1060,13 @@ export default function AdminCalendarPage() {
                               ...dayNumberStyle,
                               pointerEvents: 'auto',
                               position: 'absolute',
-                              top: 4,
-                              right: 4,
+                              top: windowWidth < 640 ? 2 : 4,
+                              right: windowWidth < 640 ? 2 : 4,
                               zIndex: 20, // Lowered from 1000 to 20
                               margin: 0,
                               alignSelf: undefined,
+                              fontSize: windowWidth < 640 ? 14 : 16,
+                              padding: windowWidth < 640 ? '1px 4px' : '1px 6px',
                             }}
                             title={isFutureOrToday ? "Add Meeting" : ""}
                             onClick={e => {
@@ -1016,7 +1086,14 @@ export default function AdminCalendarPage() {
                           >
                             {value.getDate()}
                           </div>
-                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 28, pointerEvents: 'auto' }}>
+                          <div style={{ 
+                            flex: 1, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            minHeight: windowWidth < 640 ? 20 : 28, 
+                            pointerEvents: 'auto' 
+                          }}>
                             <CalendarMonthCellIcons
                               date={value}
                               events={cellEvents}
@@ -1033,30 +1110,51 @@ export default function AdminCalendarPage() {
                     dateHeader: () => null
                   },
                   event: ({ event, view }) => (view === 'agenda' ? (
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 8,
+                      width: '100%',
+                      padding: '4px 0',
+                      whiteSpace: 'nowrap',
+                      overflowX: 'auto'
+                    }}>
                       <span
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          width: 28,
-                          height: 28,
-                          minWidth: 28,
-                          minHeight: 28,
+                          width: 20,
+                          height: 20,
+                          minWidth: 20,
+                          minHeight: 20,
                           borderRadius: '50%',
                           backgroundColor: event.color,
                           color: '#fff',
-                          marginRight: 8,
-                          marginTop: 2,
+                          marginRight: 6,
                           flexShrink: 0
                         }}
                       >
-                        <FaCalendarAlt style={{ color: '#fff', fontSize: 16 }} />
+                        <FaCalendarAlt style={{ color: '#fff', fontSize: 12 }} />
                       </span>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontWeight: 500, wordBreak: 'break-word' }}>{event.title}</span>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        minWidth: 0,
+                        flex: 1,
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <span style={{ 
+                          fontWeight: 500, 
+                          marginRight: event.agenda ? '8px' : '0'
+                        }}>
+                          {event.title}
+                        </span>
                         {event.agenda && (
-                          <span style={{ color: '#555', fontWeight: 400, wordBreak: 'break-word' }}>
+                          <span style={{ 
+                            color: '#555', 
+                            fontWeight: 400
+                          }}>
                             - {event.agenda}
                           </span>
                         )}
@@ -1065,30 +1163,52 @@ export default function AdminCalendarPage() {
                   ) : null),
                   agenda: {
                     event: ({ event }) => (
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 8,
+                        width: '100%',
+                        padding: '4px 0',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        overflowX: 'auto'
+                      }}>
                         <span
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            width: 28,
-                            height: 28,
-                            minWidth: 28,
-                            minHeight: 28,
+                            width: 20,
+                            height: 20,
+                            minWidth: 20,
+                            minHeight: 20,
                             borderRadius: '50%',
                             backgroundColor: event.color,
                             color: '#fff',
-                            marginRight: 8,
-                            marginTop: 2,
+                            marginRight: 6,
                             flexShrink: 0
                           }}
                         >
-                          <FaCalendarAlt style={{ color: '#fff', fontSize: 16 }} />
+                          <FaCalendarAlt style={{ color: '#fff', fontSize: 12 }} />
                         </span>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: 500, wordBreak: 'break-word' }}>{event.title}</span>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center',
+                          minWidth: 0,
+                          flex: 1,
+                          whiteSpace: 'nowrap'
+                        }}>
+                          <span style={{ 
+                            fontWeight: 500, 
+                            marginRight: event.agenda ? '8px' : '0'
+                          }}>
+                            {event.title}
+                          </span>
                           {event.agenda && (
-                            <span style={{ color: '#555', fontWeight: 400, wordBreak: 'break-word' }}>
+                            <span style={{ 
+                              color: '#555', 
+                              fontWeight: 400
+                            }}>
                               - {event.agenda}
                             </span>
                           )}
@@ -1103,24 +1223,24 @@ export default function AdminCalendarPage() {
               />
             </div>
           </div>
-            <aside className="w-full lg:w-80 mt-4 lg:mt-0">
+            <aside className="w-full lg:w-80 mt-0 lg:mt-0 order-first lg:order-last">
               <div className="bg-gray-50 rounded-xl border border-gray-200">
-                <div className="bg-[#232c67] px-5 py-3 border-b border-gray-200 rounded-t-xl">
+                <div className="bg-[#232c67] px-3 sm:px-5 py-3 border-b border-gray-200 rounded-t-xl">
                   <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-white">
+                  <h2 className="text-base sm:text-lg font-semibold text-white">
                   Schedule Details
                 </h2>
-                <div className="relative dropdown-container ml-4">
+                <div className="relative dropdown-container ml-2 sm:ml-4">
                   <button
-                    className="flex items-center gap-2 px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors touch-manipulation active:scale-95 min-h-[40px]"
                     onClick={() => setIsStatusDropdownOpen(prev => !prev)}
                   >
-                    <FaCalendarAlt className="text-sm text-gray-600" />
+                    <FaCalendarAlt className="text-xs sm:text-sm text-gray-600" />
                     <span>{statusFilter}</span>
-                    <FaChevronDown className={`text-sm transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                    <FaChevronDown className={`text-xs sm:text-sm transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {isStatusDropdownOpen && (
-                    <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                    <div className="absolute right-0 mt-1 w-32 sm:w-36 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
                       <div className="py-1">
                         {['Scheduled', 'Completed', 'Cancelled'].map((option) => (
                           <button
@@ -1129,7 +1249,7 @@ export default function AdminCalendarPage() {
                               setStatusFilter(option);
                               setIsStatusDropdownOpen(false);
                             }}
-                            className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors ${
+                            className={`w-full text-left px-2 sm:px-3 py-3 text-xs sm:text-sm font-medium transition-colors touch-manipulation active:scale-95 min-h-[44px] ${
                               statusFilter === option 
                                 ? "bg-[#232c67] text-white hover:bg-gray-100 hover:text-black" 
                                 : "text-gray-900 hover:bg-gray-100 hover:text-black"
@@ -1144,10 +1264,13 @@ export default function AdminCalendarPage() {
                 </div>
               </div>
                 </div>
-                <div className="p-4">
+                <div className="p-2 sm:p-4">
               <div
-                className="space-y-2 sm:space-y-2 max-h-[320px] overflow-y-auto"
-                style={{ minHeight: "100px" }}
+                className="space-y-2 overflow-y-auto"
+                style={{ 
+                  minHeight: "100px",
+                  maxHeight: "320px" // Show approximately 4 meetings by default
+                }}
               >
                 {events
                   .filter(event => {
@@ -1175,41 +1298,51 @@ export default function AdminCalendarPage() {
                     .map((event, i) => (
                       <div
                         key={i}
-                        className="bg-white p-3 rounded-lg shadow-sm flex items-center gap-2 border border-gray-200 hover:shadow-md transition cursor-pointer"
+                        className="bg-white p-2 sm:p-3 rounded-lg shadow-sm flex items-start sm:items-center gap-2 border border-gray-200 hover:shadow-md transition cursor-pointer touch-manipulation active:scale-95"
                         style={{
                           borderLeft: `${String(event.created_by) === String(userId) ? '6px solid #232c67' : '4px solid ' + event.color}`,
                           boxShadow: '0 1px 3px rgba(60,60,100,0.06)',
-                          marginBottom: 6,
+                          marginBottom: 4,
                           background: '#fff',
+                          minHeight: '44px', // Minimum touch target size
                         }}
                         onClick={() => { setSelectedEvent(event); setShowInputModal(false); }}
                       >
-                        <div className="text-xl" style={{ color: event.color }}>
+                        <div className="text-lg sm:text-xl flex-shrink-0 mt-0.5 sm:mt-0" style={{ color: event.color }}>
                           <FaCalendarAlt />
                         </div>
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-800 text-xs" style={{ fontWeight: String(event.created_by) === String(userId) ? 700 : 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            {event.title}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-800 text-xs sm:text-sm" style={{ 
+                            fontWeight: String(event.created_by) === String(userId) ? 700 : 500, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 4,
+                            wordBreak: 'break-word'
+                          }}>
+                            <span className="truncate">{event.title}</span>
                             {String(event.created_by) === String(userId) && (
                               <span style={{
                                 background: '#232c67',
                                 color: '#fff',
-                                borderRadius: '6px',
-                                fontSize: '10px',
-                                padding: '1px 6px',
-                                marginLeft: '3px',
+                                borderRadius: '4px',
+                                fontSize: '8px',
+                                padding: '1px 4px',
+                                marginLeft: '2px',
                                 fontWeight: 600,
                                 letterSpacing: '0.5px',
                                 display: 'inline-block',
+                                flexShrink: 0
                               }}>You</span>
                             )}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {event.month} {event.day}, {event.year} |
-                            {event.time && (() => {
-                              const [start, end] = event.time.split(" - ");
-                              return ` ${formatTimeToAMPM(start)} - ${formatTimeToAMPM(end)}`;
-                            })()}
+                          <div className="text-xs text-gray-500 mt-1">
+                            <div className="truncate">
+                              {event.month} {event.day}, {event.year} |
+                              {event.time && (() => {
+                                const [start, end] = event.time.split(" - ");
+                                return ` ${formatTimeToAMPM(start)} - ${formatTimeToAMPM(end)}`;
+                              })()}
+                            </div>
                           </div>
                           <span
                             className={`mt-1 inline-block px-1.5 py-0.5 rounded-full text-xs font-semibold ${
@@ -1234,24 +1367,24 @@ export default function AdminCalendarPage() {
           </aside>
           </div>
         </div>
-      </div>
+    
       {/* Modal for adding event */}
       {showInputModal && !selectedEvent && !showInviteSelectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[100]">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md overflow-hidden">
-            <div className="bg-[#232c67] px-6 py-4 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md max-h-[90vh] overflow-hidden">
+            <div className="bg-[#232c67] px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">Add Meeting</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-white">Add Meeting</h2>
                 <button
                   onClick={() => { setShowInputModal(false); setModalDay(null); setModalMonth(null); setModalYear(null); setNewEventAgenda(""); }}
-                  className="px-3 py-1.5 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1.5 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 touch-manipulation active:scale-95 min-h-[44px]"
                 >
                   <FaTimes className="w-3 h-3" />
                   Close
                 </button>
               </div>
             </div>
-                <div className="p-8 grid grid-cols-2 gap-8 text-sm">
+                <div className="p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 text-sm max-h-[calc(90vh-80px)] overflow-y-auto">
                   <div>
                     <p className="font-bold mb-1">Title</p>
                     <input
@@ -1322,7 +1455,7 @@ export default function AdminCalendarPage() {
             <div className="flex justify-end px-4 py-3 bg-gray-50 border-t border-gray-200">
               <button
                 onClick={handleAddEvent}
-                className="px-4 py-2 bg-[#232c67] hover:bg-[#1a1f4d] text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
+                className="px-4 sm:px-6 py-3 sm:py-2.5 bg-[#232c67] hover:bg-[#1a1f4d] text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 touch-manipulation active:scale-95 min-h-[44px]"
                 disabled={
                   !newEventTitle ||
                   !newEventAgenda ||
@@ -1340,11 +1473,11 @@ export default function AdminCalendarPage() {
       )}
       {/* Modal for viewing event details */}
       {selectedEvent && !showInviteViewModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[100]">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md overflow-hidden">
-            <div className="bg-[#232c67] px-6 py-4 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md max-h-[90vh] overflow-hidden">
+            <div className="bg-[#232c67] px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-base sm:text-lg font-semibold text-white">
                   {editMode ? 'Edit Meeting Details' : 'View Meeting Details'}
                 </h2>
                 <button
@@ -1354,7 +1487,7 @@ export default function AdminCalendarPage() {
                     setEditEventData(null); 
                     setOriginalInvitees({ teachers: [], parents: [] }); 
                   }}
-                  className="px-3 py-1.5 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1.5 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 touch-manipulation active:scale-95 min-h-[44px]"
                 >
                   <FaTimes className="w-3 h-3" />
                   Close
@@ -1365,7 +1498,7 @@ export default function AdminCalendarPage() {
             <>
               {editMode ? (
                 <>
-                  <div className="p-8 grid grid-cols-2 gap-8 text-sm">
+                  <div className="p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 text-sm max-h-[calc(90vh-80px)] overflow-y-auto">
                     <div>
                       <p className="font-bold mb-1">Title</p>
                       <input
@@ -1584,7 +1717,7 @@ export default function AdminCalendarPage() {
                           toast.error("Error connecting to server: " + err.message);
                         }
                       }}
-                      className="px-4 py-2 bg-[#232c67] hover:bg-[#1a1f4d] text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
+                      className="px-4 sm:px-6 py-3 sm:py-2.5 bg-[#232c67] hover:bg-[#1a1f4d] text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 touch-manipulation active:scale-95 min-h-[44px] w-full sm:w-auto justify-center"
                       disabled={!!validation.date || !!validation.time || !!validation.invite}
                     >
                       <FaSave className="w-3 h-3" />
@@ -1593,8 +1726,8 @@ export default function AdminCalendarPage() {
                   </div>
                 </>
               ) : (
-                <div className="p-8">
-                  <div className="grid grid-cols-2 gap-8 text-sm items-start">
+                <div className="p-4 sm:p-8 max-h-[calc(90vh-80px)] overflow-y-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 text-sm items-start">
                     <div className="flex flex-col gap-2">
                       <div>
                         <p className="font-bold mb-1">Title</p>
@@ -1628,11 +1761,11 @@ export default function AdminCalendarPage() {
                       </button>
                     </div>
                   </div>
-                <div className="flex justify-end gap-3 p-6 bg-gray-50 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 bg-gray-50 border-t border-gray-200">
                     {selectedEvent.status === 'Completed' ? (
                       <div className="flex gap-3 items-center">
                         <button
-                          className="px-6 py-2.5 bg-green-100 text-green-700 rounded-lg font-medium cursor-default opacity-80"
+                          className="px-4 sm:px-6 py-3 sm:py-2.5 bg-green-100 text-green-700 rounded-lg font-medium cursor-default opacity-80 w-full sm:w-auto touch-manipulation active:scale-95 min-h-[44px]"
                           disabled
                           style={{ pointerEvents: 'none' }}
                         >
@@ -1642,7 +1775,7 @@ export default function AdminCalendarPage() {
                     ) : selectedEvent.status === 'Cancelled' ? (
                       <div className="flex gap-3 items-center">
                         <button
-                          className="px-6 py-2.5 bg-red-100 text-red-700 rounded-lg font-medium cursor-default opacity-80"
+                          className="px-4 sm:px-6 py-3 sm:py-2.5 bg-red-100 text-red-700 rounded-lg font-medium cursor-default opacity-80 w-full sm:w-auto touch-manipulation active:scale-95 min-h-[44px]"
                           disabled
                           style={{ pointerEvents: 'none' }}
                         >
@@ -1666,7 +1799,7 @@ export default function AdminCalendarPage() {
                                   setShowCancelModal(true);
                                   toast.info("Cancel meeting confirmation required");
                                 }}
-                                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
+                                className="px-4 sm:px-6 py-3 sm:py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 touch-manipulation active:scale-95 min-h-[44px] w-full sm:w-auto justify-center"
                               >
                                 <FaTimesCircle className="w-3 h-3" />
                                 Cancel Meeting
@@ -1776,7 +1909,7 @@ export default function AdminCalendarPage() {
                               
                             }
                           }}
-                                                                                    className="px-4 py-2 bg-[#232c67] hover:bg-[#1a1f4d] text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
+                                                                                    className="px-4 sm:px-6 py-3 sm:py-2.5 bg-[#232c67] hover:bg-[#1a1f4d] text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 touch-manipulation active:scale-95 min-h-[44px] w-full sm:w-auto justify-center"
                           >
                             <FaEdit className="w-3 h-3" />
                             Edit
@@ -2335,7 +2468,7 @@ export default function AdminCalendarPage() {
                   setSelectedLevels([]);
                 }}
                 disabled={!teachers.some(t => t.checked) && !parents.some(p => p.checked)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                className={`px-4 sm:px-6 py-3 sm:py-2.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 touch-manipulation active:scale-95 min-h-[44px] w-full sm:w-auto justify-center ${
                   teachers.some(t => t.checked) || parents.some(p => p.checked)
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -2820,7 +2953,7 @@ export default function AdminCalendarPage() {
                   setShowCancelModal(false);
                   toast.info("Cancel meeting modal closed");
                 }}
-                className="px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
+                className="px-4 sm:px-6 py-3 sm:py-2.5 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 touch-manipulation active:scale-95 min-h-[44px] w-full sm:w-auto justify-center"
                 disabled={cancelLoading}
               >
                 <FaTimes className="w-3 h-3" />
@@ -2856,7 +2989,7 @@ export default function AdminCalendarPage() {
                   setCancelLoading(false);
                   setShowCancelModal(false);
                 }}
-                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
+                className="px-4 sm:px-6 py-3 sm:py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 touch-manipulation active:scale-95 min-h-[44px] w-full sm:w-auto justify-center"
                 disabled={cancelLoading}
               >
                 <FaTimesCircle className="w-3 h-3" />

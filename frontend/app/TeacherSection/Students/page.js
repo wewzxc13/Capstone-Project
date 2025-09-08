@@ -3,36 +3,42 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaEllipsisV, FaSearch, FaChevronDown, FaUser, FaUsers, FaCalendarAlt, FaFilter, FaMars, FaVenus, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Line } from "react-chartjs-2";
 import dynamic from "next/dynamic";
 import { useUser } from "../../Context/UserContext";
 
-const StudentStatus = dynamic(() => import("./StudentStatus/page"));
-const StudentAssessment = dynamic(() => import("./StudentAssessment/page"));
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
+// Dynamically import heavy components
+const StudentStatus = dynamic(() => import("./StudentStatus/page"), { 
+  loading: () => <div className="flex justify-center items-center h-40">Loading...</div>
+});
+const StudentAssessment = dynamic(() => import("./StudentAssessment/page"), { 
+  loading: () => <div className="flex justify-center items-center h-40">Loading...</div>
+});
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// Dynamically import chart components
+const Line = dynamic(() => import("react-chartjs-2").then(mod => ({ default: mod.Line })), { ssr: false });
 
-import '../../../lib/chart-config.js';
+// Dynamically import chart.js and register components
+const initializeCharts = async () => {
+  const chartModule = await import("chart.js");
+  const { Chart: ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } = chartModule;
+  
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend
+  );
+  
+  return ChartJS;
+};
+
+// Dynamically import chart config
+const loadChartConfig = () => import('../../../lib/chart-config.js');
+
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function StudentsPage() {
@@ -248,6 +254,10 @@ export default function StudentsPage() {
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     if (userId) {
+      // Initialize charts and config dynamically
+      initializeCharts();
+      loadChartConfig();
+      
       console.log('=== AUTO-DEBUG: Fetching advisory for teacher ID:', userId, '===');
       fetch("/php/Advisory/get_advisory_details.php", {
         method: "POST",

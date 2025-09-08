@@ -21,6 +21,8 @@ export default function ParentSectionLayout({ children }) {
   const path = pathname?.toLowerCase() || "";
   // Desktop sidebar open/close state
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  // Signal to programmatically open mobile sidebar from Topbar
+  const [mobileSidebarOpenTick, setMobileSidebarOpenTick] = React.useState(0);
   
   // Debug: Log when Parent layout is rendered
   console.log('ParentSectionLayout: Rendering with pathname:', pathname);
@@ -46,7 +48,7 @@ export default function ParentSectionLayout({ children }) {
         {/* Desktop collapse/expand toggle (hidden on Message and ChangePassword) */}
         {!isChangePassword && !isMessagePage && (
           <button
-            className={`hidden md:flex fixed top-6 z-40 ${isSidebarOpen ? "left-64 -translate-x-1/2" : "left-20 -translate-x-1/2"} transform bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none`}
+            className={`hidden md:flex fixed top-6 z-[200] ${isSidebarOpen ? "left-64 -translate-x-1/2" : "left-20 -translate-x-1/2"} transform bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none`}
             onClick={() => setIsSidebarOpen((o) => !o)}
             aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
@@ -54,11 +56,16 @@ export default function ParentSectionLayout({ children }) {
             <FaBars size={20} className="text-[#232c67]" />
           </button>
         )}
-        {!isChangePassword && <ParentSidebar isSidebarOpen={isSidebarOpen} />}
+        {!isChangePassword && <ParentSidebar isSidebarOpen={isSidebarOpen} mobileOpenSignal={mobileSidebarOpenTick} showInternalHamburger={false} />}
         <div className="flex-1 flex flex-col overflow-y-auto">
           <main className="flex-1 p-6 select-none caret-transparent">
             {!isMessagePage && !isChangePassword && (
-              <Topbar title={title} userName="Parent" userRole="Parent" />
+              <Topbar 
+                title={title} 
+                userName="Parent" 
+                userRole="Parent"
+                onOpenSidebar={() => setMobileSidebarOpenTick((t) => t + 1)}
+              />
             )}
             {children}
           </main>

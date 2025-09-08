@@ -243,8 +243,8 @@ export default function AdminDashboard() {
 
   return (
             <ProtectedRoute role="Admin">
-      <div className="flex flex-col md:flex-row">
-        <main className="flex-1 p-1 sm:p-2 md:p-3">
+      <div className="flex flex-col md:flex-row w-full overflow-x-hidden">
+        <main className="flex-1 p-1 sm:p-2 md:p-3 min-w-0">
 
 
           {/* Error Alert */}
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
           )}
 
           {/* Stat Cards */}
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <section className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             {stats.map((stat, i) => (
               <div
                 key={i}
@@ -279,7 +279,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-[#232c67] mb-0.5">{stat.label}</p>
-                    <h2 className="text-xl font-bold text-[#232c67]">
+                    <h2 className="text-lg sm:text-xl font-bold text-[#232c67]">
                       {loading ? (
                         <div className="animate-pulse bg-gray-200 h-6 w-12 rounded"></div>
                       ) : error ? (
@@ -295,23 +295,23 @@ export default function AdminDashboard() {
           </section>
 
           {/* Main Content Container - Chart and Meetings Combined */}
-          <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+          <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 overflow-hidden">
             {/* Content Row - Chart and Meetings content */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
               {/* Progress Chart Content */}
-              <div className="col-span-2">
+              <div className="col-span-2 min-w-0">
                 {/* Chart Header */}
                 <div className="mb-3">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-1">Progress of Classes</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-1">Progress of Classes</h3>
                   <p className="text-sm text-gray-600">Quarterly performance overview</p>
                   
                   {/* Chart Controls */}
                   <div className="flex justify-center mt-3">
-                    <div className="flex items-center px-3 py-1.5 gap-3 border border-gray-200 bg-gray-50 rounded-lg">
+                    <div className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 gap-1.5 sm:gap-3 border border-gray-200 bg-gray-50 rounded-lg overflow-x-auto whitespace-nowrap flex-nowrap">
                       {["discoverer", "explorer", "adventurer"].map((key, idx) => (
                         <span
                           key={key}
-                          className={`flex items-center gap-2 text-sm select-none px-3 py-1.5 rounded-md cursor-pointer transition-colors ${
+                          className={`flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-sm select-none px-2 sm:px-3 py-1 sm:py-1.5 rounded-md cursor-pointer transition-colors whitespace-nowrap ${
                             visible[key]
                               ? "text-white font-medium bg-[#232c67] shadow-sm border border-[#232c67]"
                               : "text-gray-500 hover:text-gray-700"
@@ -319,7 +319,7 @@ export default function AdminDashboard() {
                           onClick={() => setVisible((prev) => ({ ...prev, [key]: !prev[key] }))}
                         >
                           <span
-                            className="inline-block w-3 h-3 rounded-full"
+                            className="inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full"
                             style={{
                               backgroundColor:
                                 key === "discoverer"
@@ -337,7 +337,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Chart Container */}
-                <div className="h-72">
+                <div className="h-56 sm:h-64 md:h-72">
                   {progressLoading ? (
                     <div className="flex items-center justify-center h-full text-gray-500">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2c2f6f] mr-3"></div>
@@ -424,8 +424,9 @@ export default function AdminDashboard() {
                           x: {
                             ticks: { 
                               font: { size: 12, weight: '500' },
-                              maxRotation: 0,
-                              padding: 20,
+                              maxRotation: 45,
+                              minRotation: 45,
+                              padding: 10,
                               color: '#6b7280'
                             },
                             grid: { 
@@ -437,7 +438,7 @@ export default function AdminDashboard() {
                               text: 'Quarter',
                               font: { size: 14, weight: '600' },
                               color: '#2c2f6f',
-                              padding: { bottom: 10 }
+                              padding: { top: 28 }
                             }
                           },
                         },
@@ -449,7 +450,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Upcoming Meetings Content */}
-              <div>
+              <div className="min-w-0">
                 {/* Meetings Header with Navy Blue Background */}
                 <div className="bg-[#232c67] p-3 rounded-t-lg -mt-3 -mx-3 mb-3">
                   <div className="flex items-center gap-3">
@@ -465,7 +466,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="max-h-72 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div className="max-h-60 md:max-h-72 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   {meetingsLoading ? (
                     // Loading skeleton for meetings
                     Array.from({ length: 3 }).map((_, idx) => (

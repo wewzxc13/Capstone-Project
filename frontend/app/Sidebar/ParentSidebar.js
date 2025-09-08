@@ -26,7 +26,7 @@ const navItems = [
   { name: "Message", icon: FaCommentDots, href: "/ParentSection/Message" },
 ];
 
-const ParentSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
+const ParentSidebar = ({ isSidebarOpen: desktopSidebarOpen, mobileOpenSignal, showInternalHamburger = true }) => {
   const pathname = usePathname();
   const { unreadCounts } = useUser();
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
@@ -44,6 +44,13 @@ const ParentSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
       document.body.style.overflow = '';
     };
   }, [mobileSidebarOpen]);
+
+  // Allow parent (Topbar) to open the mobile sidebar via signal
+  React.useEffect(() => {
+    if (typeof mobileOpenSignal === 'number' && mobileOpenSignal > 0) {
+      setMobileSidebarOpen(true);
+    }
+  }, [mobileOpenSignal]);
 
   const SidebarContent = ({ isSidebarOpen, onNavClick }) => (
     <div
@@ -119,9 +126,9 @@ const ParentSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
   return (
     <>
       {/* Hamburger button for mobile */}
-      {!mobileSidebarOpen && (
+      {showInternalHamburger && !mobileSidebarOpen && (
         <button
-          className="md:hidden fixed top-4 left-4 z-40 bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none"
+          className="md:hidden fixed top-4 left-4 z-[120] bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none"
           onClick={() => setMobileSidebarOpen(true)}
           aria-label="Open sidebar"
         >
@@ -131,20 +138,20 @@ const ParentSidebar = ({ isSidebarOpen: desktopSidebarOpen }) => {
 
       {/* Mobile sidebar overlay */}
       {mobileSidebarOpen && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-[110] flex">
           {/* Overlay background */}
           <div
-            className="fixed inset-0 bg-black bg-opacity-30"
+            className="fixed inset-0 bg-black bg-opacity-30 z-[110]"
             onClick={() => setMobileSidebarOpen(false)}
           />
           {/* Sidebar panel */}
-          <div className="relative z-50 w-[85vw] max-w-xs sm:max-w-sm h-full">
+          <div className="relative z-[120] w-[85vw] max-w-xs sm:max-w-sm h-full">
             <button
-              className="absolute top-4 right-4 z-50 bg-white rounded-full p-2 shadow border border-blue-100 focus:outline-none"
+              className="absolute top-4 right-4 z-[130] bg-white rounded-full p-2 shadow border border-blue-100 focus:outline-none"
               onClick={() => setMobileSidebarOpen(false)}
               aria-label="Close sidebar"
             >
-              <FaTimes size={22} className="text-[#232c67]" />
+              <FaBars size={22} className="text-[#232c67]" />
             </button>
             <SidebarContent
               isSidebarOpen={true}
