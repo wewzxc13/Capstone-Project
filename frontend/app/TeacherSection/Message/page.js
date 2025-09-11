@@ -53,6 +53,8 @@ export default function TeacherMessagesPage() {
   const [actionMenuForId, setActionMenuForId] = useState(null);
   const [showReadsForId, setShowReadsForId] = useState(null);
   const [readsCache, setReadsCache] = useState({});
+  // Temporary selected chat placeholder used when selecting from search
+  const [tempSelectedChat, setTempSelectedChat] = useState(null);
   // Track unsent messages in localStorage to persist across page refreshes
   const [unsentMessages, setUnsentMessages] = useState({});
   // Store user photos
@@ -139,7 +141,7 @@ export default function TeacherMessagesPage() {
     }
     
     // Fallback to name-based detection if groupRefId doesn't work
-    console.log('getClassPhoto - returning default explorer photo');
+    console.log('getClassPhoto - falling back to name-based detection for:', groupName);
     const name = (groupName || '').toLowerCase();
     if (name.includes('discoverer')) {
       console.log('getClassPhoto - returning discoverer photo (by name)');
@@ -162,8 +164,6 @@ export default function TeacherMessagesPage() {
     switch ((groupType || '').toLowerCase()) {
       case 'class':
         return '/assets/image/explorer_gc_photo.png';
-      case 'staff':
-        return '/assets/image/staff_gc_photo.png';
       case 'overall':
       default:
         return '/assets/image/general_gc_photo.png';
@@ -940,8 +940,13 @@ export default function TeacherMessagesPage() {
       result = recent.find((r) => r.id === selectedChatId) || null;
     }
     
+    // If still not found (e.g., selected from search before arrays update), use temporary placeholder
+    if (!result && tempSelectedChat && tempSelectedChat.id === selectedChatId) {
+      return tempSelectedChat;
+    }
+    
     return result;
-  }, [selectedType, selectedChatId, chats, groupChats, archived, recent]);
+  }, [selectedType, selectedChatId, chats, groupChats, archived, recent, tempSelectedChat]);
 
   // Component mount effect - now handled by loadConversationHistoryWithMessages
   useEffect(() => {
@@ -1091,6 +1096,7 @@ export default function TeacherMessagesPage() {
           );
           return updated;
         });
+        // Keep tempSelectedChat; it will be ignored once real data is present
         
         // Clean up any duplicates that might have been created
         setTimeout(() => {
@@ -1235,28 +1241,42 @@ export default function TeacherMessagesPage() {
       // Update ONLY the selected chat in chats array, preserve all other users
       setChats((prev) => {
         // Ensure we don't lose the main conversation list
-        if (!prev || prev.length === 0) {
-          console.warn('Attempted to update chats after sending message but prev was empty, preserving original state');
-          return prev;
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const exists = safePrev.some((c) => c.id === selectedChat.id);
+        if (!exists) {
+          const newUser = {
+            id: selectedChat.id,
+            name: selectedChat.name,
+            color: selectedChat.color,
+            role: selectedChat.role,
+            unread: 0,
+            lastMessageAt: now,
+            lastMessage: `You: ${text}`,
+            messages: [{ id: optimisticId, from: 'self', text, time: now }],
+            photo: selectedChat.photo || null,
+          };
+          return [...safePrev, newUser];
         }
         
-        const updated = prev.map((c) =>
+        const updated = safePrev.map((c) =>
           c.id === selectedChat.id
             ? {
-              ...c,
-              messages: [
-                ...c.messages,
-                { id: optimisticId, from: "self", text, time: now },
-              ],
-              lastMessage: `You: ${text}`,
-              lastMessageAt: now,
-              unread: 0,
-            }
+                ...c,
+                messages: [
+                  ...c.messages,
+                  { id: optimisticId, from: 'self', text, time: now },
+                ],
+                lastMessage: `You: ${text}`,
+                lastMessageAt: now,
+                unread: 0,
+              }
             : c
         );
 
         return updated;
       });
+      // If we were showing a temporary selected chat from search, clear it now
+      setTempSelectedChat((prev) => (prev && prev.id === selectedChat.id ? null : prev));
       
       // Clean up any duplicates that might have been created
       setTimeout(() => {
@@ -1304,13 +1324,24 @@ export default function TeacherMessagesPage() {
             
             // Update ONLY the selected chat in chats array, preserve all other users
             setChats((prev) => {
-                      // Ensure we don't lose the main conversation list
-        if (!prev || prev.length === 0) {
-          console.warn('Attempted to update chats after backend response but prev was empty, preserving original state');
-          return prev;
-        }
+              const safePrev = Array.isArray(prev) ? prev : [];
+              const exists = safePrev.some((c) => c.id === String(receiverId));
+              if (!exists) {
+                const newUser = {
+                  id: String(receiverId),
+                  name: selectedChat.name,
+                  color: selectedChat.color,
+                  role: selectedChat.role,
+                  unread: 0,
+                  lastMessageAt: sentAt,
+                  lastMessage: `You: ${text}`,
+                  messages: [{ id: dbId || optimisticId, from: 'self', text, time: sentAt }],
+                  photo: selectedChat.photo || null,
+                };
+                return [...safePrev, newUser];
+              }
               
-              const updated = prev.map((c) =>
+              const updated = safePrev.map((c) =>
                 c.id === String(receiverId)
                   ? { 
                       ...c, 
@@ -1324,6 +1355,8 @@ export default function TeacherMessagesPage() {
       
               return updated;
             });
+            // Ensure temporary placeholder is cleared after confirmed send
+            setTempSelectedChat((prev) => (prev && prev.id === String(receiverId) ? null : prev));
             
             // Clean up any duplicates that might have been created
             setTimeout(() => {
@@ -1414,6 +1447,15 @@ export default function TeacherMessagesPage() {
       return String(dateStr || "");
     }
   }
+
+  // Truncate preview text consistently (mobile vs desktop)
+  const truncatePreview = (text) => {
+    if (!text) return "";
+    const str = String(text);
+    const limit = isMobile ? 42 : 72; // slightly shorter on mobile
+    if (str.length <= limit) return str;
+    return str.slice(0, limit - 1).trimEnd() + "…";
+  };
 
   const roleBracket = (roleId) => {
     const r = Number(roleId);
@@ -1509,7 +1551,6 @@ export default function TeacherMessagesPage() {
     }
     
   }
-
   // SVG helpers for playful background
   const buildPuzzleSvg = (fill, rotated) =>
     `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'>` +
@@ -1545,6 +1586,16 @@ export default function TeacherMessagesPage() {
     const onResize = () => gen();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Track if viewport is mobile (Tailwind 'sm' < 640px)
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
   }, []);
 
   // Load unsent messages from localStorage on component mount
@@ -1612,7 +1663,7 @@ export default function TeacherMessagesPage() {
         if (userPhotos[senderId] || photosFetchedRef.current.has(senderId)) {
           continue;
         }
-        
+          
         try {
           const res = await fetch(`/php/Users/get_user_details.php`, {
             method: 'POST',
@@ -1857,11 +1908,11 @@ export default function TeacherMessagesPage() {
   return (
     <ProtectedRoute role="Teacher">
       <div className="fixed inset-0 bg-[#f4f9ff]">
-        <div className="flex h-full">
-          <main className="flex-1 flex flex-col h-full">
-            <div className="flex flex-1 overflow-hidden">
+        <div className="flex h-full overflow-hidden">
+          <main className="flex-1 flex flex-col h-full min-w-0">
+            <div className="flex flex-1 overflow-hidden min-w-0">
               {/* LEFT SIDEBAR CHAT LIST */}
-              <div className="w-[320px] flex flex-col bg-white border-r">
+              <div className={`${isMobile && selectedChatId ? 'hidden' : 'flex'} w-full sm:w-[320px] flex-col bg-white border-r min-w-0`}>
                 {/* Search Header */}
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
@@ -1907,10 +1958,10 @@ export default function TeacherMessagesPage() {
                             // Only restore conversation history if no user is currently selected
                             // This prevents interference with the selected user from search results
                             if (!selectedChatId) {
-                            
+      
                               restoreConversationHistory();
                             } else {
-                            
+                              
                             }
                           }
                         }, 300); // Increased delay to allow button clicks and prevent race conditions
@@ -1919,21 +1970,24 @@ export default function TeacherMessagesPage() {
                       className="w-full pl-12 pr-10 py-2.5 text-sm rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200 caret-[#1E2A79]"
                       ref={searchInputRef}
                     />
-                    {query && (
+                    {(isSearchFocused || query) && (
                       <button
                         onClick={() => {
-                          setQuery("");
-                          setIsSearchFocused(false);
-                          // Only restore conversation history if no user is currently selected
-                          // This prevents interference with the selected user from search results
-                          if (!selectedChatId) {
-                          
-                            // Use a small delay to ensure state updates are processed
-                            setTimeout(() => {
-                              restoreConversationHistory();
-                            }, 100);
+                          if (query) {
+                            setQuery("");
+                            setIsSearchFocused(false);
+                            searchInputRef.current?.blur();
+                            if (!selectedChatId) {
+                              setTimeout(() => { restoreConversationHistory(); }, 100);
+                            }
                           } else {
-                         
+                            // When focused with empty query, act as a cancel/back action
+                            setIsSearchFocused(false);
+                            setQuery("");
+                            searchInputRef.current?.blur();
+                            if (!selectedChatId) {
+                              setTimeout(() => { restoreConversationHistory(); }, 100);
+                            }
                           }
                         }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
@@ -1973,7 +2027,7 @@ export default function TeacherMessagesPage() {
                 {activeTab === "Users" && (
                   <>
                     {/* Debug info */}
-                  
+
                     
                     {/* Show loading indicator when conversations are being loaded */}
                     {isLoadingConversations && (
@@ -2028,8 +2082,8 @@ export default function TeacherMessagesPage() {
                                       )}
                                     </div>
                                     <div className="flex items-center justify-between mt-0.5">
-                                      <p className={`text-xs truncate pr-2 ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                                        {chat.lastMessage || ""}
+                                      <p className={`flex-1 min-w-0 text-xs pr-2 truncate ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                                        {truncatePreview(chat.lastMessage) || ""}
                                       </p>
                                       {chat.unread > 0 && (
                                         <span className="text-[10px] bg-[#1E2A79] text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ml-2">
@@ -2061,7 +2115,7 @@ export default function TeacherMessagesPage() {
                                     manuallyLoadConversation(chat.id);
                                   }, 50);
                                 }}
-                                className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm ${isSelected ? 'bg-[#eef2ff] border-blue-500' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                                className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm min-h-[64px] ${isSelected ? 'bg-[#eef2ff] border-blue-500' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
                               >
                                 <div className="relative">
                                   {renderUserAvatar(chat.id, chat.role)}
@@ -2074,8 +2128,8 @@ export default function TeacherMessagesPage() {
                                     )}
                                   </div>
                                   <div className="flex items-center justify-between mt-0.5">
-                                    <p className={`text-xs truncate pr-2 ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                                      {chat.lastMessage || ""}
+                                    <p className={`flex-1 min-w-0 text-xs pr-2 truncate ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                                      {truncatePreview(chat.lastMessage) || ""}
                                     </p>
                                     {chat.unread > 0 && (
                                       <span className="text-[10px] bg-[#1E2A79] text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ml-2">
@@ -2108,6 +2162,18 @@ export default function TeacherMessagesPage() {
                                     // Set the selected user FIRST to prevent the "No conversation selected" state
                                     setSelectedType("user");
                                     setSelectedChatId(chat.id);
+                                    // Provide temporary selected chat so right pane can render immediately
+                                    setTempSelectedChat({
+                                      id: chat.id,
+                                      name: chat.name,
+                                      color: chat.color,
+                                      role: chat.role,
+                                      unread: 0,
+                                      lastMessageAt: chat.lastMessageAt || null,
+                                      lastMessage: chat.lastMessage || "",
+                                      messages: [],
+                                      photo: chat.photo || null,
+                                    });
                                     
                                     // Clear search state AFTER setting the selected user
                                     setIsSearchFocused(false);
@@ -2181,6 +2247,7 @@ export default function TeacherMessagesPage() {
                                             setTimeout(() => {
                                               setChats(prev => removeDuplicateUsers(prev));
                                             }, 100);
+                                            // Keep tempSelectedChat; it will be ignored once real data is present
                                             
 
                                           } else {
@@ -2258,8 +2325,8 @@ export default function TeacherMessagesPage() {
                                       )}
                                     </div>
                                     <div className="flex items-center justify-between mt-0.5">
-                                      <p className={`text-xs truncate pr-2 ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                                        {chat.lastMessage || ""}
+                                      <p className={`text-xs pr-2 overflow-hidden text-ellipsis whitespace-nowrap ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                                        {truncatePreview(chat.lastMessage) || ""}
                                       </p>
                                       {chat.unread > 0 && (
                                         <span className="text-[10px] bg-[#1E2A79] text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ml-2">
@@ -2304,7 +2371,7 @@ export default function TeacherMessagesPage() {
                               setSelectedType("group");
                               setSelectedChatId(grp.id);
                             }}
-                            className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm ${isSelected ? "bg-[#eef2ff] border-blue-500" : "bg-white border-gray-200 hover:bg-gray-50"
+                            className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm min-h-[64px] ${isSelected ? "bg-[#eef2ff] border-blue-500" : "bg-white border-gray-200 hover:bg-gray-50"
                               }`}
                           >
                             <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
@@ -2337,8 +2404,8 @@ export default function TeacherMessagesPage() {
                                 <span className="text-[10px] text-gray-400 ml-2 whitespace-nowrap">{grp.lastMessageAt ? formatTime(grp.lastMessageAt) : ''}</span>
                               </div>
                               <div className="flex items-center justify-between mt-0.5">
-                                <p className={`text-xs truncate pr-2 ${grp.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                                  {grp.lastMessage || ""}
+                                <p className={`flex-1 min-w-0 text-xs pr-2 truncate ${grp.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                                  {truncatePreview(grp.lastMessage) || ""}
                                 </p>
                                 {grp.unread > 0 && (
                                   <span className="text-[10px] bg-[#1E2A79] text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ml-2">
@@ -2394,7 +2461,7 @@ export default function TeacherMessagesPage() {
               </div>
 
               {/* RIGHT CHAT SECTION */}
-              <div className="relative flex flex-col flex-1 bg-[#f4f9ff]">
+              <div className={`${isMobile && !selectedChatId ? 'hidden' : 'flex'} relative flex-col flex-1 bg-[#f4f9ff] min-w-0 overflow-x-hidden`}>
                 <div
                   className="pointer-events-none absolute inset-0 -z-0"
                   style={{
@@ -2456,28 +2523,46 @@ export default function TeacherMessagesPage() {
                     backgroundRepeat: 'repeat',
                   }}
                 />
-                {/* If no chat selected, show fallback */}
+                {/* If no chat selected, show fallback or loading when a user is being opened */}
                 {!selectedChat ? (
                   <div className="flex-1 flex items-center justify-center text-center text-gray-500 relative z-10">
-                    <div className="flex flex-col items-center justify-center p-8">
-                      <div className="relative mb-6">
-                        <div className="w-20 h-20 bg-gradient-to-br from-[#1e2a79] to-[#232c67] rounded-full flex items-center justify-center">
-                          <FaUser className="text-4xl text-white" />
+                    {selectedChatId && tempSelectedChat && tempSelectedChat.id === selectedChatId ? (
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <div className="mx-auto w-16 h-16 rounded-full bg-white border border-gray-300 flex items-center justify-center text-[#1E2A79] mb-3">
+                          {renderUserAvatar(tempSelectedChat.id, tempSelectedChat.role, "w-full h-full")}
                         </div>
-                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">💬</span>
+                        <p className="font-semibold text-[#1E2A79]">{tempSelectedChat.name}</p>
+                        <p className="text-xs mt-1">No messages yet. Say hello!</p>
+                      </div>
+                    ) : selectedChatId && (isRunningRef.current.conversation === selectedChatId || isLoadingSpecificConversation || isLoadingConversations) ? (
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <div className="w-10 h-10 rounded-full bg-[#1E2A79] text-white flex items-center justify-center font-bold mb-3">
+                          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        <h3 className="text-sm font-medium text-gray-700">Loading conversation...</h3>
+                        <p className="text-xs text-gray-500 mt-1">Please wait a moment.</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <div className="relative mb-6">
+                          <div className="w-20 h-20 bg-gradient-to-br from-[#1e2a79] to-[#232c67] rounded-full flex items-center justify-center">
+                            <FaUser className="text-4xl text-white" />
+                          </div>
+                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">💬</span>
+                          </div>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No conversation selected</h3>
+                        <p className="text-sm text-gray-500 mb-4 max-w-64 leading-relaxed">
+                          Search and select a user or group to start messaging. Your conversations will appear here once you begin chatting.
+                        </p>
+                        <div className="flex items-center gap-3 text-xs text-blue-600">
+                          <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
+                          <span className="font-medium">Ready to connect!</span>
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
                         </div>
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No conversation selected</h3>
-                      <p className="text-sm text-gray-500 mb-4 max-w-64 leading-relaxed">
-                        Search and select a user or group to start messaging. Your conversations will appear here once you begin chatting.
-                      </p>
-                      <div className="flex items-center gap-3 text-xs text-blue-600">
-                        <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
-                        <span className="font-medium">Ready to connect!</span>
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <>
@@ -2485,7 +2570,14 @@ export default function TeacherMessagesPage() {
                     <div className="px-6 py-4 border-b bg-white flex items-center justify-between relative z-10">
                       <div className="flex items-center gap-3">
                         <button
-                          onClick={() => router.push('/TeacherSection/Dashboard')}
+                          onClick={() => {
+                            if (isMobile) {
+                              setSelectedChatId("");
+                              setSelectedType("user");
+                            } else {
+                              router.push('/TeacherSection/Dashboard');
+                            }
+                          }}
                           className="p-2 rounded-full hover:bg-gray-100 text-[#1E2A79] sm:hidden"
                           title="Back"
                         >
@@ -2504,8 +2596,6 @@ export default function TeacherMessagesPage() {
                                 } else {
                                   // Use the general group photo logic
                                   switch (groupType.toLowerCase()) {
-                                    case 'staff':
-                                      return '/assets/image/staff_gc_photo.png';
                                     case 'overall':
                                     default:
                                       return '/assets/image/general_gc_photo.png';
@@ -2540,18 +2630,25 @@ export default function TeacherMessagesPage() {
                         </div>
                       </div>
                       {/* Archive icon for user conversations; show Restore for archived */}
-                      {selectedType === 'user' && (
-                        <button
-                          className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-3 py-1.5 rounded-md flex items-center gap-2"
-                          onClick={() => setShowArchiveModal(true)}
-                          title="Archive conversation"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                          </svg>
-                          <span className="hidden sm:inline">Archive</span>
-                        </button>
-                      )}
+                      {selectedType === 'user' && (() => {
+                        const hasMessages = Array.isArray(selectedChat?.messages) && selectedChat.messages.length > 0;
+                        const hasLastMessage = !!(selectedChat?.lastMessage && String(selectedChat.lastMessage).trim() !== '');
+                        const hasRecentHistory = recent.some((r) => r.id === selectedChat?.id);
+                        const hasChatsHistory = chats.some((c) => c.id === selectedChat?.id && c.lastMessage && String(c.lastMessage).trim() !== '');
+                        const canArchive = hasMessages || hasLastMessage || hasRecentHistory || hasChatsHistory;
+                        return canArchive ? (
+                          <button
+                            className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-3 py-1.5 rounded-md flex items-center gap-2"
+                            onClick={() => setShowArchiveModal(true)}
+                            title="Archive conversation"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                            </svg>
+                            <span className="hidden sm:inline">Archive</span>
+                          </button>
+                        ) : null;
+                      })()}
                       {selectedType === 'archived' && (
                         <button
                           className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1.5 rounded-md flex items-center gap-2"
@@ -2600,9 +2697,16 @@ export default function TeacherMessagesPage() {
                                   </div>
                                 </div>
                               );
-                            } else if (hasConversationHistory || hasRecentHistory || hasLastMessage || hasConversationHistoryAPI || wasJustSelectedFromSearch) {
-                              // User has conversation history but no messages loaded yet - show "No messages yet. Say hello!"
-                              return <p className="text-xs">No messages yet. Say hello!</p>;
+                            } else if (hasConversationHistory || hasRecentHistory || hasLastMessage || hasConversationHistoryAPI) {
+                              // User has conversation history but messages aren't loaded yet - show loading state
+                              return (
+                                <div className="mt-1">
+                                  <div className="inline-flex items-center gap-2 text-xs text-blue-600">
+                                    <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                    Loading conversation...
+                                  </div>
+                                </div>
+                              );
                             } else {
                               // User has no conversation history at all - show "No conversation started"
                               return <p className="text-xs">No conversation started</p>;
@@ -2611,7 +2715,7 @@ export default function TeacherMessagesPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="relative z-10 flex-1 overflow-y-auto px-6 sm:px-8 py-4 sm:py-6 space-y-3">
+                      <div className="relative z-10 flex-1 overflow-y-auto px-6 sm:px-8 py-4 sm:py-6 space-y-3 min-w-0">
                         {(selectedChat?.messages || []).map((msg) => {
                           const isSelf = msg.from === "self";
                           return (
@@ -2696,7 +2800,8 @@ export default function TeacherMessagesPage() {
                                             .then((r) => r.json())
                                             .then((res) => {
                                               if (!res?.success) throw new Error(res?.error || 'Failed to unsent');
-                                              const now = new Date();
+                                              // Preserve the original message timestamp instead of using current time
+                                              const originalMessageTime = msg.time;
                                               if (selectedType === 'group') {
                                                 setGroupChats((prev) => prev.map((g) => (
                                                   g.id === selectedChat.id
@@ -2704,7 +2809,7 @@ export default function TeacherMessagesPage() {
                                                         ...g,
                                                         messages: g.messages.map((m) => (m.id === msg.id ? { ...m, text: '', isUnsent: true } : m)),
                                                         lastMessage: 'You unsent a message',
-                                                        lastMessageAt: now,
+                                                        lastMessageAt: originalMessageTime,
                                                       }
                                                     : g
                                                 )));
@@ -2719,16 +2824,16 @@ export default function TeacherMessagesPage() {
                                                 const userId = selectedChat.id;
                                                 setUnsentMessages((prev) => {
                                                   const current = prev[userId] || [];
-                                                  const updated = [...current, { messageId: msg.id, timestamp: now.toISOString() }];
+                                                  const updated = [...current, { messageId: msg.id, timestamp: originalMessageTime.toISOString() }];
                                                   return { ...prev, [userId]: updated };
                                                 });
                                                 
                                                 setRecent((prev) => {
                                                   const exists = prev.find((r) => r.id === selectedChat.id);
                                                   if (!exists) return prev;
-                                                  const updated = { ...exists, lastMessage: 'You unsent a message', lastMessageAt: now };
-                                                  const others = prev.filter((r) => r.id !== selectedChat.id);
-                                                  return [updated, ...others];
+                                                  const updated = { ...exists, lastMessage: 'You unsent a message', lastMessageAt: originalMessageTime };
+                                                  // Update the existing conversation without changing its position
+                                                  return prev.map((r) => r.id === selectedChat.id ? updated : r);
                                                 });
                                               }
                                               setActionMenuForId(null);
@@ -2761,7 +2866,8 @@ export default function TeacherMessagesPage() {
                                               .then((res) => {
                                                 if (!res?.success) throw new Error(res?.error || 'Failed to edit');
                                                 const updatedText = editingText.trim();
-                                                const now = new Date();
+                                                // Preserve the original message timestamp instead of using current time
+                                                const originalMessageTime = msg.time;
                                                 if (selectedType === 'group') {
                                                   setGroupChats((prev) => prev.map((g) => (
                                                     g.id === selectedChat.id
@@ -2769,7 +2875,7 @@ export default function TeacherMessagesPage() {
                                                           ...g,
                                                           messages: g.messages.map((m) => (m.id === msg.id ? { ...m, text: updatedText, edited: true } : m)),
                                                           lastMessage: updatedText || g.lastMessage,
-                                                          lastMessageAt: now,
+                                                          lastMessageAt: originalMessageTime,
                                                         }
                                                       : g
                                                   )));
@@ -2783,9 +2889,9 @@ export default function TeacherMessagesPage() {
                                                   setRecent((prev) => {
                                                     const exists = prev.find((r) => r.id === selectedChat.id);
                                                     if (!exists) return prev;
-                                                    const updated = { ...exists, lastMessage: (updatedText ? `You: ${updatedText}` : exists.lastMessage), lastMessageAt: now };
-                                                    const others = prev.filter((r) => r.id !== selectedChat.id);
-                                                    return [updated, ...others];
+                                                    const updated = { ...exists, lastMessage: (updatedText ? `You: ${updatedText}` : exists.lastMessage), lastMessageAt: originalMessageTime };
+                                                    // Update the existing conversation without changing its position
+                                                    return prev.map((r) => r.id === selectedChat.id ? updated : r);
                                                   });
                                                 }
                                                 setEditingMessageId(null);
@@ -2816,7 +2922,8 @@ export default function TeacherMessagesPage() {
                                               .then((res) => {
                                                 if (!res?.success) throw new Error(res?.error || 'Failed to edit');
                                                 const updatedText = editingText.trim();
-                                                const now = new Date();
+                                                // Preserve the original message timestamp instead of using current time
+                                                const originalMessageTime = msg.time;
                                                 if (selectedType === 'group') {
                                                   setGroupChats((prev) => prev.map((g) => (
                                                     g.id === selectedChat.id
@@ -2824,7 +2931,7 @@ export default function TeacherMessagesPage() {
                                                           ...g,
                                                           messages: g.messages.map((m) => (m.id === msg.id ? { ...m, text: updatedText, edited: true } : m)),
                                                           lastMessage: updatedText || g.lastMessage,
-                                                          lastMessageAt: now,
+                                                          lastMessageAt: originalMessageTime,
                                                         }
                                                       : g
                                                   )));
@@ -2837,9 +2944,9 @@ export default function TeacherMessagesPage() {
                                                   setRecent((prev) => {
                                                     const exists = prev.find((r) => r.id === selectedChat.id);
                                                     if (!exists) return prev;
-                                                    const updated = { ...exists, lastMessage: (updatedText ? `You: ${updatedText}` : exists.lastMessage), lastMessageAt: now };
-                                                    const others = prev.filter((r) => r.id !== selectedChat.id);
-                                                    return [updated, ...others];
+                                                    const updated = { ...exists, lastMessage: (updatedText ? `You: ${updatedText}` : exists.lastMessage), lastMessageAt: originalMessageTime };
+                                                    // Update the existing conversation without changing its position
+                                                    return prev.map((r) => r.id === selectedChat.id ? updated : r);
                                                   });
                                                 }
                                                 setEditingMessageId(null);
@@ -2975,7 +3082,7 @@ export default function TeacherMessagesPage() {
                     )}
 
                     {/* Fixed Input Bar */}
-                    <div className="relative z-10 px-4 sm:px-6 py-3 border-t bg-white flex flex-col gap-2 sm:gap-3">
+                    <div className="relative z-10 px-4 sm:px-6 py-3 border-t bg-white flex flex-col gap-2 sm:gap-3 min-w-0">
                       {selectedType !== 'archived' && (
                         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
                           {getQuickReplies(selectedType, selectedChat).map((qr, idx) => (
@@ -2988,7 +3095,7 @@ export default function TeacherMessagesPage() {
                       {selectedType === 'archived' ? (
                         <div className="flex-1 text-center text-sm text-gray-500 py-2">This conversation is archived. You can't send, edit, or unsend messages.</div>
                       ) : (
-                        <div className="flex items-end gap-2 sm:gap-3">
+                        <div className="flex items-end gap-2 sm:gap-3 min-w-0">
                           <textarea
                             rows={1}
                             placeholder="Type a message..."
@@ -3009,7 +3116,7 @@ export default function TeacherMessagesPage() {
                                 handleSend();
                               }
                             }}
-                            className="flex-1 px-4 py-2.5 rounded-2xl border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-blue-200 resize-none min-h-[44px] max-h-[180px] caret-[#1E2A79] placeholder:text-gray-400 leading-5"
+                            className="flex-1 px-4 py-2.5 rounded-2xl border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-blue-200 resize-none min-h-[44px] max-h-[180px] caret-[#1E2A79] placeholder:text-gray-400 leading-5 w-full"
                             ref={composerRef}
                           />
                           <button

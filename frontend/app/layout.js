@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { GeistSans, GeistMono } from "geist/font";
 import "./globals.css";
 import { Providers } from "./Context/Providers";
 import { metadata } from "./metadata";
@@ -10,15 +10,7 @@ export const viewport = {
   viewportFit: "cover",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Fonts are provided locally by the `geist` package
 
 export default function RootLayout({ children }) {
   return (
@@ -29,9 +21,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
         <PerformanceMonitor />
         <Providers>{children}</Providers>
       </body>

@@ -287,9 +287,89 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
         return;
       }
 
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+      if (isMobile) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        const cloned = printableElement.cloneNode(true);
+        const tempId = 'reportcard-printable';
+        cloned.setAttribute('id', tempId);
+
+        const head = doc.createElement('head');
+        document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+          const newLink = doc.createElement('link');
+          newLink.rel = 'stylesheet';
+          newLink.href = link.href;
+          head.appendChild(newLink);
+        });
+        document.querySelectorAll('style').forEach((styleEl) => {
+          const newStyle = doc.createElement('style');
+          newStyle.textContent = styleEl.textContent;
+          head.appendChild(newStyle);
+        });
+
+        const style = doc.createElement('style');
+        style.setAttribute('media', 'print');
+        style.innerHTML = `
+          @page { size: Letter portrait; margin: 0; }
+          @media print {
+            html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            #${tempId} { position: static !important; width: 8.5in !important; margin: 0 auto !important; }
+            #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
+            table, tr, td, th { page-break-inside: avoid !important; }
+            .rounded-xl, .rounded-lg { box-shadow: none !important; }
+            .print-page { width: 8.5in !important; min-height: 11in !important; height: 11in !important; box-sizing: border-box !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; position: relative !important; }
+            .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
+            .print-page > * { position: relative; z-index: 1; }
+            .pastel-blue::before { background: #eef5ff !important; }
+            .pastel-green::before { background: #eaf7f1 !important; }
+            .pastel-yellow::before { background: #fff7e6 !important; }
+            .pastel-pink::before { background: #ffeef2 !important; }
+            .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
+            .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
+            .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
+          }
+        `;
+        head.appendChild(style);
+
+        const html = doc.createElement('html');
+        html.appendChild(head);
+        const body = doc.createElement('body');
+        body.style.margin = '0';
+        body.appendChild(cloned);
+        html.appendChild(body);
+        doc.open();
+        doc.write('<!doctype html>' + html.outerHTML);
+        doc.close();
+
+        const assignPageNumbers = () => {
+          const pages = doc.querySelectorAll('.print-page');
+          const total = pages.length;
+          pages.forEach((p, i) => p.setAttribute('data-page-number', `${i+1}/${total}`));
+        };
+
+        setTimeout(() => {
+          assignPageNumbers();
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          setTimeout(() => { if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1500);
+        }, 800);
+        return;
+      }
+
       const originalTitle = document.title;
 
-      // Clone printable element to body to avoid clipping by scroll containers
+      // Desktop path unchanged
       const tempId = "reportcard-printable";
       const cloned = printableElement.cloneNode(true);
       cloned.setAttribute("id", tempId);
@@ -304,18 +384,12 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
         @page { size: auto; margin: 0; }
         @media print {
           html, body { margin: 0 !important; padding: 0 !important; }
-          /* Ensure colors are kept */
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          /* Hide everything except the cloned print container */
           body > *:not(#${tempId}) { display: none !important; }
-          /* Normalize the printable container */
           #${tempId} { position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; padding: 0; margin: 0; font-family: Calibri, 'Arial Rounded MT Bold', 'Comic Sans MS', Arial, sans-serif; display: flex !important; flex-direction: column !important; max-width: none !important; }
-          /* Remove clipping/overflow from ancestors inside the container */
           #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
-          /* Avoid page breaks inside table rows/cards */
           table, tr, td, th { page-break-inside: avoid !important; }
           .rounded-xl, .rounded-lg { box-shadow: none !important; }
-          /* Page breaks: start a new page only from the second section onward */
           .print-page { width: 100% !important; position: relative !important; min-height: 100vh !important; box-sizing: border-box !important; }
           .print-page + .print-page { page-break-before: always; break-before: page; }
           .no-break { page-break-inside: avoid; break-inside: avoid; }
@@ -325,21 +399,18 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
           .pastel-yellow { background: #fff7e6; }
           .pastel-pink { background: #ffeef2; }
           .border-soft { border: 1px solid #e5e7eb; }
-          /* Custom page number footer (bottom-right) */
           .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
         }
       `;
 
       document.head.appendChild(style);
 
-      // Assign page numbers to each print page
       const pages = cloned.querySelectorAll('.print-page');
       const totalPages = pages.length;
       pages.forEach((pageEl, index) => {
         pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
       });
 
-      // Set a descriptive title for the print/PDF
       const studentName = student ? `${student.stud_lastname || student.lastName || ''}, ${student.stud_firstname || student.firstName || ''}`.trim() : "";
       document.title = `Report Card ${studentName ? `- ${studentName}` : ''}`;
 
@@ -348,23 +419,12 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
           if (style && style.parentNode) document.head.removeChild(style);
           if (cloned && cloned.parentNode) cloned.parentNode.removeChild(cloned);
           document.title = originalTitle;
-        } catch (e) {
-          // no-op
-        }
+        } catch (e) {}
       };
 
-      const afterPrint = () => {
-        window.removeEventListener('afterprint', afterPrint);
-        cleanup();
-      };
+      const afterPrint = () => { window.removeEventListener('afterprint', afterPrint); cleanup(); };
       window.addEventListener('afterprint', afterPrint);
-
-      // Give React a beat to render the print layout
-      setTimeout(() => {
-        window.print();
-      }, 300);
-
-      // Fallback cleanup for browsers that don't fire afterprint reliably
+      setTimeout(() => { window.print(); }, 300);
       setTimeout(() => { cleanup(); }, 1500);
     } catch (err) {
       console.error('Error exporting assessment:', err);

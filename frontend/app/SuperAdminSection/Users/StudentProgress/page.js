@@ -670,8 +670,89 @@ export default function StudentProgress({ formData: initialFormData }) {
         return;
       }
 
-      const originalTitle = document.title;
+      // Mobile-optimized iframe printing
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+      if (isMobile) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
 
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        const tempId = 'studentprogress-printable';
+        const cloned = printableElement.cloneNode(true);
+        cloned.setAttribute('id', tempId);
+
+        const head = doc.createElement('head');
+        document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+          const newLink = doc.createElement('link');
+          newLink.rel = 'stylesheet';
+          newLink.href = link.href;
+          head.appendChild(newLink);
+        });
+        document.querySelectorAll('style').forEach((styleEl) => {
+          const newStyle = doc.createElement('style');
+          newStyle.textContent = styleEl.textContent;
+          head.appendChild(newStyle);
+        });
+
+        const style = doc.createElement('style');
+        style.setAttribute('media', 'print');
+        style.innerHTML = `
+          @page { size: Letter portrait; margin: 0; }
+          @media print {
+            html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            #${tempId} { position: static !important; width: 8.5in !important; margin: 0 auto !important; }
+            #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
+            table, tr, td, th { page-break-inside: avoid !important; }
+            .print-page { width: 8.5in !important; min-height: 11in !important; height: 11in !important; box-sizing: border-box !important; position: relative !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; }
+            /* Colored backgrounds via pseudo layer */
+            .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
+            .print-page > * { position: relative; z-index: 1; }
+            .pastel-blue::before { background: #eef5ff !important; }
+            .pastel-green::before { background: #eaf7f1 !important; }
+            .pastel-yellow::before { background: #fff7e6 !important; }
+            .pastel-pink::before { background: #ffeef2 !important; }
+            .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
+            .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
+            .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
+          }
+        `;
+        head.appendChild(style);
+
+        const html = doc.createElement('html');
+        html.appendChild(head);
+        const body = doc.createElement('body');
+        body.style.margin = '0';
+        body.appendChild(cloned);
+        html.appendChild(body);
+        doc.open();
+        doc.write('<!doctype html>' + html.outerHTML);
+        doc.close();
+
+        const assignPageNumbers = () => {
+          const pages = doc.querySelectorAll('.print-page');
+          const totalPages = pages.length;
+          pages.forEach((p, i) => p.setAttribute('data-page-number', `${i+1}/${totalPages}`));
+        };
+
+        setTimeout(() => {
+          assignPageNumbers();
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          setTimeout(() => { if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1500);
+        }, 800);
+        return;
+      }
+
+      // Desktop behavior unchanged
+      const originalTitle = document.title;
       const tempId = "studentprogress-printable";
       const cloned = printableElement.cloneNode(true);
       cloned.setAttribute("id", tempId);
@@ -721,16 +802,9 @@ export default function StudentProgress({ formData: initialFormData }) {
         } catch (e) {}
       };
 
-      const afterPrint = () => {
-        window.removeEventListener('afterprint', afterPrint);
-        cleanup();
-      };
+      const afterPrint = () => { window.removeEventListener('afterprint', afterPrint); cleanup(); };
       window.addEventListener('afterprint', afterPrint);
-
-      setTimeout(() => {
-        window.print();
-      }, 300);
-
+      setTimeout(() => { window.print(); }, 300);
       setTimeout(() => { cleanup(); }, 1500);
     } catch (err) {
       console.error('Error exporting assessment:', err);

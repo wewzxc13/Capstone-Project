@@ -854,6 +854,106 @@ export default function StudentProgress({ formData: initialFormData }) {
         return;
       }
 
+      // Prefer iframe-based printing on mobile for reliable pagination
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+      if (isMobile) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+        // Clone printable content
+        const cloned = printableElement.cloneNode(true);
+        cloned.style.display = 'block';
+
+        // Build head with existing stylesheets
+        const head = doc.createElement('head');
+        // Copy link stylesheets
+        document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+          const newLink = doc.createElement('link');
+          newLink.rel = 'stylesheet';
+          newLink.href = link.href;
+          head.appendChild(newLink);
+        });
+        // Copy inline styles
+        document.querySelectorAll('style').forEach((styleEl) => {
+          const newStyle = doc.createElement('style');
+          newStyle.textContent = styleEl.textContent;
+          head.appendChild(newStyle);
+        });
+
+        // Add our print styles (same rules as desktop path)
+        const style = doc.createElement('style');
+        style.setAttribute('media', 'print');
+        const tempId = 'reportcard-printable';
+        cloned.setAttribute('id', tempId);
+        style.innerHTML = `
+          @page { size: Letter portrait; margin: 0; }
+          @media print {
+            html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            #${tempId} { position: static !important; width: 8.5in !important; margin: 0 auto !important; }
+            #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
+            table, tr, td, th { page-break-inside: avoid !important; }
+            .rounded-xl, .rounded-lg { box-shadow: none !important; }
+            .print-page { width: 8.5in !important; min-height: 11in !important; height: 11in !important; box-sizing: border-box !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; position: relative !important; }
+            /* Force colored backgrounds via pseudo element so mobile prints them */
+            .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
+            .print-page > * { position: relative; z-index: 1; }
+            .pastel-blue::before { background: #eef5ff !important; }
+            .pastel-green::before { background: #eaf7f1 !important; }
+            .pastel-yellow::before { background: #fff7e6 !important; }
+            .pastel-pink::before { background: #ffeef2 !important; }
+            .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
+            .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
+            .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
+          }
+        `;
+        head.appendChild(style);
+
+        // Write document
+        const html = doc.createElement('html');
+        html.appendChild(head);
+        const body = doc.createElement('body');
+        body.style.margin = '0';
+        body.appendChild(cloned);
+        html.appendChild(body);
+        doc.open();
+        doc.write('<!doctype html>' + html.outerHTML);
+        doc.close();
+
+        // Assign page numbers
+        const assignPageNumbers = () => {
+          const pages = doc.querySelectorAll('.print-page');
+          const totalPages = pages.length;
+          pages.forEach((pageEl, index) => {
+            pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
+          });
+        };
+
+        // Wait a moment for stylesheets to load, then print
+        const printNow = () => {
+          try {
+            assignPageNumbers();
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } finally {
+            setTimeout(() => { if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1500);
+          }
+        };
+
+        // Give external styles time to load (mobile needs longer)
+        setTimeout(printNow, 800);
+        return; // stop; mobile path handled
+      }
+
       const originalTitle = document.title;
 
       // Clone printable element to body to avoid clipping by scroll containers
@@ -868,23 +968,46 @@ export default function StudentProgress({ formData: initialFormData }) {
       const style = document.createElement("style");
       style.setAttribute("media", "print");
       style.innerHTML = `
-        @page { size: auto; margin: 0; }
+        /* Use explicit Letter portrait sizing so mobile print engines paginate consistently */
+        @page { size: Letter portrait; margin: 0; }
         @media print {
-          html, body { margin: 0 !important; padding: 0 !important; }
+          html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
           /* Ensure colors are kept */
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           /* Hide everything except the cloned print container */
           body > *:not(#${tempId}) { display: none !important; }
           /* Normalize the printable container */
-          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; padding: 0; margin: 0; font-family: Calibri, 'Arial Rounded MT Bold', 'Comic Sans MS', Arial, sans-serif; display: flex !important; flex-direction: column !important; max-width: none !important; }
+          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: 8.5in !important; padding: 0; margin: 0 auto !important; font-family: Calibri, 'Arial Rounded MT Bold', 'Comic Sans MS', Arial, sans-serif; display: block !important; max-width: none !important; }
           /* Remove clipping/overflow from ancestors inside the container */
           #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
           /* Avoid page breaks inside table rows/cards */
           table, tr, td, th { page-break-inside: avoid !important; }
           .rounded-xl, .rounded-lg { box-shadow: none !important; }
-          /* Page breaks: start a new page only from the second section onward */
-          .print-page { width: 100% !important; position: relative !important; min-height: 100vh !important; box-sizing: border-box !important; }
-          .print-page + .print-page { page-break-before: always; break-before: page; }
+          /* Page breaks: force every .print-page onto its own page (mobile-safe) */
+          .print-page { 
+            width: 8.5in !important; 
+            position: relative !important; 
+            box-sizing: border-box !important; 
+            /* Make each section independent and avoid it being merged */
+            break-inside: avoid !important; 
+            page-break-inside: avoid !important; 
+            /* Use exact page height to enforce one section per physical page */
+            min-height: 11in !important; 
+            height: 11in !important;
+            page-break-after: always !important; 
+            break-after: page !important;
+          }
+          /* Force background colors to print by drawing them as real elements */
+          .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
+          .print-page > * { position: relative; z-index: 1; }
+          .pastel-blue::before { background: #eef5ff !important; }
+          .pastel-green::before { background: #eaf7f1 !important; }
+          .pastel-yellow::before { background: #fff7e6 !important; }
+          .pastel-pink::before { background: #ffeef2 !important; }
+          /* Do not add an extra blank page after the last section */
+          .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
+          /* Also ensure a hard break before subsequent sections for engines that only honor before */
+          .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
           .no-break { page-break-inside: avoid; break-inside: avoid; }
           .section-title { font-weight: 700; color: #1f2937; }
           .pastel-blue { background: #eef5ff; }

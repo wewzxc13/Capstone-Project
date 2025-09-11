@@ -268,3 +268,33 @@ Plain Input Password: Quennielyn@123
 Input: clarsejay@gmail.com
 Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
 Plain Input Password: Chan@123
+Input: manongdomargareth1335@gmail.com
+Hashed DB Password: $2y$10$em/CoMFNY1tjX8/ON.1x7.zpc2Bu3VbE55C.wM2oL1mrhZY/iTQUe
+Plain Input Password: Marg@123
+Input: manongdomargareth1335@gmail.com
+Hashed DB Password: $2y$10$em/CoMFNY1tjX8/ON.1x7.zpc2Bu3VbE55C.wM2oL1mrhZY/iTQUe
+Plain Input Password: Marg@123
+Input: manongdomargareth1335@gmail.com
+Hashed DB Password: $2y$10$em/CoMFNY1tjX8/ON.1x7.zpc2Bu3VbE55C.wM2oL1mrhZY/iTQUe
+Plain Input Password: Marg@123
+Input: decenajessa03@gmail.com
+Hashed DB Password: $2y$10$CPLO02gUKBJlcRYbJePch.NDwz6DZX2ZSueECGhH6aGSBbfyrTU1e
+Plain Input Password: Decena@123
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123
+Input: margarethmanongdo1335@gmail.com
+Hashed DB Password: 
+Plain Input Password: Marg@123
+Input: margarethmanongdo1335@gmail.com
+Hashed DB Password: 
+Plain Input Password: Marg@123
+Input: manongdomargareth1335@gmail.com
+Hashed DB Password: $2y$10$em/CoMFNY1tjX8/ON.1x7.zpc2Bu3VbE55C.wM2oL1mrhZY/iTQUe
+Plain Input Password: Marg@123
+Input: decenajessa03@gmail.com
+Hashed DB Password: $2y$10$CPLO02gUKBJlcRYbJePch.NDwz6DZX2ZSueECGhH6aGSBbfyrTU1e
+Plain Input Password: Decena@123

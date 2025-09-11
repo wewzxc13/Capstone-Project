@@ -851,7 +851,7 @@ export default function AdminUsersPage() {
                           )}
                         </div>
                         <button
-                          onClick={() => { window.location.href = "http://localhost:3000/AdminSection/Users/StudentProgress"; }}
+                          onClick={() => { window.location.href = "/AdminSection/Users/StudentProgress"; }}
                           className="flex items-center gap-2 px-4 py-2.5 bg-[#232c67] text-white rounded-lg text-sm font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
                         >
                           <FaClipboardCheck className="text-sm" />

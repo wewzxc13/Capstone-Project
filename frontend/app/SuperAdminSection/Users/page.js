@@ -934,7 +934,7 @@ export default function SuperAdminUsersPage() {
                           )}
                         </div>
                         <button
-                          onClick={() => { window.location.href = "http://localhost:3000/SuperAdminSection/Users/StudentProgress"; }}
+                          onClick={() => { window.location.href = "/SuperAdminSection/Users/StudentProgress"; }}
                           className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-[#232c67] text-white rounded-lg text-sm font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
                         >
                           <FaClipboardCheck className="text-sm" />

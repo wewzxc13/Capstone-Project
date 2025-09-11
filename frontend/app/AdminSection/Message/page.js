@@ -53,6 +53,8 @@ export default function AdminMessagesPage() {
   const [actionMenuForId, setActionMenuForId] = useState(null);
   const [showReadsForId, setShowReadsForId] = useState(null);
   const [readsCache, setReadsCache] = useState({});
+  // Temporary selected chat placeholder used when selecting from search
+  const [tempSelectedChat, setTempSelectedChat] = useState(null);
   // Track unsent messages in localStorage to persist across page refreshes
   const [unsentMessages, setUnsentMessages] = useState({});
   // Store user photos
@@ -154,7 +156,7 @@ export default function AdminMessagesPage() {
     
     // Final fallback
     console.log('getClassPhoto - returning default explorer photo');
-    return '/assets/image/ville.png';
+    return '/assets/image/ville.jpg';
   };
 
   // Get the appropriate group photo based on group type
@@ -162,8 +164,6 @@ export default function AdminMessagesPage() {
     switch ((groupType || '').toLowerCase()) {
       case 'class':
         return '/assets/image/explorer_gc_photo.png';
-      case 'staff':
-        return '/assets/image/staff_gc_photo.png';
       case 'overall':
       default:
         return '/assets/image/general_gc_photo.png';
@@ -218,7 +218,7 @@ export default function AdminMessagesPage() {
           return;
         }
         
-        console.log('SuperAdmin: Loading conversation history users');
+
         
         // Use get_users.php for conversation history (default mode)
         const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
@@ -227,7 +227,7 @@ export default function AdminMessagesPage() {
           signal: controller.signal,
         });
         const data = await res.json();
-        console.log('SuperAdmin: Conversation history API response:', data);
+
         
         if (!data?.success) throw new Error(data?.error || "Failed to fetch conversation history");
 
@@ -236,14 +236,7 @@ export default function AdminMessagesPage() {
             .filter(Boolean)
             .join(" ");
           
-          console.log('SuperAdmin: Processing user data:', {
-            id: u.user_id,
-            name: fullName,
-            last_message: u.last_message,
-            last_sent_at: u.last_sent_at,
-            unread_count: u.unread_count,
-            is_last_unsent: u.is_last_unsent
-          });
+
           
           return {
             id: String(u.user_id),
@@ -264,13 +257,10 @@ export default function AdminMessagesPage() {
           index === self.findIndex(u => u.id === user.id)
         );
         
-        console.log('SuperAdmin: Processed conversation history users:', uniqueUsers);
         if (isMounted) {
-          console.log('SuperAdmin: Setting chats state with conversation history users:', uniqueUsers);
           setChats(uniqueUsers);
           dataLoadedRef.current.users = true; // Mark as loaded
           isRunningRef.current.users = false; // Mark as not running
-          console.log('SuperAdmin: Conversation history users loaded successfully, chats state updated');
         }
         
         // Initialize photos for all users
@@ -306,7 +296,7 @@ export default function AdminMessagesPage() {
       const uid = Number(localStorage.getItem('userId')) || 0;
       if (!uid) return;
       
-      console.log('SuperAdmin: Loading all users for search');
+
       
       // Use get_users.php with search=true parameter to get all active users
       const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}&search=true`, {
@@ -314,7 +304,7 @@ export default function AdminMessagesPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       const data = await res.json();
-      console.log('SuperAdmin: All users for search API response:', data);
+
       
       if (!data?.success) throw new Error(data?.error || "Failed to fetch all users for search");
 
@@ -340,7 +330,7 @@ export default function AdminMessagesPage() {
         index === self.findIndex(u => u.id === user.id)
       );
       
-      console.log('SuperAdmin: Processed all users for search:', uniqueAllUsers);
+
       setChats(uniqueAllUsers);
       
       // Update photos for new users
@@ -363,7 +353,7 @@ export default function AdminMessagesPage() {
       const uid = Number(localStorage.getItem('userId')) || 0;
       if (!uid) return;
       
-      console.log('SuperAdmin: Restoring conversation history');
+
       
       // Use get_users.php for conversation history (default mode)
       const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
@@ -371,7 +361,7 @@ export default function AdminMessagesPage() {
         headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
-      console.log('SuperAdmin: Conversation history restore API response:', data);
+
       
       if (!data?.success) throw new Error(data?.error || "Failed to restore conversation history");
 
@@ -380,14 +370,7 @@ export default function AdminMessagesPage() {
           .filter(Boolean)
           .join(" ");
         
-        console.log('SuperAdmin: Restore - Processing user data:', {
-          id: u.user_id,
-          name: fullName,
-          last_message: u.last_message,
-          last_sent_at: u.last_sent_at,
-          unread_count: u.unread_count,
-          is_last_unsent: u.is_last_unsent
-        });
+
         
         return {
           id: String(u.user_id),
@@ -408,7 +391,7 @@ export default function AdminMessagesPage() {
         index === self.findIndex(u => u.id === user.id)
       );
       
-      console.log('SuperAdmin: Restored conversation history users:', uniqueUsers);
+
       setChats(uniqueUsers);
       
     } catch (err) {
@@ -422,7 +405,7 @@ export default function AdminMessagesPage() {
       const uid = Number(localStorage.getItem('userId')) || 0;
       if (!uid) return false;
       
-      console.log('SuperAdmin: Checking conversation history for user:', userId);
+
       
       // Check if this user has any conversation history
       const res = await fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${userId}`, {
@@ -431,13 +414,11 @@ export default function AdminMessagesPage() {
       });
       const data = await res.json();
       
-      if (data?.success && data.data && data.data.length > 0) {
-        console.log('SuperAdmin: User', userId, 'has conversation history with', data.data.length, 'messages');
-        return true;
-      } else {
-        console.log('SuperAdmin: User', userId, 'has no conversation history');
-        return false;
-      }
+              if (data?.success && data.data && data.data.length > 0) {
+          return true;
+        } else {
+          return false;
+        }
     } catch (err) {
       console.error("Error checking conversation history for user:", userId, err);
       return false;
@@ -454,7 +435,7 @@ export default function AdminMessagesPage() {
         seen.add(chat.id);
         unique.push(chat);
       } else {
-        console.log('SuperAdmin: Removed duplicate user:', chat.id, chat.name);
+
       }
     }
     
@@ -464,9 +445,7 @@ export default function AdminMessagesPage() {
   // Enhanced setChats function that automatically removes duplicates
   const setChatsWithDuplicateRemoval = (newChats) => {
     const uniqueChats = removeDuplicateUsers(newChats);
-    if (uniqueChats.length !== newChats.length) {
-      console.log('SuperAdmin: Removed', newChats.length - uniqueChats.length, 'duplicate users');
-    }
+
     setChats(uniqueChats);
   };
 
@@ -476,7 +455,7 @@ export default function AdminMessagesPage() {
       const uid = Number(localStorage.getItem('userId'));
       if (!uid) return;
       
-      console.log('SuperAdmin: Marking messages as read for user:', userId);
+
       
       // Call the backend to mark messages as read
       const res = await fetch(`/php/Communication/mark_messages_read.php`, {
@@ -489,8 +468,7 @@ export default function AdminMessagesPage() {
       });
       
       const data = await res.json();
-      if (data?.success) {
-        console.log('SuperAdmin: Successfully marked messages as read for user:', userId);
+              if (data?.success) {
         
         // Refresh unread counts by calling the get_users API again
         try {
@@ -522,17 +500,13 @@ export default function AdminMessagesPage() {
                 return r;
               });
             });
-            
-            console.log('SuperAdmin: Refreshed unread counts after marking messages as read');
           }
         } catch (refreshErr) {
-          console.error('SuperAdmin: Error refreshing unread counts:', refreshErr);
+          console.error('Error refreshing unread counts:', refreshErr);
         }
-      } else {
-        console.log('SuperAdmin: Failed to mark messages as read for user:', userId);
       }
     } catch (err) {
-      console.error('SuperAdmin: Error marking messages as read for user:', userId, err);
+      console.error('Error marking messages as read for user:', userId, err);
     }
   };
 
@@ -542,13 +516,7 @@ export default function AdminMessagesPage() {
       const uid = Number(localStorage.getItem('userId'));
       if (!uid) return;
       
-      console.log('SuperAdmin: Manually loading conversation for user:', userId);
-      console.log('SuperAdmin: Current state in manuallyLoadConversation:', {
-        selectedChatId,
-        selectedType,
-        chatsLength: chats.length,
-        recentLength: recent.length
-      });
+
       
       // Set loading state
       setIsLoadingSpecificConversation(true);
@@ -574,15 +542,14 @@ export default function AdminMessagesPage() {
           time: m.sent_at ? new Date(m.sent_at) : new Date(),
         }));
         
-        console.log('SuperAdmin: Fetched messages for user:', userId, 'count:', msgs.length);
-        console.log('SuperAdmin: First few messages:', msgs.slice(0, 3));
+
         
         // Update the chats array with messages for this user
         setChats((prev) => {
           const updated = prev.map((c) => 
             c.id === userId ? { ...c, messages: msgs, unread: 0 } : c
           );
-          console.log('SuperAdmin: Updated chats array for user:', userId, 'new messages count:', msgs.length, 'unread reset to 0');
+
           return updated;
         });
         
@@ -594,38 +561,23 @@ export default function AdminMessagesPage() {
           return updated;
         });
         
-        console.log('SuperAdmin: Manually loaded conversation for user:', userId, 'with', msgs.length, 'messages');
-        console.log('SuperAdmin: State after updating messages:', {
-          selectedChatId,
-          selectedType,
-          chatsLength: chats.length
-        });
+
         
         // Mark messages as read for this user
         await markMessagesAsRead(userId);
         
         // Add a small delay to ensure state updates are processed
         // This helps ensure the conversation is displayed in the right panel
-        setTimeout(() => {
-          console.log('SuperAdmin: After delay - checking if conversation is properly loaded for user:', userId);
-          const updatedUser = chats.find(c => c.id === userId);
-          if (updatedUser) {
-            console.log('SuperAdmin: User in chats array after update:', {
-              id: updatedUser.id,
-              name: updatedUser.name,
-              messagesCount: updatedUser.messages?.length || 0
-            });
-          }
-        }, 100);
+
       } else {
-        console.log('SuperAdmin: No messages found for user:', userId);
+
       }
       
       // Mark as not running
       isRunningRef.current.conversation = null;
       setIsLoadingSpecificConversation(false);
     } catch (err) {
-      console.error('SuperAdmin: Error manually loading conversation for user:', userId, err);
+      console.error('Error manually loading conversation for user:', userId, err);
       isRunningRef.current.conversation = null;
       setIsLoadingSpecificConversation(false);
     }
@@ -733,7 +685,7 @@ export default function AdminMessagesPage() {
     let isMounted = true;
     isRunningRef.current.recent = true; // Mark as running
     
-    console.log('SuperAdmin: Loading recent conversations for user:', uid);
+
     
     fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`, {
       signal: controller.signal,
@@ -745,7 +697,7 @@ export default function AdminMessagesPage() {
         return r.json();
       })
       .then(async (json) => {
-        console.log('SuperAdmin: Recent conversations API response:', json);
+
         if (!json?.success) {
           console.error('Recent conversations API returned success: false');
           return;
@@ -793,12 +745,10 @@ export default function AdminMessagesPage() {
             photo: null, // Will be fetched separately since recent conversations API doesn't include photos
           };
         });
-        console.log('SuperAdmin: Mapped recent conversations:', mapped);
         if (isMounted) {
           setRecent(mapped);
           dataLoadedRef.current.recent = true; // Mark as loaded
           isRunningRef.current.recent = false; // Mark as not running
-          console.log('SuperAdmin: Recent conversations loaded, count:', mapped.length);
         }
         
         // For users not in userPhotos, we'll use default photos based on their role
@@ -975,20 +925,12 @@ export default function AdminMessagesPage() {
   }, [groupChats, query]);
 
   const selectedChat = useMemo(() => {
-    console.log('SuperAdmin: selectedChat useMemo triggered');
-    console.log('SuperAdmin: selectedType:', selectedType);
-    console.log('SuperAdmin: selectedChatId:', selectedChatId);
-    console.log('SuperAdmin: chats.length:', chats.length);
-    console.log('SuperAdmin: chats array with messages:', chats.map(c => ({ id: c.id, name: c.name, messagesCount: c.messages?.length || 0, hasMessages: Boolean(c.messages && c.messages.length > 0) })));
-    
     if (selectedType === "group") {
       const result = groupChats.find((g) => g.id === selectedChatId) || null;
-      console.log('SuperAdmin: Group chat result:', result);
       return result;
     }
     if (selectedType === 'archived') {
       const result = archived.find((a) => a.id === selectedChatId) || null;
-      console.log('SuperAdmin: Archived chat result:', result);
       return result;
     }
     
@@ -998,21 +940,17 @@ export default function AdminMessagesPage() {
       result = recent.find((r) => r.id === selectedChatId) || null;
     }
     
-    console.log('SuperAdmin: User chat result:', result);
-    if (result) {
-      console.log('SuperAdmin: Selected user details:', {
-        id: result.id,
-        name: result.name,
-        messagesCount: result.messages?.length || 0,
-        hasMessages: Boolean(result.messages && result.messages.length > 0)
-      });
+    // If still not found (e.g., selected from search before arrays update), use temporary placeholder
+    if (!result && tempSelectedChat && tempSelectedChat.id === selectedChatId) {
+      return tempSelectedChat;
     }
+    
     return result;
-  }, [selectedType, selectedChatId, chats, groupChats, archived, recent]);
+  }, [selectedType, selectedChatId, chats, groupChats, archived, recent, tempSelectedChat]);
 
   // Component mount effect - now handled by loadConversationHistoryWithMessages
   useEffect(() => {
-    console.log('SuperAdmin: Component mounted, conversation history loading will happen automatically');
+    // Component mounted, conversation history loading will happen automatically
   }, []); // Only run on mount
 
   // Enhanced conversation history loading that also fetches messages
@@ -1022,7 +960,7 @@ export default function AdminMessagesPage() {
         const uid = Number(localStorage.getItem('userId')) || 0;
         if (!uid) return;
         
-        console.log('SuperAdmin: Loading conversation history with messages');
+
         setIsLoadingConversations(true);
         
         // First, load the user list
@@ -1053,8 +991,6 @@ export default function AdminMessagesPage() {
             };
           });
           
-          console.log('SuperAdmin: Loaded', users.length, 'users from conversation history');
-          
           // Set the users first
           setChats(users);
           setRecent(users);
@@ -1062,10 +998,9 @@ export default function AdminMessagesPage() {
           
           // Don't automatically load messages here - let the user selection trigger it
           // This prevents conflicts and ensures proper conversation loading
-          console.log('SuperAdmin: Conversation history users loaded, messages will be loaded on user selection');
         }
       } catch (err) {
-        console.error('SuperAdmin: Error loading conversation history:', err);
+        console.error('Error loading conversation history:', err);
       } finally {
         setIsLoadingConversations(false);
       }
@@ -1088,56 +1023,43 @@ export default function AdminMessagesPage() {
 
   // Load conversation when a user is selected (fallback for automatic loading)
   useEffect(() => {
-    console.log('SuperAdmin: Conversation loading useEffect triggered');
-    console.log('SuperAdmin: selectedChatId:', selectedChatId);
-    console.log('SuperAdmin: selectedType:', selectedType);
-    
     if (!selectedChatId || selectedType !== 'user') {
-      console.log('SuperAdmin: Early return - no selectedChatId or wrong type');
       return;
     }
     
     const uid = Number(localStorage.getItem('userId'));
     if (!uid) {
-      console.log('SuperAdmin: Early return - no user ID');
       return;
     }
     
     // Prevent multiple simultaneous conversation loads for the same user
     if (isRunningRef.current.conversation === selectedChatId) {
-      console.log('SuperAdmin: Conversation loading already in progress for user:', selectedChatId);
       return;
     }
     
     // Check if this user already has messages loaded (to prevent reloading)
     const userWithMessages = chats.find(c => c.id === selectedChatId && c.messages && c.messages.length > 0);
     if (userWithMessages) {
-      console.log('SuperAdmin: User already has messages loaded, skipping conversation load:', selectedChatId);
       return;
     }
     
     // Check if this user exists in the chats array (to ensure we can load their conversation)
     const userExists = chats.find(c => c.id === selectedChatId);
     if (!userExists) {
-      console.log('SuperAdmin: User not found in chats array, skipping conversation load:', selectedChatId);
       return;
     }
     
     // Only auto-load if manual loading hasn't been triggered
     // This prevents conflicts with the manual loading from click handlers
     if (isRunningRef.current.conversation) {
-      console.log('SuperAdmin: Manual loading in progress, skipping auto-load:', selectedChatId);
       return;
     }
     
     // Also check if this user was just manually loaded to prevent conflicts
     const userJustManuallyLoaded = chats.find(c => c.id === selectedChatId && c.messages && c.messages.length > 0);
     if (userJustManuallyLoaded) {
-      console.log('SuperAdmin: User was just manually loaded, skipping auto-load:', selectedChatId);
       return;
     }
-    
-    console.log('SuperAdmin: Auto-loading conversation for user ID:', selectedChatId);
     
     // Mark as running
     isRunningRef.current.conversation = selectedChatId;
@@ -1152,9 +1074,8 @@ export default function AdminMessagesPage() {
     })
       .then((r) => r.json())
       .then((json) => {
-        console.log('SuperAdmin: Conversation API response for user', selectedChatId, ':', json);
         if (!json?.success) {
-          console.error('SuperAdmin: Failed to load conversation for user:', selectedChatId);
+          console.error('Failed to load conversation for user:', selectedChatId);
           return;
         }
         
@@ -1168,17 +1089,14 @@ export default function AdminMessagesPage() {
           time: m.sent_at ? new Date(m.sent_at) : new Date(),
         }));
         
-        console.log('SuperAdmin: Processed messages for user', selectedChatId, ':', msgs);
-        
         // Update ONLY the messages for this specific user, preserve all other users
         setChats((prev) => {
-          console.log('SuperAdmin: Updating chats array - before update:', prev.length, 'users');
           const updated = prev.map((c) => 
             c.id === selectedChatId ? { ...c, messages: msgs, unread: 0 } : c
           );
-          console.log('SuperAdmin: Updated chats array (preserving all users):', updated.length, 'users');
           return updated;
         });
+        // Keep tempSelectedChat; it will be ignored once real data is present
         
         // Clean up any duplicates that might have been created
         setTimeout(() => {
@@ -1193,14 +1111,12 @@ export default function AdminMessagesPage() {
           return updated;
         });
         
-        console.log('SuperAdmin: Successfully auto-loaded conversation for user:', selectedChatId, 'with', msgs.length, 'messages');
-        
         // Mark messages as read for this user
         markMessagesAsRead(selectedChatId);
       })
       .catch((err) => { 
         if (!(err && err.name === 'AbortError')) {
-          console.error('SuperAdmin: Error auto-loading conversation for user:', selectedChatId, err);
+          console.error('Error auto-loading conversation for user:', selectedChatId, err);
         }
       })
       .finally(() => {
@@ -1325,28 +1241,42 @@ export default function AdminMessagesPage() {
       // Update ONLY the selected chat in chats array, preserve all other users
       setChats((prev) => {
         // Ensure we don't lose the main conversation list
-        if (!prev || prev.length === 0) {
-          console.warn('SuperAdmin: Attempted to update chats after sending message but prev was empty, preserving original state');
-          return prev;
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const exists = safePrev.some((c) => c.id === selectedChat.id);
+        if (!exists) {
+          const newUser = {
+            id: selectedChat.id,
+            name: selectedChat.name,
+            color: selectedChat.color,
+            role: selectedChat.role,
+            unread: 0,
+            lastMessageAt: now,
+            lastMessage: `You: ${text}`,
+            messages: [{ id: optimisticId, from: 'self', text, time: now }],
+            photo: selectedChat.photo || null,
+          };
+          return [...safePrev, newUser];
         }
         
-        const updated = prev.map((c) =>
+        const updated = safePrev.map((c) =>
           c.id === selectedChat.id
             ? {
-              ...c,
-              messages: [
-                ...c.messages,
-                { id: optimisticId, from: "self", text, time: now },
-              ],
-              lastMessage: `You: ${text}`,
-              lastMessageAt: now,
-              unread: 0,
-            }
+                ...c,
+                messages: [
+                  ...c.messages,
+                  { id: optimisticId, from: 'self', text, time: now },
+                ],
+                lastMessage: `You: ${text}`,
+                lastMessageAt: now,
+                unread: 0,
+              }
             : c
         );
-        console.log('SuperAdmin: Updated chats array after sending message (preserving all users):', updated);
+
         return updated;
       });
+      // If we were showing a temporary selected chat from search, clear it now
+      setTempSelectedChat((prev) => (prev && prev.id === selectedChat.id ? null : prev));
       
       // Clean up any duplicates that might have been created
       setTimeout(() => {
@@ -1394,13 +1324,24 @@ export default function AdminMessagesPage() {
             
             // Update ONLY the selected chat in chats array, preserve all other users
             setChats((prev) => {
-              // Ensure we don't lose the main conversation list
-              if (!prev || prev.length === 0) {
-                console.warn('SuperAdmin: Attempted to update chats after backend response but prev was empty, preserving original state');
-                return prev;
+              const safePrev = Array.isArray(prev) ? prev : [];
+              const exists = safePrev.some((c) => c.id === String(receiverId));
+              if (!exists) {
+                const newUser = {
+                  id: String(receiverId),
+                  name: selectedChat.name,
+                  color: selectedChat.color,
+                  role: selectedChat.role,
+                  unread: 0,
+                  lastMessageAt: sentAt,
+                  lastMessage: `You: ${text}`,
+                  messages: [{ id: dbId || optimisticId, from: 'self', text, time: sentAt }],
+                  photo: selectedChat.photo || null,
+                };
+                return [...safePrev, newUser];
               }
               
-              const updated = prev.map((c) =>
+              const updated = safePrev.map((c) =>
                 c.id === String(receiverId)
                   ? { 
                       ...c, 
@@ -1411,9 +1352,11 @@ export default function AdminMessagesPage() {
                     }
                   : c
               );
-              console.log('SuperAdmin: Updated chats array after backend response (preserving all users):', updated);
+      
               return updated;
             });
+            // Ensure temporary placeholder is cleared after confirmed send
+            setTempSelectedChat((prev) => (prev && prev.id === String(receiverId) ? null : prev));
             
             // Clean up any duplicates that might have been created
             setTimeout(() => {
@@ -1505,6 +1448,15 @@ export default function AdminMessagesPage() {
     }
   }
 
+  // Truncate preview text consistently (mobile vs desktop)
+  const truncatePreview = (text) => {
+    if (!text) return "";
+    const str = String(text);
+    const limit = isMobile ? 42 : 72; // slightly shorter on mobile
+    if (str.length <= limit) return str;
+    return str.slice(0, limit - 1).trimEnd() + "…";
+  };
+
   const roleBracket = (roleId) => {
     const r = Number(roleId);
     if (r === 1) return "Owner";
@@ -1514,6 +1466,7 @@ export default function AdminMessagesPage() {
     return "User";
   };
 
+ 
   function getQuickReplies(type, chat) {
     // User roles: 2=Admin, 3=Teacher, 4=Parent
     if (!chat) return [
@@ -1637,6 +1590,16 @@ export default function AdminMessagesPage() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  // Track if viewport is mobile (Tailwind 'sm' < 640px)
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+
   // Load unsent messages from localStorage on component mount
   useEffect(() => {
     const stored = localStorage.getItem('unsentMessages');
@@ -1702,7 +1665,7 @@ export default function AdminMessagesPage() {
         if (userPhotos[senderId] || photosFetchedRef.current.has(senderId)) {
           continue;
         }
-        
+          
         try {
           const res = await fetch(`/php/Users/get_user_details.php`, {
             method: 'POST',
@@ -1880,7 +1843,7 @@ export default function AdminMessagesPage() {
   // Ensure conversation history is loaded when needed
   useEffect(() => {
     if (activeTab === "Users" && !isSearchFocused && chats.length === 0) {
-      console.log('SuperAdmin: Users tab active, ensuring conversation history is loaded');
+
       restoreConversationHistory();
     }
   }, [activeTab, isSearchFocused, chats.length]);
@@ -1921,10 +1884,10 @@ export default function AdminMessagesPage() {
               });
             });
             
-            console.log('SuperAdmin: Refreshed unread counts when Users tab became active');
+
           }
         } catch (err) {
-          console.error('SuperAdmin: Error refreshing unread counts:', err);
+          console.error('Error refreshing unread counts:', err);
         }
       };
       
@@ -1938,7 +1901,7 @@ export default function AdminMessagesPage() {
     if (chats.length > 0) {
       const uniqueChats = removeDuplicateUsers(chats);
       if (uniqueChats.length !== chats.length) {
-        console.log('SuperAdmin: Auto-cleanup: Removed', chats.length - uniqueChats.length, 'duplicate users');
+  
         setChats(uniqueChats);
       }
     }
@@ -1947,11 +1910,11 @@ export default function AdminMessagesPage() {
   return (
     <ProtectedRoute role="Admin">
       <div className="fixed inset-0 bg-[#f4f9ff]">
-        <div className="flex h-full">
-          <main className="flex-1 flex flex-col h-full">
-            <div className="flex flex-1 overflow-hidden">
+        <div className="flex h-full overflow-hidden">
+          <main className="flex-1 flex flex-col h-full min-w-0">
+            <div className="flex flex-1 overflow-hidden min-w-0">
               {/* LEFT SIDEBAR CHAT LIST */}
-              <div className="w-[320px] flex flex-col bg-white border-r">
+              <div className={`${isMobile && selectedChatId ? 'hidden' : 'flex'} w-full sm:w-[320px] flex-col bg-white border-r min-w-0`}>
                 {/* Search Header */}
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
@@ -1997,10 +1960,10 @@ export default function AdminMessagesPage() {
                             // Only restore conversation history if no user is currently selected
                             // This prevents interference with the selected user from search results
                             if (!selectedChatId) {
-                              console.log('SuperAdmin: Search lost focus, no user selected, restoring conversation history');
+      
                               restoreConversationHistory();
                             } else {
-                              console.log('SuperAdmin: Search lost focus, user selected, skipping conversation history restoration');
+                              
                             }
                           }
                         }, 300); // Increased delay to allow button clicks and prevent race conditions
@@ -2009,21 +1972,24 @@ export default function AdminMessagesPage() {
                       className="w-full pl-12 pr-10 py-2.5 text-sm rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200 caret-[#1E2A79]"
                       ref={searchInputRef}
                     />
-                    {query && (
+                    {(isSearchFocused || query) && (
                       <button
                         onClick={() => {
-                          setQuery("");
-                          setIsSearchFocused(false);
-                          // Only restore conversation history if no user is currently selected
-                          // This prevents interference with the selected user from search results
-                          if (!selectedChatId) {
-                            console.log('SuperAdmin: Search cleared, no user selected, restoring conversation history');
-                            // Use a small delay to ensure state updates are processed
-                            setTimeout(() => {
-                              restoreConversationHistory();
-                            }, 100);
+                          if (query) {
+                            setQuery("");
+                            setIsSearchFocused(false);
+                            searchInputRef.current?.blur();
+                            if (!selectedChatId) {
+                              setTimeout(() => { restoreConversationHistory(); }, 100);
+                            }
                           } else {
-                            console.log('SuperAdmin: Search cleared, user selected, skipping conversation history restoration');
+                            // When focused with empty query, act as a cancel/back action
+                            setIsSearchFocused(false);
+                            setQuery("");
+                            searchInputRef.current?.blur();
+                            if (!selectedChatId) {
+                              setTimeout(() => { restoreConversationHistory(); }, 100);
+                            }
                           }
                         }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
@@ -2063,7 +2029,7 @@ export default function AdminMessagesPage() {
                 {activeTab === "Users" && (
                   <>
                     {/* Debug info */}
-                    {console.log('SuperAdmin: Users tab rendering - isSearchFocused:', isSearchFocused, 'recent.length:', recent.length, 'chats.length:', chats.length)}
+
                     
                     {/* Show loading indicator when conversations are being loaded */}
                     {isLoadingConversations && (
@@ -2093,32 +2059,18 @@ export default function AdminMessagesPage() {
                               return (
                                 <button
                                   key={`chat-${chat.id}-${index}`}
-                                  onClick={() => {
-                                    console.log('SuperAdmin: User clicked from conversation history:', chat);
-                                    console.log('SuperAdmin: Current state before click:', {
-                                      selectedChatId,
-                                      selectedType,
-                                      chatsLength: chats.length,
-                                      userMessages: chat.messages?.length || 0
-                                    });
-                                    
-                                    setSelectedType("user");
-                                    setSelectedChatId(chat.id);
-                                    
-                                    console.log('SuperAdmin: State after setting:', {
-                                      selectedChatId: chat.id,
-                                      selectedType: "user"
-                                    });
-                                    
-                                    // Always trigger conversation loading for users from conversation history
-                                    // This ensures the conversation is displayed in the right panel
-                                    console.log('SuperAdmin: Triggering conversation load for user:', chat.id);
-                                    
-                                    // Use a small delay to ensure state updates are processed first
-                                    setTimeout(() => {
-                                      manuallyLoadConversation(chat.id);
-                                    }, 50);
-                                  }}
+                                                                  onClick={() => {
+                                  setSelectedType("user");
+                                  setSelectedChatId(chat.id);
+                                  
+                                  // Always trigger conversation loading for users from conversation history
+                                  // This ensures the conversation is displayed in the right panel
+                                  
+                                  // Use a small delay to ensure state updates are processed first
+                                  setTimeout(() => {
+                                    manuallyLoadConversation(chat.id);
+                                  }, 50);
+                                }}
                                   className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm ${isSelected ? 'bg-[#eef2ff] border-blue-500' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
                                 >
                                   <div className="relative">
@@ -2132,8 +2084,8 @@ export default function AdminMessagesPage() {
                                       )}
                                     </div>
                                     <div className="flex items-center justify-between mt-0.5">
-                                      <p className={`text-xs truncate pr-2 ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                                        {chat.lastMessage || ""}
+                                      <p className={`flex-1 min-w-0 text-xs pr-2 truncate ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                                        {truncatePreview(chat.lastMessage) || ""}
                                       </p>
                                       {chat.unread > 0 && (
                                         <span className="text-[10px] bg-[#1E2A79] text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ml-2">
@@ -2154,20 +2106,18 @@ export default function AdminMessagesPage() {
                               <button
                                 key={`recent-${chat.id}-${index}`}
                                 onClick={() => {
-                                  console.log('SuperAdmin: User clicked from recent conversations:', chat);
                                   setSelectedType("user");
                                   setSelectedChatId(chat.id);
                                   
                                   // Always trigger conversation loading for users from recent conversations
                                   // This ensures the conversation is displayed in the right panel
-                                  console.log('SuperAdmin: Triggering conversation load for recent user:', chat.id);
                                   
                                   // Use a small delay to ensure state updates are processed first
                                   setTimeout(() => {
                                     manuallyLoadConversation(chat.id);
                                   }, 50);
                                 }}
-                                className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm ${isSelected ? 'bg-[#eef2ff] border-blue-500' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                                className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm min-h-[64px] ${isSelected ? 'bg-[#eef2ff] border-blue-500' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
                               >
                                 <div className="relative">
                                   {renderUserAvatar(chat.id, chat.role)}
@@ -2180,8 +2130,8 @@ export default function AdminMessagesPage() {
                                     )}
                                   </div>
                                   <div className="flex items-center justify-between mt-0.5">
-                                    <p className={`text-xs truncate pr-2 ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                                      {chat.lastMessage || ""}
+                                    <p className={`flex-1 min-w-0 text-xs pr-2 truncate ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                                      {truncatePreview(chat.lastMessage) || ""}
                                     </p>
                                     {chat.unread > 0 && (
                                       <span className="text-[10px] bg-[#1E2A79] text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ml-2">
@@ -2211,11 +2161,21 @@ export default function AdminMessagesPage() {
                                 <button
                                   key={`search-${chat.id}-${index}`}
                                   onClick={async () => {
-                                    console.log('SuperAdmin: User clicked from search results:', chat);
-                                    
                                     // Set the selected user FIRST to prevent the "No conversation selected" state
                                     setSelectedType("user");
                                     setSelectedChatId(chat.id);
+                                    // Provide temporary selected chat so right pane can render immediately
+                                    setTempSelectedChat({
+                                      id: chat.id,
+                                      name: chat.name,
+                                      color: chat.color,
+                                      role: chat.role,
+                                      unread: 0,
+                                      lastMessageAt: chat.lastMessageAt || null,
+                                      lastMessage: chat.lastMessage || "",
+                                      messages: [],
+                                      photo: chat.photo || null,
+                                    });
                                     
                                     // Clear search state AFTER setting the selected user
                                     setIsSearchFocused(false);
@@ -2224,16 +2184,12 @@ export default function AdminMessagesPage() {
                                     
                                     // Check if this user has conversation history
                                     const hasHistory = await checkUserConversationHistory(chat.id);
-                                    console.log('SuperAdmin: Search result user has conversation history:', hasHistory);
                                     
                                     // Also check if this user exists in recent conversations (which means they have history)
                                     const hasRecentHistory = recent.some(r => r.id === chat.id);
                                     const hasChatsHistory = chats.some(c => c.id === chat.id && c.lastMessage && c.lastMessage.trim() !== '');
                                     
                                     const shouldLoadConversation = hasHistory || hasRecentHistory || hasChatsHistory;
-                                    console.log('SuperAdmin: Should load conversation for user:', chat.id, 'hasHistory:', hasHistory, 'hasRecentHistory:', hasRecentHistory, 'hasChatsHistory:', hasChatsHistory);
-                                    console.log('SuperAdmin: Recent array:', recent.map(r => ({ id: r.id, name: r.name, lastMessage: r.lastMessage })));
-                                    console.log('SuperAdmin: Chats array:', chats.map(c => ({ id: c.id, name: c.name, lastMessage: c.lastMessage })));
                                     
                                     if (shouldLoadConversation) {
                                       // User has conversation history - load their messages
@@ -2293,8 +2249,9 @@ export default function AdminMessagesPage() {
                                             setTimeout(() => {
                                               setChats(prev => removeDuplicateUsers(prev));
                                             }, 100);
+                                            // Keep tempSelectedChat; it will be ignored once real data is present
                                             
-                                            console.log('SuperAdmin: Loaded conversation for search result user:', chat.id, 'with', msgs.length, 'messages');
+
                                           } else {
                                             // No messages found, but user might still exist - ensure they're in chats array
                                             setChats((prev) => {
@@ -2319,15 +2276,15 @@ export default function AdminMessagesPage() {
                                           
                                           // Mark as not running after successful load
                                           isRunningRef.current.conversation = null;
-                                        } catch (err) {
-                                          console.error('SuperAdmin: Error loading conversation for search result user:', chat.id, err);
-                                          // Mark as not running on error
-                                          isRunningRef.current.conversation = null;
-                                        }
+                                                } catch (err) {
+          console.error('Error loading conversation for search result user:', chat.id, err);
+          // Mark as not running on error
+          isRunningRef.current.conversation = null;
+        }
                                       }
                                     } else {
                                       // User has no conversation history - add them to chats array with empty messages
-                                      console.log('SuperAdmin: User has no conversation history, adding to chats array with empty messages:', chat.id);
+                                      
                                       setChats((prev) => {
                                         const existingUser = prev.find(c => c.id === chat.id);
                                         if (!existingUser) {
@@ -2355,7 +2312,7 @@ export default function AdminMessagesPage() {
                                     
                                     // Ensure the selected user stays selected by preventing any interference
                                     // The user list will be properly managed by the existing state
-                                    console.log('SuperAdmin: Search result click handler completed for user:', chat.id);
+
                                   }}
                                   className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm ${isSelected ? 'bg-[#eef2ff] border-blue-500' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
                                 >
@@ -2370,8 +2327,8 @@ export default function AdminMessagesPage() {
                                       )}
                                     </div>
                                     <div className="flex items-center justify-between mt-0.5">
-                                      <p className={`text-xs truncate pr-2 ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                                        {chat.lastMessage || ""}
+                                      <p className={`text-xs pr-2 overflow-hidden text-ellipsis whitespace-nowrap ${chat.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                                        {truncatePreview(chat.lastMessage) || ""}
                                       </p>
                                       {chat.unread > 0 && (
                                         <span className="text-[10px] bg-[#1E2A79] text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ml-2">
@@ -2416,14 +2373,16 @@ export default function AdminMessagesPage() {
                               setSelectedType("group");
                               setSelectedChatId(grp.id);
                             }}
-                            className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm ${isSelected ? "bg-[#eef2ff] border-blue-500" : "bg-white border-gray-200 hover:bg-gray-50"
+                            className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm min-h-[64px] ${isSelected ? "bg-[#eef2ff] border-blue-500" : "bg-white border-gray-200 hover:bg-gray-50"
                               }`}
                           >
                             <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
                               <img 
                                 src={(() => {
                                   if (grp.groupType === 'Class') {
+                                    console.log('Class group detected:', grp.name, 'groupRefId:', grp.groupRefId, 'type:', typeof grp.groupRefId);
                                     const photo = getClassPhoto(grp.groupRefId, grp.name);
+                                    console.log('Selected photo for', grp.name, ':', photo);
                                     return photo;
                                   } else {
                                     return getGroupPhoto(grp.groupType);
@@ -2447,8 +2406,8 @@ export default function AdminMessagesPage() {
                                 <span className="text-[10px] text-gray-400 ml-2 whitespace-nowrap">{grp.lastMessageAt ? formatTime(grp.lastMessageAt) : ''}</span>
                               </div>
                               <div className="flex items-center justify-between mt-0.5">
-                                <p className={`text-xs truncate pr-2 ${grp.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                                  {grp.lastMessage || ""}
+                                <p className={`flex-1 min-w-0 text-xs pr-2 truncate ${grp.isLastUnsent ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                                  {truncatePreview(grp.lastMessage) || ""}
                                 </p>
                                 {grp.unread > 0 && (
                                   <span className="text-[10px] bg-[#1E2A79] text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ml-2">
@@ -2504,7 +2463,7 @@ export default function AdminMessagesPage() {
               </div>
 
               {/* RIGHT CHAT SECTION */}
-              <div className="relative flex flex-col flex-1 bg-[#f4f9ff]">
+              <div className={`${isMobile && !selectedChatId ? 'hidden' : 'flex'} relative flex-col flex-1 bg-[#f4f9ff] min-w-0 overflow-x-hidden`}>
                 <div
                   className="pointer-events-none absolute inset-0 -z-0"
                   style={{
@@ -2566,28 +2525,46 @@ export default function AdminMessagesPage() {
                     backgroundRepeat: 'repeat',
                   }}
                 />
-                {/* If no conversation selected, show fallback */}
+                {/* If no chat selected, show fallback or loading when a user is being opened */}
                 {!selectedChat ? (
                   <div className="flex-1 flex items-center justify-center text-center text-gray-500 relative z-10">
-                    <div className="flex flex-col items-center justify-center p-8">
-                      <div className="relative mb-6">
-                        <div className="w-20 h-20 bg-gradient-to-br from-[#1e2a79] to-[#232c67] rounded-full flex items-center justify-center">
-                          <FaUser className="text-4xl text-white" />
+                    {selectedChatId && tempSelectedChat && tempSelectedChat.id === selectedChatId ? (
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <div className="mx-auto w-16 h-16 rounded-full bg-white border border-gray-300 flex items-center justify-center text-[#1E2A79] mb-3">
+                          {renderUserAvatar(tempSelectedChat.id, tempSelectedChat.role, "w-full h-full")}
                         </div>
-                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">💬</span>
+                        <p className="font-semibold text-[#1E2A79]">{tempSelectedChat.name}</p>
+                        <p className="text-xs mt-1">No messages yet. Say hello!</p>
+                      </div>
+                    ) : selectedChatId && (isRunningRef.current.conversation === selectedChatId || isLoadingSpecificConversation || isLoadingConversations) ? (
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <div className="w-10 h-10 rounded-full bg-[#1E2A79] text-white flex items-center justify-center font-bold mb-3">
+                          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        <h3 className="text-sm font-medium text-gray-700">Loading conversation...</h3>
+                        <p className="text-xs text-gray-500 mt-1">Please wait a moment.</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <div className="relative mb-6">
+                          <div className="w-20 h-20 bg-gradient-to-br from-[#1e2a79] to-[#232c67] rounded-full flex items-center justify-center">
+                            <FaUser className="text-4xl text-white" />
+                          </div>
+                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">💬</span>
+                          </div>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No conversation selected</h3>
+                        <p className="text-sm text-gray-500 mb-4 max-w-64 leading-relaxed">
+                          Search and select a user or group to start messaging. Your conversations will appear here once you begin chatting.
+                        </p>
+                        <div className="flex items-center gap-3 text-xs text-blue-600">
+                          <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
+                          <span className="font-medium">Ready to connect!</span>
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
                         </div>
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No conversation selected</h3>
-                      <p className="text-sm text-gray-500 mb-4 max-w-64 leading-relaxed">
-                        Search and select a user or group to start messaging. Your conversations will appear here once you begin chatting.
-                      </p>
-                      <div className="flex items-center gap-3 text-xs text-blue-600">
-                        <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
-                        <span className="font-medium">Ready to connect!</span>
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <>
@@ -2595,7 +2572,14 @@ export default function AdminMessagesPage() {
                     <div className="px-6 py-4 border-b bg-white flex items-center justify-between relative z-10">
                       <div className="flex items-center gap-3">
                         <button
-                          onClick={() => router.push('/SuperAdminSection/Dashboard')}
+                          onClick={() => {
+                            if (isMobile) {
+                              setSelectedChatId("");
+                              setSelectedType("user");
+                            } else {
+                              router.push('/AdminSection/Dashboard');
+                            }
+                          }}
                           className="p-2 rounded-full hover:bg-gray-100 text-[#1E2A79] sm:hidden"
                           title="Back"
                         >
@@ -2614,8 +2598,6 @@ export default function AdminMessagesPage() {
                                 } else {
                                   // Use the general group photo logic
                                   switch (groupType.toLowerCase()) {
-                                    case 'staff':
-                                      return '/assets/image/staff_gc_photo.png';
                                     case 'overall':
                                     default:
                                       return '/assets/image/general_gc_photo.png';
@@ -2650,18 +2632,25 @@ export default function AdminMessagesPage() {
                         </div>
                       </div>
                       {/* Archive icon for user conversations; show Restore for archived */}
-                      {selectedType === 'user' && (
-                        <button
-                          className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-3 py-1.5 rounded-md flex items-center gap-2"
-                          onClick={() => setShowArchiveModal(true)}
-                          title="Archive conversation"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                          </svg>
-                          <span className="hidden sm:inline">Archive</span>
-                        </button>
-                      )}
+                      {selectedType === 'user' && (() => {
+                        const hasMessages = Array.isArray(selectedChat?.messages) && selectedChat.messages.length > 0;
+                        const hasLastMessage = !!(selectedChat?.lastMessage && String(selectedChat.lastMessage).trim() !== '');
+                        const hasRecentHistory = recent.some((r) => r.id === selectedChat?.id);
+                        const hasChatsHistory = chats.some((c) => c.id === selectedChat?.id && c.lastMessage && String(c.lastMessage).trim() !== '');
+                        const canArchive = hasMessages || hasLastMessage || hasRecentHistory || hasChatsHistory;
+                        return canArchive ? (
+                          <button
+                            className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-3 py-1.5 rounded-md flex items-center gap-2"
+                            onClick={() => setShowArchiveModal(true)}
+                            title="Archive conversation"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                            </svg>
+                            <span className="hidden sm:inline">Archive</span>
+                          </button>
+                        ) : null;
+                      })()}
                       {selectedType === 'archived' && (
                         <button
                           className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1.5 rounded-md flex items-center gap-2"
@@ -2698,20 +2687,7 @@ export default function AdminMessagesPage() {
                             // Check if this user was just selected from search results and has messages
                             const wasJustSelectedFromSearch = selectedChat?.messages && selectedChat.messages.length > 0;
                             
-                            console.log('SuperAdmin: Conversation display logic check for user:', selectedChat?.id, {
-                              hasConversationHistory,
-                              hasRecentHistory,
-                              hasLastMessage,
-                              isConversationLoading,
-                              hasConversationHistoryAPI,
-                              wasJustSelectedFromSearch
-                            });
-                            console.log('SuperAdmin: Selected chat details:', {
-                              id: selectedChat?.id,
-                              name: selectedChat?.name,
-                              lastMessage: selectedChat?.lastMessage,
-                              messagesCount: selectedChat?.messages?.length || 0
-                            });
+
                             
                             if (isConversationLoading) {
                               // Show loading state
@@ -2723,9 +2699,16 @@ export default function AdminMessagesPage() {
                                   </div>
                                 </div>
                               );
-                            } else if (hasConversationHistory || hasRecentHistory || hasLastMessage || hasConversationHistoryAPI || wasJustSelectedFromSearch) {
-                              // User has conversation history but no messages loaded yet - show "No messages yet. Say hello!"
-                              return <p className="text-xs">No messages yet. Say hello!</p>;
+                            } else if (hasConversationHistory || hasRecentHistory || hasLastMessage || hasConversationHistoryAPI) {
+                              // User has conversation history but messages aren't loaded yet - show loading state
+                              return (
+                                <div className="mt-1">
+                                  <div className="inline-flex items-center gap-2 text-xs text-blue-600">
+                                    <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                    Loading conversation...
+                                  </div>
+                                </div>
+                              );
                             } else {
                               // User has no conversation history at all - show "No conversation started"
                               return <p className="text-xs">No conversation started</p>;
@@ -2734,7 +2717,7 @@ export default function AdminMessagesPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="relative z-10 flex-1 overflow-y-auto px-6 sm:px-8 py-4 sm:py-6 space-y-3">
+                      <div className="relative z-10 flex-1 overflow-y-auto px-6 sm:px-8 py-4 sm:py-6 space-y-3 min-w-0">
                         {(selectedChat?.messages || []).map((msg) => {
                           const isSelf = msg.from === "self";
                           return (
@@ -2819,7 +2802,8 @@ export default function AdminMessagesPage() {
                                             .then((r) => r.json())
                                             .then((res) => {
                                               if (!res?.success) throw new Error(res?.error || 'Failed to unsent');
-                                              const now = new Date();
+                                              // Preserve the original message timestamp instead of using current time
+                                              const originalMessageTime = msg.time;
                                               if (selectedType === 'group') {
                                                 setGroupChats((prev) => prev.map((g) => (
                                                   g.id === selectedChat.id
@@ -2827,7 +2811,7 @@ export default function AdminMessagesPage() {
                                                         ...g,
                                                         messages: g.messages.map((m) => (m.id === msg.id ? { ...m, text: '', isUnsent: true } : m)),
                                                         lastMessage: 'You unsent a message',
-                                                        lastMessageAt: now,
+                                                        lastMessageAt: originalMessageTime,
                                                       }
                                                     : g
                                                 )));
@@ -2842,16 +2826,16 @@ export default function AdminMessagesPage() {
                                                 const userId = selectedChat.id;
                                                 setUnsentMessages((prev) => {
                                                   const current = prev[userId] || [];
-                                                  const updated = [...current, { messageId: msg.id, timestamp: now.toISOString() }];
+                                                  const updated = [...current, { messageId: msg.id, timestamp: originalMessageTime.toISOString() }];
                                                   return { ...prev, [userId]: updated };
                                                 });
                                                 
                                                 setRecent((prev) => {
                                                   const exists = prev.find((r) => r.id === selectedChat.id);
                                                   if (!exists) return prev;
-                                                  const updated = { ...exists, lastMessage: 'You unsent a message', lastMessageAt: now };
-                                                  const others = prev.filter((r) => r.id !== selectedChat.id);
-                                                  return [updated, ...others];
+                                                  const updated = { ...exists, lastMessage: 'You unsent a message', lastMessageAt: originalMessageTime };
+                                                  // Update the existing conversation without changing its position
+                                                  return prev.map((r) => r.id === selectedChat.id ? updated : r);
                                                 });
                                               }
                                               setActionMenuForId(null);
@@ -2884,7 +2868,8 @@ export default function AdminMessagesPage() {
                                               .then((res) => {
                                                 if (!res?.success) throw new Error(res?.error || 'Failed to edit');
                                                 const updatedText = editingText.trim();
-                                                const now = new Date();
+                                                // Preserve the original message timestamp instead of using current time
+                                                const originalMessageTime = msg.time;
                                                 if (selectedType === 'group') {
                                                   setGroupChats((prev) => prev.map((g) => (
                                                     g.id === selectedChat.id
@@ -2892,7 +2877,7 @@ export default function AdminMessagesPage() {
                                                           ...g,
                                                           messages: g.messages.map((m) => (m.id === msg.id ? { ...m, text: updatedText, edited: true } : m)),
                                                           lastMessage: updatedText || g.lastMessage,
-                                                          lastMessageAt: now,
+                                                          lastMessageAt: originalMessageTime,
                                                         }
                                                       : g
                                                   )));
@@ -2906,9 +2891,9 @@ export default function AdminMessagesPage() {
                                                   setRecent((prev) => {
                                                     const exists = prev.find((r) => r.id === selectedChat.id);
                                                     if (!exists) return prev;
-                                                    const updated = { ...exists, lastMessage: (updatedText ? `You: ${updatedText}` : exists.lastMessage), lastMessageAt: now };
-                                                    const others = prev.filter((r) => r.id !== selectedChat.id);
-                                                    return [updated, ...others];
+                                                    const updated = { ...exists, lastMessage: (updatedText ? `You: ${updatedText}` : exists.lastMessage), lastMessageAt: originalMessageTime };
+                                                    // Update the existing conversation without changing its position
+                                                    return prev.map((r) => r.id === selectedChat.id ? updated : r);
                                                   });
                                                 }
                                                 setEditingMessageId(null);
@@ -2939,7 +2924,8 @@ export default function AdminMessagesPage() {
                                               .then((res) => {
                                                 if (!res?.success) throw new Error(res?.error || 'Failed to edit');
                                                 const updatedText = editingText.trim();
-                                                const now = new Date();
+                                                // Preserve the original message timestamp instead of using current time
+                                                const originalMessageTime = msg.time;
                                                 if (selectedType === 'group') {
                                                   setGroupChats((prev) => prev.map((g) => (
                                                     g.id === selectedChat.id
@@ -2947,7 +2933,7 @@ export default function AdminMessagesPage() {
                                                           ...g,
                                                           messages: g.messages.map((m) => (m.id === msg.id ? { ...m, text: updatedText, edited: true } : m)),
                                                           lastMessage: updatedText || g.lastMessage,
-                                                          lastMessageAt: now,
+                                                          lastMessageAt: originalMessageTime,
                                                         }
                                                       : g
                                                   )));
@@ -2960,9 +2946,9 @@ export default function AdminMessagesPage() {
                                                   setRecent((prev) => {
                                                     const exists = prev.find((r) => r.id === selectedChat.id);
                                                     if (!exists) return prev;
-                                                    const updated = { ...exists, lastMessage: (updatedText ? `You: ${updatedText}` : exists.lastMessage), lastMessageAt: now };
-                                                    const others = prev.filter((r) => r.id !== selectedChat.id);
-                                                    return [updated, ...others];
+                                                    const updated = { ...exists, lastMessage: (updatedText ? `You: ${updatedText}` : exists.lastMessage), lastMessageAt: originalMessageTime };
+                                                    // Update the existing conversation without changing its position
+                                                    return prev.map((r) => r.id === selectedChat.id ? updated : r);
                                                   });
                                                 }
                                                 setEditingMessageId(null);
@@ -3098,7 +3084,7 @@ export default function AdminMessagesPage() {
                     )}
 
                     {/* Fixed Input Bar */}
-                    <div className="relative z-10 px-4 sm:px-6 py-3 border-t bg-white flex flex-col gap-2 sm:gap-3">
+                    <div className="relative z-10 px-4 sm:px-6 py-3 border-t bg-white flex flex-col gap-2 sm:gap-3 min-w-0">
                       {selectedType !== 'archived' && (
                         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
                           {getQuickReplies(selectedType, selectedChat).map((qr, idx) => (
@@ -3111,7 +3097,7 @@ export default function AdminMessagesPage() {
                       {selectedType === 'archived' ? (
                         <div className="flex-1 text-center text-sm text-gray-500 py-2">This conversation is archived. You can't send, edit, or unsend messages.</div>
                       ) : (
-                        <div className="flex items-end gap-2 sm:gap-3">
+                        <div className="flex items-end gap-2 sm:gap-3 min-w-0">
                           <textarea
                             rows={1}
                             placeholder="Type a message..."
@@ -3132,7 +3118,7 @@ export default function AdminMessagesPage() {
                                 handleSend();
                               }
                             }}
-                            className="flex-1 px-4 py-2.5 rounded-2xl border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-blue-200 resize-none min-h-[44px] max-h-[180px] caret-[#1E2A79] placeholder:text-gray-400 leading-5"
+                            className="flex-1 px-4 py-2.5 rounded-2xl border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-blue-200 resize-none min-h-[44px] max-h-[180px] caret-[#1E2A79] placeholder:text-gray-400 leading-5 w-full"
                             ref={composerRef}
                           />
                           <button
