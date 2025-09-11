@@ -204,6 +204,24 @@ function unformatPhoneInput(formattedInput) {
   return digits.substring(0, 10);
 }
 
+// Helper function to construct full photo URL from filename
+function getPhotoUrl(filename) {
+  if (!filename) return null;
+  
+  // If it's already a full URL (like a blob URL for preview), return as is
+  if (filename.startsWith('http://') || filename.startsWith('https://') || filename.startsWith('blob:')) {
+    return filename;
+  }
+  
+  // If it already starts with /php/Uploads/, return as is
+  if (filename.startsWith('/php/Uploads/')) {
+    return filename;
+  }
+  
+  // If it's a filename, construct the full backend URL
+  return `/php/Uploads/${filename}`;
+}
+
 
 // --- END VALIDATION LOGIC ---
 
@@ -304,18 +322,7 @@ export default function ViewOwnUserPage() {
             city: data.user.city || "",
             province: data.user.province || "",
             country: data.user.country || "",
-            user_photo: (() => {
-              const photo = data.user.photo || data.user.user_photo || "";
-              if (!photo) return "";
-              
-              // If it's already a full URL, return as is
-              if (photo.startsWith('http://') || photo.startsWith('https://')) {
-                return photo;
-              }
-              
-              // If it's just a filename, construct the full backend URL
-              return `/php/Uploads/${photo}`;
-            })()
+            user_photo: getPhotoUrl(data.user.photo || data.user.user_photo || "")
           };
 
           console.log("Processed User Data:", userData); // Debug log
@@ -1053,7 +1060,7 @@ export default function ViewOwnUserPage() {
 
     if (formData.user_photo) {
       console.log('Current user_photo:', formData.user_photo);
-      console.log('Full photo URL:', formData.user_photo);
+      console.log('Full photo URL:', getPhotoUrl(formData.user_photo));
     } else {
       console.log('No user_photo found in formData');
     }
@@ -1116,12 +1123,12 @@ export default function ViewOwnUserPage() {
               {formData.user_photo && typeof formData.user_photo === 'string' && formData.user_photo.trim() !== '' ? (
                 <>
                   <img
-                    src={formData.user_photo}
+                    src={getPhotoUrl(formData.user_photo)}
                     alt="Profile"
                     className="w-20 h-20 rounded-full object-cover shadow-sm border-2 border-blue-200"
                     onError={(e) => {
                       console.log('Photo failed to load:', formData.user_photo); // Debug log
-                      console.log('Full photo URL:', formData.user_photo); // Debug log
+                      console.log('Full photo URL:', getPhotoUrl(formData.user_photo)); // Debug log
                       console.log('Error event:', e); // Debug log
                       console.log('Image element:', e.target); // Debug log
                       e.target.style.display = 'none';
@@ -1131,7 +1138,7 @@ export default function ViewOwnUserPage() {
                     }}
                     onLoad={(e) => {
                       console.log('Photo loaded successfully:', formData.user_photo); // Debug log
-                      console.log('Full photo URL:', formData.user_photo); // Debug log
+                      console.log('Full photo URL:', getPhotoUrl(formData.user_photo)); // Debug log
                       console.log('Image dimensions:', e.target.naturalWidth, 'x', e.target.naturalHeight); // Debug log
                     }}
                   />
@@ -1172,12 +1179,12 @@ export default function ViewOwnUserPage() {
           </div>
         </div>
         {/* Editable Form */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-[calc(100vh-350px)] flex flex-col">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-auto md:h-[calc(100vh-350px)] flex flex-col">
           <div className="p-6 border-b border-gray-200 flex-shrink-0">
             <h3 className="text-lg font-bold text-gray-900">Profile Details</h3>
             <p className="text-sm text-gray-600">View and edit your profile information</p>
           </div>
-          <div className="p-6 flex-1 overflow-y-auto">
+          <div className="p-6 flex-1 overflow-y-auto md:overflow-y-auto overflow-y-visible">
             <form className="space-y-6 text-sm">
               {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1407,20 +1414,20 @@ export default function ViewOwnUserPage() {
                     {formData.user_photo && typeof formData.user_photo === 'string' && formData.user_photo.trim() !== '' ? (
                       <div className="relative">
                                                <img
-                         src={formData.user_photo}
+                         src={getPhotoUrl(formData.user_photo)}
                          alt="Current Profile"
                          className={`w-20 h-20 rounded-full object-cover border-2 border-gray-200 ${isEditing ? 'cursor-pointer hover:border-blue-400 transition-colors' : ''
                            }`}
                          onClick={handlePhotoClick}
                          onError={(e) => {
                            console.log('Current photo failed to load:', formData.user_photo); // Debug log
-                           console.log('Full photo URL:', formData.user_photo); // Debug log
+                           console.log('Full photo URL:', getPhotoUrl(formData.user_photo)); // Debug log
                            e.target.style.display = 'none';
                            e.target.nextSibling.style.display = 'flex';
                          }}
                          onLoad={() => {
                            console.log('Current photo loaded successfully:', formData.user_photo); // Debug log
-                           console.log('Full photo URL:', formData.user_photo); // Debug log
+                           console.log('Full photo URL:', getPhotoUrl(formData.user_photo)); // Debug log
                          }}
                        />
                         {/* Fallback icon that shows when photo fails to load */}

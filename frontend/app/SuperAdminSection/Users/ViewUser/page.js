@@ -1111,12 +1111,12 @@ export default function ViewUserPage() {
           </div>
         </div>
           {/* Editable Form */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 max-h-[calc(100vh-300px)] flex flex-col">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-auto md:h-[calc(100vh-350px)] flex flex-col">
             <div className="p-6 border-b border-gray-200 flex-shrink-0">
               <h3 className="text-lg font-bold text-gray-900">User Details</h3>
               <p className="text-sm text-gray-600">View and edit user information</p>
             </div>
-            <div className="p-6 flex-1 overflow-y-auto">
+            <div className="p-6 flex-1 overflow-y-auto md:overflow-y-auto overflow-y-visible">
             <form className="space-y-6 text-sm max-w-full">
               {/* Basic Information - Show for all roles */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1510,11 +1510,11 @@ export default function ViewUserPage() {
 
             </form>
             </div>
-            <div className="p-6 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
+            <div className="p-6 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-3 flex-shrink-0">
               <button
                 onClick={handleBack}
                 type="button"
-                className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                className="w-full sm:w-auto px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               >
                 Back
               </button>
@@ -1526,14 +1526,14 @@ export default function ViewUserPage() {
                       // Reload user data to reset any changes
                       window.location.reload();
                     }}
-                    className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                    className="w-full sm:w-auto px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={handleSave}
                     disabled={!isFormValid}
-                    className={`px-6 py-2 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
+                    className={`w-full sm:w-auto px-6 py-2 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
                       isFormValid 
                         ? 'bg-[#232c67] text-white hover:bg-[#1a1f4d] shadow-sm' 
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -1545,7 +1545,7 @@ export default function ViewUserPage() {
               ) : (
                 <button
                   onClick={handleEdit}
-                  className="px-6 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm flex items-center gap-2"
+                  className="w-full sm:w-auto px-6 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2"
                 >
                   <FaEdit className="text-sm" />
                   Edit User
@@ -1558,7 +1558,7 @@ export default function ViewUserPage() {
                         ? (
                             <button
                               onClick={handleArchive}
-                              className="px-6 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm flex items-center gap-2"
+                              className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2"
                             >
                               <FaArchive className="text-sm" />
                               Archive User
@@ -1567,7 +1567,7 @@ export default function ViewUserPage() {
                         : (
                             <button
                               onClick={handleRestore}
-                              className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-sm flex items-center gap-2"
+                              className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2"
                             >
                               <FaUndo /> Restore User
                             </button>
@@ -1581,7 +1581,7 @@ export default function ViewUserPage() {
                               <div className="relative group">
                                 <button
                                   disabled
-                                  className="px-6 py-2 bg-gray-400 text-gray-500 rounded-lg font-semibold cursor-not-allowed shadow-sm flex items-center gap-2"
+                                  className="w-full sm:w-auto px-6 py-2 bg-gray-400 text-gray-500 rounded-lg font-semibold cursor-not-allowed shadow-sm flex items-center justify-center gap-2"
                                   title="Cannot archive assigned teacher"
                                 >
                                   <FaArchive className="text-sm" />
@@ -1592,7 +1592,7 @@ export default function ViewUserPage() {
                             ) : (
                               <button
                                 onClick={handleArchive}
-                                className="px-6 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm flex items-center gap-2"
+                                className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2"
                               >
                                 <FaArchive className="text-sm" />
                                 Archive User
@@ -1602,7 +1602,7 @@ export default function ViewUserPage() {
                         : (
                             <button
                               onClick={handleRestore}
-                              className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-sm flex items-center gap-2"
+                              className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2"
                             >
                               <FaUndo /> Restore User
                             </button>

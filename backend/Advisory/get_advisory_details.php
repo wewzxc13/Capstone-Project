@@ -152,7 +152,9 @@ try {
         if ($lead) {
             $lead_teacher_name = trim($lead['user_firstname'] . ' ' . $lead['user_middlename'] . ' ' . $lead['user_lastname']);
             $lead_teacher_name = preg_replace('/\s+/', ' ', $lead_teacher_name);
-            $lead_teacher_photo = $lead['user_photo'] ? $lead['user_photo'] : 'default_teacher.png';
+            $lead_teacher_photo = $lead['user_photo'] ? 
+                (strpos($lead['user_photo'], '/php/Uploads/') === 0 ? $lead['user_photo'] : '/php/Uploads/' . $lead['user_photo']) : 
+                '/php/Uploads/default_teacher.png';
         }
     }
     if (!empty($advisory['assistant_teacher_id'])) {
@@ -162,7 +164,9 @@ try {
         if ($assistant) {
             $assistant_teacher_name = trim($assistant['user_firstname'] . ' ' . $assistant['user_middlename'] . ' ' . $assistant['user_lastname']);
             $assistant_teacher_name = preg_replace('/\s+/', ' ', $assistant_teacher_name);
-            $assistant_teacher_photo = $assistant['user_photo'] ? $assistant['user_photo'] : 'default_teacher.png';
+            $assistant_teacher_photo = $assistant['user_photo'] ? 
+                (strpos($assistant['user_photo'], '/php/Uploads/') === 0 ? $assistant['user_photo'] : '/php/Uploads/' . $assistant['user_photo']) : 
+                '/php/Uploads/default_teacher.png';
         }
     }
     // Add names and photos to advisory array
@@ -242,9 +246,15 @@ try {
     
     // Add photo field to students based on gender
     for ($i = 0; $i < count($students_for_processing); $i++) {
-        $students_for_processing[$i]['photo'] = $students_for_processing[$i]['stud_photo'] ? 
-            $students_for_processing[$i]['stud_photo'] : 
-            ($students_for_processing[$i]['stud_gender'] === 'Male' ? 'default_boy_student.png' : 'default_girl_student.png');
+        if ($students_for_processing[$i]['stud_photo']) {
+            $students_for_processing[$i]['photo'] = strpos($students_for_processing[$i]['stud_photo'], '/php/Uploads/') === 0 ? 
+                $students_for_processing[$i]['stud_photo'] : 
+                '/php/Uploads/' . $students_for_processing[$i]['stud_photo'];
+        } else {
+            $students_for_processing[$i]['photo'] = $students_for_processing[$i]['stud_gender'] === 'Male' ? 
+                '/php/Uploads/default_boy_student.png' : 
+                '/php/Uploads/default_girl_student.png';
+        }
     }
     
     // Use the processed students array
@@ -318,7 +328,13 @@ try {
         
         // Add photo field to parents
         foreach ($parents as &$parent) {
-            $parent['photo'] = $parent['user_photo'] ? $parent['user_photo'] : 'default_parent.png';
+            if ($parent['user_photo']) {
+                $parent['photo'] = strpos($parent['user_photo'], '/php/Uploads/') === 0 ? 
+                    $parent['user_photo'] : 
+                    '/php/Uploads/' . $parent['user_photo'];
+            } else {
+                $parent['photo'] = '/php/Uploads/default_parent.png';
+            }
         }
         
         // Create a lookup array for parent information

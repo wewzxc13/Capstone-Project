@@ -18,8 +18,8 @@ const classTabs = [
 function Modal({ open, onClose, children }) {
   if (!open) return null;
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl p-8 min-w-[480px] max-w-[98vw] w-[520px] relative border border-gray-100" style={{ overflow: 'visible' }}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 w-full max-w-[520px] relative border border-gray-100" style={{ overflow: 'visible' }}>
         {children}
       </div>
     </div>,
@@ -461,40 +461,40 @@ export default function AssignedClassPage() {
   return (
     <ProtectedRoute role="Admin">
       {/* Combined Header and Class Information Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-           <div className="flex items-center gap-4 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
              <button
                onClick={() => router.push('/AdminSection/Users')}
-               className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+               className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 w-fit"
              >
                <FaArrowLeft className="text-sm" />
                <span className="text-sm">Back to Users</span>
              </button>
-             <h2 className="text-lg font-bold text-gray-900">Assigned Class Management</h2>
+             <h2 className="text-base sm:text-lg font-bold text-gray-900">Assigned Class Management</h2>
            </div>
            
                        {/* Tab Buttons and Ellipsis Menu */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:justify-between mb-4 sm:mb-6">
+              <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-2 sm:pb-0">
                 {classTabs.map(tab => (
                   <button
                     key={tab.name}
                     onClick={() => setSelectedTab(tab.name)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
+                    className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 whitespace-nowrap ${
                       selectedTab === tab.name
                         ? 'bg-[#232c67] text-white shadow-sm'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    <FaUsers className="text-sm" />
-                    {tab.name}
+                    <FaUsers className="text-xs sm:text-sm" />
+                    <span className="text-xs sm:text-sm">{tab.name}</span>
                   </button>
                 ))}
               </div>
               
                              <button 
                  onClick={handleEditClassAssigned}
-                 className="flex items-center gap-2 px-4 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm"
+                 className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm w-full sm:w-auto justify-center sm:justify-start"
                >
                  <FaEdit className="text-sm" />
                  <span className="text-sm">Edit Class Assigned</span>
@@ -502,17 +502,17 @@ export default function AssignedClassPage() {
             </div>
            
            {/* Teachers and Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-gray-700 mb-3">Teaching Staff</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
                   {advisory?.lead_teacher_photo ? (
                     <>
                       <img
                         src={advisory.lead_teacher_photo}
                         alt="Lead Teacher"
-                        className="w-10 h-10 rounded-full object-cover shadow-sm"
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           if (e.target.nextSibling) {
@@ -521,18 +521,18 @@ export default function AssignedClassPage() {
                         }}
                       />
                       {/* Fallback icon that shows when photo fails to load */}
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg shadow-sm hidden">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                         <FaChalkboardTeacher />
                       </div>
                     </>
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg shadow-sm">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
                       <FaChalkboardTeacher />
                     </div>
                   )}
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Lead Teacher</p>
-                    <p className="text-sm text-gray-600">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900">Lead Teacher</p>
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">
                       {advisory?.lead_teacher_name ? 
                         (() => {
                           const nameParts = advisory.lead_teacher_name.split(' ');
@@ -549,13 +549,13 @@ export default function AssignedClassPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
                   {advisory?.assistant_teacher_photo ? (
                     <>
                       <img
                         src={advisory.assistant_teacher_photo}
                         alt="Assistant Teacher"
-                        className="w-10 h-10 rounded-full object-cover shadow-sm"
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           if (e.target.nextSibling) {
@@ -564,18 +564,18 @@ export default function AssignedClassPage() {
                         }}
                       />
                       {/* Fallback icon that shows when photo fails to load */}
-                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm hidden">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                         <FaChalkboardTeacher />
                       </div>
                     </>
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
                       <FaChalkboardTeacher />
                     </div>
                   )}
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Assistant Teacher</p>
-                    <p className="text-sm text-gray-600">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900">Assistant Teacher</p>
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">
                       {advisory?.assistant_teacher_name ? 
                         (() => {
                           const nameParts = advisory.assistant_teacher_name.split(' ');
@@ -597,18 +597,18 @@ export default function AssignedClassPage() {
             
                          <div className="space-y-3">
                <h4 className="text-sm font-semibold text-gray-700 mb-3">Student Statistics</h4>
-               <div className="flex items-center gap-3">
-                 <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 rounded-full">
-                   <FaMars className="text-blue-600 text-sm" />
-                   <span className="text-sm font-medium text-blue-900">Male: {advisory?.total_male ?? 0}</span>
+               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                 <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-blue-50 rounded-full">
+                   <FaMars className="text-blue-600 text-xs sm:text-sm" />
+                   <span className="text-xs sm:text-sm font-medium text-blue-900">Male: {advisory?.total_male ?? 0}</span>
                  </div>
-                 <div className="flex items-center gap-1.5 px-2 py-0.5 bg-pink-50 rounded-full">
-                   <FaVenus className="text-pink-600 text-sm" />
-                   <span className="text-sm font-medium text-pink-900">Female: {advisory?.total_female ?? 0}</span>
+                 <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-pink-50 rounded-full">
+                   <FaVenus className="text-pink-600 text-xs sm:text-sm" />
+                   <span className="text-xs sm:text-sm font-medium text-pink-900">Female: {advisory?.total_female ?? 0}</span>
                  </div>
-                 <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 rounded-full">
-                   <FaUsers className="text-green-600 text-sm" />
-                   <span className="text-sm font-medium text-green-700">Total: {advisory?.total_students ?? 0}</span>
+                 <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-green-50 rounded-full">
+                   <FaUsers className="text-green-600 text-xs sm:text-sm" />
+                   <span className="text-xs sm:text-sm font-medium text-green-700">Total: {advisory?.total_students ?? 0}</span>
                  </div>
                </div>
              </div>
@@ -624,9 +624,9 @@ export default function AssignedClassPage() {
            </div>
          ) : (
            <>
-             <div className="mb-4 bg-[#232c67] text-white p-4 -mt-8 -mx-8 rounded-t-lg">
-               <h3 className="text-xl font-bold text-white mb-1">Edit Class Assignment</h3>
-               <p className="text-[#a8b0e0] text-sm">Update the teaching staff for this class</p>
+             <div className="mb-4 bg-[#232c67] text-white p-3 sm:p-4 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8 rounded-t-lg">
+               <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Edit Class Assignment</h3>
+               <p className="text-[#a8b0e0] text-xs sm:text-sm">Update the teaching staff for this class</p>
              </div>
         
         <form
@@ -793,10 +793,10 @@ export default function AssignedClassPage() {
            </div>
           
           {/* Buttons */}
-          <div className="flex justify-end gap-3 pt-3 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 border-t border-gray-200">
             <button 
               type="button" 
-              className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors" 
+              className="flex items-center justify-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors w-full sm:w-auto" 
               onClick={() => setShowEditModal(false)} 
               disabled={updating}
             >
@@ -805,7 +805,7 @@ export default function AssignedClassPage() {
             </button>
             <button 
               type="submit" 
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md ${
+              className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md w-full sm:w-auto ${
                 updating || !selectedLead
                   ? 'bg-gray-400 text-gray-200 cursor-not-allowed shadow-none'
                   : 'bg-[#232c67] hover:bg-[#1a1f4d] text-white hover:shadow-lg'
@@ -828,14 +828,14 @@ export default function AssignedClassPage() {
      )}
        </Modal>
         {/* Parents & Students Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Parents Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900">Parents</h3>
-                             <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 rounded-full">
-                 <FaUsers className="text-blue-600 text-sm" />
-                 <span className="text-sm font-medium text-blue-900">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-4">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900">Parents</h3>
+                             <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 rounded-full w-fit">
+                 <FaUsers className="text-blue-600 text-xs sm:text-sm" />
+                 <span className="text-xs sm:text-sm font-medium text-blue-900">
                    {(() => {
                      const filteredParents = parents.filter(p => {
                        const formattedName = `${p.user_lastname}, ${p.user_firstname} ${p.user_middlename || ''}`;
@@ -868,19 +868,19 @@ export default function AssignedClassPage() {
                </div>
              </div>
             
-                         <div className="space-y-2 h-[240px] overflow-y-auto">
+                         <div className="space-y-2 h-[200px] sm:h-[240px] overflow-y-auto">
                {parents.length === 0 ? (
                 <div className="flex flex-col justify-center items-center h-full text-center">
-                  <FaUsers className="text-4xl text-gray-300 mb-2" />
-                  <p className="text-gray-500">No parents found</p>
+                  <FaUsers className="text-3xl sm:text-4xl text-gray-300 mb-2" />
+                  <p className="text-sm sm:text-base text-gray-500">No parents found</p>
                 </div>
               ) : (
                                  parents.filter(p =>
                    (`${p.user_lastname}, ${p.user_firstname} ${p.user_middlename || ''}`.toLowerCase().includes(parentSearch.toLowerCase()))
                  ).length === 0 ? (
                   <div className="flex flex-col justify-center items-center h-full text-center">
-                    <FaSearch className="text-4xl text-gray-300 mb-2" />
-                    <p className="text-gray-500">No parents match your search</p>
+                    <FaSearch className="text-3xl sm:text-4xl text-gray-300 mb-2" />
+                    <p className="text-sm sm:text-base text-gray-500">No parents match your search</p>
                   </div>
                                  ) : (
                    // Remove duplicate parents by user_id to prevent React key conflicts
@@ -903,7 +903,7 @@ export default function AssignedClassPage() {
                                          return (
                        <div 
                          key={`${parent.user_id}-${idx}`}
-                         className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                         className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                          onClick={() => router.push(`/AdminSection/Users/ViewUser?role=Parent&id=${parent.user_id}`)}
                        >
                                                    {(() => {
@@ -916,7 +916,7 @@ export default function AssignedClassPage() {
                                   <img
                                     src={realTimePhoto}
                                     alt="Profile"
-                                    className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
                                     onError={(e) => {
                                       e.target.style.display = 'none';
                                       if (e.target.nextSibling) {
@@ -925,23 +925,23 @@ export default function AssignedClassPage() {
                                     }}
                                   />
                                   {/* Fallback icon that shows when photo fails to load */}
-                                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg shadow-sm hidden">
+                                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                                     <FaUser />
                                   </div>
                                 </>
                               );
                             } else {
                               return (
-                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg shadow-sm">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
                                   <FaUser />
                                 </div>
                               );
                             }
                           })()}
-                                                                          <div className="flex-1">
-                          <div className="font-medium text-gray-900">{parent.user_lastname}, {parent.user_firstname} {parent.user_middlename || ''}</div>
+                                                                          <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 text-sm sm:text-base truncate">{parent.user_lastname}, {parent.user_firstname} {parent.user_middlename || ''}</div>
                           {children.length > 0 && (
-                            <div className="text-sm text-gray-500 mt-1">
+                            <div className="text-xs sm:text-sm text-gray-500 mt-1 truncate">
                               {children.length === 1 ? 'Child' : 'Children'}: {children.map((child, i) => 
                                 `${child.stud_lastname}, ${child.stud_firstname} ${child.stud_middlename || ''}`
                               ).join(', ')}
@@ -957,18 +957,18 @@ export default function AssignedClassPage() {
           </div>
           
           {/* Students Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900">Students</h3>
-                             <div className="flex items-center gap-3">
-                 <div className="relative student-session-dropdown">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:gap-0 sm:flex-row sm:items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900">Students</h3>
+                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                 <div className="relative student-session-dropdown w-full sm:w-auto">
                    <button
                      type="button"
                      onClick={() => setStudentSessionDropdownOpen(!studentSessionDropdownOpen)}
-                     className="flex items-center justify-between bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-3 py-1 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md min-w-[120px]"
+                     className="flex items-center justify-between bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm hover:shadow-md w-full sm:min-w-[120px]"
                    >
-                     <span>{studentScheduleFilter}</span>
-                     <FaChevronDown className={`text-xs transition-transform ${studentSessionDropdownOpen ? 'rotate-180' : ''}`} />
+                     <span className="truncate">{studentScheduleFilter}</span>
+                     <FaChevronDown className={`text-xs transition-transform flex-shrink-0 ${studentSessionDropdownOpen ? 'rotate-180' : ''}`} />
                    </button>
                    
                    {studentSessionDropdownOpen && (
@@ -994,9 +994,9 @@ export default function AssignedClassPage() {
                      </div>
                    )}
                  </div>
-                                 <div className="flex items-center gap-2 px-2 py-1 bg-green-50 rounded-full">
-                   <FaUsers className="text-green-600 text-sm" />
-                   <span className="text-sm font-medium text-green-900">
+                                 <div className="flex items-center gap-2 px-2 py-1 bg-green-50 rounded-full w-fit">
+                   <FaUsers className="text-green-600 text-xs sm:text-sm" />
+                   <span className="text-xs sm:text-sm font-medium text-green-900">
                      {(() => {
                                             const filteredStudents = students
                        .filter(s => {
@@ -1032,7 +1032,7 @@ export default function AssignedClassPage() {
                </div>
              </div>
             
-                         <div className="space-y-2 h-[240px] overflow-y-auto">
+                         <div className="space-y-2 h-[200px] sm:h-[240px] overflow-y-auto">
                {(() => {
                                  const filtered = students
                    .filter(s => {
@@ -1044,8 +1044,8 @@ export default function AssignedClassPage() {
                 if (filtered.length === 0) {
                   return (
                     <div className="flex flex-col justify-center items-center h-full text-center">
-                      <FaUsers className="text-4xl text-gray-300 mb-2" />
-                      <p className="text-gray-500">No students found</p>
+                      <FaUsers className="text-3xl sm:text-4xl text-gray-300 mb-2" />
+                      <p className="text-sm sm:text-base text-gray-500">No students found</p>
                     </div>
                   );
                 }
@@ -1077,9 +1077,9 @@ export default function AssignedClassPage() {
                  });
                 
                                                                    return sorted.map((student, idx) => (
-                    <div key={`${student.student_id}-${idx}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div key={`${student.student_id}-${idx}`} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors">
                      <div 
-                       className="flex items-center gap-3 flex-1 cursor-pointer"
+                       className="flex items-center gap-2 sm:gap-3 flex-1 cursor-pointer min-w-0"
                        onClick={() => router.push(`/AdminSection/Users/ViewUser?role=Student&id=${student.student_id}`)}
                      >
                                                {(() => {
@@ -1092,7 +1092,7 @@ export default function AssignedClassPage() {
                                 <img
                                   src={realTimePhoto}
                                   alt="Profile"
-                                  className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
                                   onError={(e) => {
                                     e.target.style.display = 'none';
                                     if (e.target.nextSibling) {
@@ -1101,27 +1101,27 @@ export default function AssignedClassPage() {
                                   }}
                                 />
                                 {/* Fallback icon that shows when photo fails to load */}
-                                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm hidden">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                                   <FaUser />
                                 </div>
                               </>
                             );
                           } else {
                             return (
-                              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
                                 <FaUser />
                               </div>
                             );
                           }
                         })()}
-                                                <div className="flex-1">
-                          <div className="font-medium text-gray-900">{student.stud_lastname}, {student.stud_firstname} {student.stud_middlename || ''}</div>
-                          <div className="text-sm text-gray-500">
+                                                <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 text-sm sm:text-base truncate">{student.stud_lastname}, {student.stud_firstname} {student.stud_middlename || ''}</div>
+                          <div className="text-xs sm:text-sm text-gray-500 truncate">
                             Session: {student.stud_schedule_class || 'Not assigned'}
                           </div>
                         </div>
                      </div>
-                                          <div className="relative">
+                                          <div className="relative flex-shrink-0">
                        <button
                          type="button"
                          onClick={() => {
@@ -1133,10 +1133,10 @@ export default function AssignedClassPage() {
                                : { ...s, dropdownOpen: false }
                            ));
                          }}
-                         className="flex items-center justify-between bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-3 py-1 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md min-w-[140px]"
+                         className="flex items-center justify-between bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm hover:shadow-md min-w-[100px] sm:min-w-[140px]"
                        >
-                         <span>{student.stud_schedule_class || 'Select Session'}</span>
-                         <FaChevronDown className={`text-xs transition-transform ${student.dropdownOpen ? 'rotate-180' : ''}`} />
+                         <span className="truncate">{student.stud_schedule_class || 'Select Session'}</span>
+                         <FaChevronDown className={`text-xs transition-transform flex-shrink-0 ${student.dropdownOpen ? 'rotate-180' : ''}`} />
                        </button>
                        
                        {student.dropdownOpen && (
@@ -1154,13 +1154,13 @@ export default function AssignedClassPage() {
                                        : s
                                    ));
                                  }}
-                                 className={`w-full text-left px-3 py-2 transition-colors ${
+                                 className={`w-full text-left px-2 sm:px-3 py-2 transition-colors ${
                                    session === (student.stud_schedule_class || '') 
                                      ? 'bg-blue-100 text-blue-700' 
                                      : 'text-gray-700 hover:bg-blue-50'
                                  }`}
                                >
-                                 <div className="font-medium">{session || 'Select Session'}</div>
+                                 <div className="font-medium text-xs sm:text-sm">{session || 'Select Session'}</div>
                                </button>
                              ))}
                            </div>

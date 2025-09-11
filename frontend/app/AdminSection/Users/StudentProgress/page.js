@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useMemo, useEffect } from "react";
-import { FaArrowLeft, FaUser, FaMale, FaFemale, FaUsers, FaChalkboardTeacher, FaMars, FaVenus, FaChartBar, FaTable, FaExclamationTriangle, FaComments, FaSave, FaEdit, FaTimes, FaCheckCircle, FaRegClock, FaPlusCircle, FaChartLine, FaSearch, FaChevronDown, FaLock } from "react-icons/fa";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { FaArrowLeft, FaUser, FaMale, FaFemale, FaUsers, FaChalkboardTeacher, FaMars, FaVenus, FaChartBar, FaTable, FaExclamationTriangle, FaComments, FaSave, FaEdit, FaTimes, FaCheckCircle, FaRegClock, FaPlusCircle, FaChartLine, FaSearch, FaChevronDown, FaLock, FaPrint } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
 import '../../../../lib/chart-config.js';
 import ProtectedRoute from "../../../Context/ProtectedRoute";
@@ -10,12 +10,38 @@ import "react-toastify/dist/ReactToastify.css";
 import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "../../../Context/UserContext";
 
+// Helper function to construct full photo URL from filename
+function getPhotoUrl(filename) {
+  if (!filename) {
+    return null;
+  }
+  
+  // If it's already a full URL (like a blob URL for preview), return as is
+  if (filename.startsWith('http://') || filename.startsWith('https://') || filename.startsWith('blob:')) {
+    return filename;
+  }
+  
+  // If it already starts with /php/Uploads/, return as is
+  if (filename.startsWith('/php/Uploads/')) {
+    return filename;
+  }
+  
+  // If it's a filename, construct the full backend URL
+  const fullUrl = `/php/Uploads/${filename}`;
+  return fullUrl;
+}
+
 export default function StudentProgress({ formData: initialFormData }) {
   const [activeTab, setActiveTab] = useState("Class Overview");
   const [isEditing, setIsEditing] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const router = useRouter();
   const { getUserPhoto, getStudentPhoto, initializeAdvisoryPhotos } = useUser();
+  
+  // Refs for printable content
+  const assessmentRef = useRef(null);
+  const printRef = useRef(null);
+  const [showPrintLayout, setShowPrintLayout] = useState(false);
 
   // State for class and session selection
   const [selectedClass, setSelectedClass] = useState("");
@@ -38,6 +64,8 @@ export default function StudentProgress({ formData: initialFormData }) {
   const [assessmentData, setAssessmentData] = useState(null);
   const [statusData, setStatusData] = useState(null);
   const [studentSearch, setStudentSearch] = useState("");
+  const [parentProfile, setParentProfile] = useState(null);
+  const [studentLevelData, setStudentLevelData] = useState(null);
 
   // Assessment data states
   const [visualFeedback, setVisualFeedback] = useState([]);
@@ -160,7 +188,6 @@ export default function StudentProgress({ formData: initialFormData }) {
     
     // Check if we have the required advisory_id
     if (!selectedStudent.advisory_id) {
-      console.log('No advisory_id found for student:', selectedStudent);
       setAssessmentLoading(false);
       return;
     }
@@ -186,7 +213,9 @@ export default function StudentProgress({ formData: initialFormData }) {
           fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
           fetch('/php/Assessment/get_quarters.php'),
           fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${selectedStudent.student_id}&advisory_id=${selectedStudent.advisory_id}`),
-          fetch('/php/Assessment/get_overall_progress.php?student_id=' + selectedStudent.student_id + '&advisory_id=' + selectedStudent.advisory_id)
+          fetch('/php/Assessment/get_overall_progress.php?student_id=' + selectedStudent.student_id + '&advisory_id=' + selectedStudent.advisory_id),
+          fetch('/php/Users/get_user_profile.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: selectedStudent.parent_id }) }),
+          fetch('/php/Users/get_student_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: selectedStudent.student_id }) })
         ];
 
         const responses = await Promise.all(promises);
@@ -243,6 +272,19 @@ export default function StudentProgress({ formData: initialFormData }) {
                   setOverallProgress(data[9].progress);
       }
 
+        // Process parent profile for socio-demographic print
+        if (data[10] && data[10].status === 'success') {
+          setParentProfile(data[10].user || data[10].profile || data[10]);
+        } else {
+        }
+
+        // Process student details for level information
+        if (data[11] && data[11].status === 'success') {
+          // Store level data in a separate state to avoid infinite loop
+          if (data[11].student) {
+            setStudentLevelData(data[11].student);
+          }
+        }
 
         
         setAssessmentLoading(false);
@@ -266,6 +308,8 @@ export default function StudentProgress({ formData: initialFormData }) {
     setQuartersData([]);
     setFinalSubjectProgress([]);
     setOverallProgress(null);
+    setParentProfile(null);
+    setStudentLevelData(null);
     
     fetchAssessmentData();
   }, [selectedStudent]);
@@ -276,7 +320,6 @@ export default function StudentProgress({ formData: initialFormData }) {
     
     // Check if we have the required advisory_id
     if (!selectedStudent.advisory_id) {
-      console.log('No advisory_id found for student:', selectedStudent);
       setStatusLoading(false);
       return;
     }
@@ -618,6 +661,83 @@ export default function StudentProgress({ formData: initialFormData }) {
     return "";
   };
 
+  // Export/Print: use a print-only stylesheet; do not mutate screen layout
+  const handleExportAssessment = () => {
+    try {
+      const printableElement = printRef.current || assessmentRef.current;
+      if (!printableElement) {
+        toast.error("Nothing to export yet.");
+        return;
+      }
+
+      const originalTitle = document.title;
+
+      const tempId = "studentprogress-printable";
+      const cloned = printableElement.cloneNode(true);
+      cloned.setAttribute("id", tempId);
+      cloned.style.display = 'block';
+      cloned.style.margin = '0';
+      cloned.style.padding = '0';
+      document.body.appendChild(cloned);
+
+      const style = document.createElement("style");
+      style.setAttribute("media", "print");
+      style.innerHTML = `
+        @page { size: auto; margin: 0; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body > *:not(#${tempId}) { display: none !important; }
+          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; padding: 0; margin: 0; display: flex !important; flex-direction: column !important; max-width: none !important; }
+          #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
+          table, tr, td, th { page-break-inside: avoid !important; }
+          .print-page { width: 100% !important; position: relative !important; min-height: 100vh !important; box-sizing: border-box !important; }
+          .print-page + .print-page { page-break-before: always; break-before: page; }
+          .no-break { page-break-inside: avoid; break-inside: avoid; }
+          .border-soft { border: 1px solid #e5e7eb; }
+          .pastel-blue { background: #eef5ff; }
+          .pastel-green { background: #eaf7f1; }
+          .pastel-yellow { background: #fff7e6; }
+          .pastel-pink { background: #ffeef2; }
+          .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
+        }
+      `;
+      document.head.appendChild(style);
+
+      const pages = cloned.querySelectorAll('.print-page');
+      const totalPages = pages.length;
+      pages.forEach((pageEl, index) => {
+        pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
+      });
+
+      const studentName = selectedStudent ? `${selectedStudent.stud_lastname || ''}, ${selectedStudent.stud_firstname || ''}`.trim() : "";
+      document.title = `Student Progress ${studentName ? `- ${studentName}` : ''}`;
+
+      const cleanup = () => {
+        try {
+          if (style && style.parentNode) document.head.removeChild(style);
+          if (cloned && cloned.parentNode) cloned.parentNode.removeChild(cloned);
+          document.title = originalTitle;
+        } catch (e) {}
+      };
+
+      const afterPrint = () => {
+        window.removeEventListener('afterprint', afterPrint);
+        cleanup();
+      };
+      window.addEventListener('afterprint', afterPrint);
+
+      setTimeout(() => {
+        window.print();
+      }, 300);
+
+      setTimeout(() => { cleanup(); }, 1500);
+    } catch (err) {
+      console.error('Error exporting assessment:', err);
+      toast.error("Failed to export. Please try again.");
+    }
+  };
+
   // Helper to render status chart
   function renderStatusChart() {
     // Y-axis: Excellent, Very Good, Good, Need Help, Not Met
@@ -639,16 +759,16 @@ export default function StudentProgress({ formData: initialFormData }) {
     
     if (dataPoints.every(v => v === null)) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 text-gray-400 italic border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
-          <FaChartLine className="text-4xl mb-4 text-gray-300" />
-          <p className="text-lg font-medium">No chart data available</p>
-          <p className="text-sm text-gray-500 mt-2">Quarterly performance data will appear here</p>
+        <div className="flex flex-col items-center justify-center h-48 md:h-64 text-gray-400 italic border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 p-4">
+          <FaChartLine className="text-3xl md:text-4xl mb-4 text-gray-300" />
+          <p className="text-base md:text-lg font-medium text-center">No chart data available</p>
+          <p className="text-xs md:text-sm text-gray-500 mt-2 text-center">Quarterly performance data will appear here</p>
         </div>
       );
     }
     
     return (
-      <div className="h-64 w-full bg-white rounded-lg border border-gray-200 p-4">
+      <div className="h-48 md:h-64 w-full bg-white rounded-lg border border-gray-200 p-2 md:p-4">
         <Line
           data={{
             labels: xLabels,
@@ -753,6 +873,79 @@ export default function StudentProgress({ formData: initialFormData }) {
     '🟡': '#facc15'  // gold/yellow
   };
 
+  // Printable SVG line chart (for print layout)
+  function renderPrintStatusChartSVG() {
+    const yMap = { 'Excellent': 5, 'Very Good': 4, 'Good': 3, 'Need Help': 2, 'Not Met': 1 };
+    const xLabels = ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
+    const dataPoints = [1,2,3,4].map(qid => {
+      const card = quarterlyPerformance.find(c => Number(c.quarter_id) === qid);
+      const desc = card && visualFeedbackMap[card.quarter_visual_feedback_id];
+      return yMap[desc] || null;
+    });
+
+    if (dataPoints.every(v => v === null)) {
+      return (
+        <div className="flex flex-col items-center justify-center h-48 text-gray-400 italic border-2 border-dashed border-gray-200 rounded-lg bg-white p-4">
+          <FaChartLine className="text-3xl mb-2 text-gray-300" />
+          <span className="text-base">No chart data available</span>
+        </div>
+      );
+    }
+
+    const width = 700;
+    const height = 240;
+    const margin = { top: 20, right: 50, bottom: 42, left: 70 };
+    const chartW = width - margin.left - margin.right;
+    const chartH = height - margin.top - margin.bottom;
+    const innerPadX = 12;
+    const innerPadY = 12;
+    const plotLeft = margin.left + innerPadX;
+    const plotRight = margin.left + chartW - innerPadX;
+    const plotTop = margin.top + innerPadY;
+    const plotBottom = margin.top + chartH - innerPadY;
+    const xs = (i) => plotLeft + ((plotRight - plotLeft) / 3) * i;
+    const ys = (v) => plotBottom - ((v - 1) / 4) * (plotBottom - plotTop);
+
+    let path = '';
+    dataPoints.forEach((v, i) => {
+      if (v == null) return;
+      const cmd = path ? 'L' : 'M';
+      path += `${cmd}${xs(i)},${ys(v)} `;
+    });
+
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-2">
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+          {[1,2,3,4,5].map((lvl) => (
+            <g key={lvl}>
+              <line x1={plotLeft} y1={ys(lvl)} x2={plotRight} y2={ys(lvl)} stroke="#e5e7eb" strokeWidth="1" />
+              <text x={plotLeft - 12} y={ys(lvl) + 4} textAnchor="end" fontSize="12" fill="#6b7280">
+                {['','Not Met','Need Help','Good','Very Good','Excellent'][lvl]}
+              </text>
+            </g>
+          ))}
+          <line x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} stroke="#9ca3af" strokeWidth="1" />
+          <line x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} stroke="#9ca3af" strokeWidth="1" />
+          <path d={path.trim()} fill="none" stroke="#2563eb" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+          {dataPoints.map((v, i) => v == null ? null : (
+            <circle key={i} cx={xs(i)} cy={ys(v)} r={5} fill="#2563eb" stroke="#ffffff" strokeWidth="2" />
+          ))}
+          {xLabels.map((lbl, i) => {
+            const isFirst = i === 0;
+            const isLast = i === xLabels.length - 1;
+            const anchor = isFirst ? 'start' : isLast ? 'end' : 'middle';
+            const xOffset = isFirst ? 4 : isLast ? -4 : 0;
+            return (
+              <text key={i} x={xs(i) + xOffset} y={plotBottom + 20} textAnchor={anchor} fontSize="13" fill="#6b7280">{lbl}</text>
+            );
+          })}
+          <text x={(plotLeft + plotRight)/2} y={height - 6} textAnchor="middle" fontSize="12" fill="#374151">Quarter</text>
+          <text x={16} y={margin.top - 6} textAnchor="start" fontSize="13" fill="#374151">Performance Level</text>
+        </svg>
+      </div>
+    );
+  }
+
   // Helper to check if all subjects have feedback for a given quarter
   function allSubjectsHaveFeedbackForQuarter(qid) {
     return subjects.length > 0 && quarterFeedback.filter(fb => Number(fb.quarter_id) === qid).length === subjects.length;
@@ -790,6 +983,93 @@ export default function StudentProgress({ formData: initialFormData }) {
     const totalAbsent = summary.reduce((a, b) => a + b.absent, 0);
     
     return { summary, totalSchoolDays, totalPresent, totalAbsent };
+  }
+
+  // General helpers for printable data fallbacks
+  function displayOrLine(value, line = '____________________________') {
+    if (value === 0) return '0';
+    if (value === false) return 'No';
+    const str = typeof value === 'string' ? value.trim() : value;
+    return str ? String(str) : line;
+  }
+
+  function computeAge(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    const diff = Date.now() - d.getTime();
+    const ageDate = new Date(diff);
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
+  }
+
+  function buildParentName(profile, prefix) {
+    if (!profile) return '';
+    // Check for direct field first
+    const direct = profile?.[`${prefix}_name`];
+    if (direct && String(direct).trim()) return String(direct).trim();
+    
+    // Check for individual name parts
+    const first = profile?.[`${prefix}_firstname`] || profile?.[`${prefix}_first_name`] || profile?.[`${prefix}_first`] || profile?.[`${prefix}_fname`];
+    const middle = profile?.[`${prefix}_middlename`] || profile?.[`${prefix}_middle_name`] || profile?.[`${prefix}_mname`];
+    const last = profile?.[`${prefix}_lastname`] || profile?.[`${prefix}_last_name`] || profile?.[`${prefix}_lname`];
+    
+    const parts = [first, middle, last].filter(Boolean).map(v => String(v).trim());
+    return parts.join(' ');
+  }
+
+  function getParentAge(profile, prefix) {
+    if (!profile) return '';
+    const age = profile?.[`${prefix}_age`];
+    if (age) return String(age);
+    const bday = profile?.[`${prefix}_birthdate`] || profile?.[`${prefix}_dob`];
+    const computed = computeAge(bday);
+    return Number.isFinite(computed) ? String(computed) : '';
+  }
+
+  function getParentOccupation(profile, prefix) {
+    if (!profile) return '';
+    return profile?.[`${prefix}_occupation`] || '';
+  }
+
+  // Helper to format names as "Lastname, Firstname Middlename"
+  function formatName(fullName) {
+    if (!fullName) return '';
+    
+    const nameParts = fullName.trim().split(' ');
+    if (nameParts.length < 2) return fullName;
+    
+    const lastName = nameParts[nameParts.length - 1];
+    const firstName = nameParts[0];
+    const middleName = nameParts.slice(1, -1).join(' ');
+    
+    if (middleName) {
+      return `${lastName}, ${firstName} ${middleName}`;
+    } else {
+      return `${lastName}, ${firstName}`;
+    }
+  }
+
+  // Helper: Get latest teacher comment text for a given quarter (1-4)
+  function getQuarterCommentText(quarterId) {
+    if (!Array.isArray(comments) || comments.length === 0) return "";
+    const matches = comments.filter((c) => {
+      const qid = Number(c.quarter_id ?? c.quarterId);
+      if (!isNaN(qid)) return qid === Number(quarterId);
+      if (c.quarter_name && typeof c.quarter_name === 'string') {
+        const suffix = quarterId === 1 ? 'st' : quarterId === 2 ? 'nd' : quarterId === 3 ? 'rd' : 'th';
+        return c.quarter_name.toLowerCase().startsWith(`${quarterId}${suffix} quarter`.toLowerCase());
+      }
+      return false;
+    });
+    if (matches.length === 0) return "";
+    const getTime = (c) => {
+      const t = c.updated_at || c.created_at || c.comment_date;
+      const d = t ? new Date(t) : null;
+      return d && !isNaN(d) ? d.getTime() : 0;
+    };
+    const latest = matches.sort((a, b) => getTime(a) - getTime(b))[matches.length - 1];
+    const text = latest.comment_text || latest.feedback || latest.comment || "";
+    return (typeof text === 'string' ? text.trim() : '') || "";
   }
 
   // Empty chart data
@@ -895,7 +1175,7 @@ export default function StudentProgress({ formData: initialFormData }) {
 
   const handleDelete = () => {
     // Delete logic here (UI only)
-            router.push("/AdminSection/Users");
+    router.push("/AdminSection/Users");
   };
 
   // Calculate student counts (filtered by search)
@@ -913,7 +1193,7 @@ export default function StudentProgress({ formData: initialFormData }) {
         <div className="px-6 py-4">
           <div className="flex items-center gap-4 mb-4">
             <button
-                              onClick={() => router.push('/AdminSection/Users')}
+              onClick={() => router.push('/AdminSection/Users')}
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               <FaArrowLeft className="text-sm" />
@@ -923,7 +1203,7 @@ export default function StudentProgress({ formData: initialFormData }) {
         </div>
 
           {/* Tab Navigation */}
-          <div className="flex gap-8">
+          <div className="flex items-center gap-8">
             <button
               onClick={() => setActiveTabSafely("Class Overview")}
               className={`text-[#2c2f6f] border-b-2 font-semibold pb-2 transition-colors ${
@@ -970,6 +1250,16 @@ export default function StudentProgress({ formData: initialFormData }) {
                     )}
                   </button>
                 </div>
+                {(activeTab === "Assessment" || activeTab === "Status") && (
+                  <button
+                    onClick={handleExportAssessment}
+                    className="ml-auto inline-flex items-center gap-2 bg-[#2c2f6f] text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                    title="Print or Save Assessment as PDF"
+                  >
+                    <FaPrint />
+                    <span className="font-semibold">Export PDF</span>
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -1112,51 +1402,83 @@ export default function StudentProgress({ formData: initialFormData }) {
             {/* Teaching Staff */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-gray-700 mb-3">Teaching Staff</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  {advisory?.lead_teacher_photo ? (
-                    <img
-                      src={advisory.lead_teacher_photo}
-                      alt="Lead Teacher"
-                      className="w-12 h-12 rounded-full object-cover shadow-sm"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        if (e.target.nextSibling) {
-                          e.target.nextSibling.style.display = 'flex';
-                        }
-                      }}
-                    />
-                  ) : null}
-                  {/* Fallback icon that shows when photo fails to load */}
-                  <div className={`w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg shadow-sm ${advisory?.lead_teacher_photo ? 'hidden' : 'flex'}`}>
-                    <FaChalkboardTeacher />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Lead Teacher</p>
-                    <p className="text-sm text-gray-600">{leadTeacher || "Not assigned"}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                  {(() => {
+                    // Get teacher photo from advisory data
+                    const teacherPhoto = advisory?.lead_teacher_photo;
+                    const photoUrl = teacherPhoto ? getPhotoUrl(teacherPhoto) : null;
+                    
+                    if (photoUrl) {
+                      return (
+                        <>
+                          <img
+                            src={photoUrl}
+                            alt="Lead Teacher"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-sm flex-shrink-0"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              if (e.target.nextSibling) {
+                                e.target.nextSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                          {/* Fallback icon that shows when photo fails to load */}
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs sm:text-sm shadow-sm hidden flex-shrink-0">
+                            <FaChalkboardTeacher />
+                          </div>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs sm:text-sm shadow-sm flex-shrink-0">
+                          <FaChalkboardTeacher />
+                        </div>
+                      );
+                    }
+                  })()}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">Lead Teacher</p>
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">{leadTeacher || "Not assigned"}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  {advisory?.assistant_teacher_photo ? (
-                    <img
-                      src={advisory.assistant_teacher_photo}
-                      alt="Assistant Teacher"
-                      className="w-12 h-12 rounded-full object-cover shadow-sm"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        if (e.target.nextSibling) {
-                          e.target.nextSibling.style.display = 'flex';
-                        }
-                      }}
-                    />
-                  ) : null}
-                  {/* Fallback icon that shows when photo fails to load */}
-                  <div className={`w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm ${advisory?.assistant_teacher_photo ? 'hidden' : 'flex'}`}>
-                    <FaChalkboardTeacher />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Assistant Teacher</p>
-                    <p className="text-sm text-gray-600">{assistantTeacher || "Not assigned"}</p>
+                <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                  {(() => {
+                    // Get teacher photo from advisory data
+                    const teacherPhoto = advisory?.assistant_teacher_photo;
+                    const photoUrl = teacherPhoto ? getPhotoUrl(teacherPhoto) : null;
+                    
+                    if (photoUrl) {
+                      return (
+                        <>
+                          <img
+                            src={photoUrl}
+                            alt="Assistant Teacher"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-sm flex-shrink-0"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              if (e.target.nextSibling) {
+                                e.target.nextSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                          {/* Fallback icon that shows when photo fails to load */}
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xs sm:text-sm shadow-sm hidden flex-shrink-0">
+                            <FaChalkboardTeacher />
+                          </div>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xs sm:text-sm shadow-sm flex-shrink-0">
+                          <FaChalkboardTeacher />
+                        </div>
+                      );
+                    }
+                  })()}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">Assistant Teacher</p>
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">{assistantTeacher || "Not assigned"}</p>
                   </div>
                 </div>
               </div>
@@ -1166,20 +1488,20 @@ export default function StudentProgress({ formData: initialFormData }) {
           {/* Right Column - Student List Header and List */}
           <div className="space-y-4">
             {/* Student List Header with Counts */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
               <h4 className="text-sm font-semibold text-gray-700">Student List</h4>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 rounded-full">
-                  <FaMars className="text-blue-600 text-sm" />
-                  <span className="text-sm font-medium text-blue-900">Male: {maleCount}</span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-blue-50 rounded-full">
+                  <FaMars className="text-blue-600 text-xs sm:text-sm" />
+                  <span className="text-xs sm:text-sm font-medium text-blue-900">Male: {maleCount}</span>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-pink-50 rounded-full">
-                  <FaVenus className="text-pink-600 text-sm" />
-                  <span className="text-sm font-medium text-pink-900">Female: {femaleCount}</span>
+                <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-pink-50 rounded-full">
+                  <FaVenus className="text-pink-600 text-xs sm:text-sm" />
+                  <span className="text-xs sm:text-sm font-medium text-pink-900">Female: {femaleCount}</span>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-green-50 rounded-full">
-                  <FaUsers className="text-green-600 text-sm" />
-                  <span className="text-sm font-medium text-green-900">Total: {totalCount}</span>
+                <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-green-50 rounded-full">
+                  <FaUsers className="text-green-600 text-xs sm:text-sm" />
+                  <span className="text-xs sm:text-sm font-medium text-green-900">Total: {totalCount}</span>
                 </div>
               </div>
             </div>
@@ -1246,7 +1568,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                        return sorted.map((student, index) => (
                          <div 
                            key={`${student.student_id}-${index}`} 
-                           className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                           className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                            onClick={() => setSelectedStudent(student)}
                          >
                            {(() => {
@@ -1259,7 +1581,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                    <img
                                      src={realTimePhoto}
                                      alt="Profile"
-                                     className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                     className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
                                      onError={(e) => {
                                        e.target.style.display = 'none';
                                        if (e.target.nextSibling) {
@@ -1268,32 +1590,34 @@ export default function StudentProgress({ formData: initialFormData }) {
                                      }}
                                    />
                                    {/* Fallback icon that shows when photo fails to load */}
-                                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center hidden">
-                                     <FaUser className="text-blue-600 text-sm" />
+                                   <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center hidden flex-shrink-0">
+                                     <FaUser className="text-blue-600 text-xs sm:text-sm" />
                                    </div>
                                  </>
                                );
                              } else {
                                return (
-                                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                   <FaUser className="text-blue-600 text-sm" />
+                                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                   <FaUser className="text-blue-600 text-xs sm:text-sm" />
                                  </div>
                                );
                              }
                            })()}
-                           <div className="flex-1">
-                             <p className="text-sm font-medium text-gray-900">
+                           <div className="flex-1 min-w-0">
+                             <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                                {student.stud_lastname}, {student.stud_firstname} {student.stud_middlename || ''}
                              </p>
-                             <p className="text-sm text-gray-500">
+                             <p className="text-xs sm:text-sm text-gray-500 truncate">
                                {student.stud_schedule_class || "No session"}
                              </p>
                            </div>
-                           {student.stud_gender === "Male" ? (
-                             <FaMars className="text-blue-600 text-sm" />
-                           ) : (
-                             <FaVenus className="text-pink-600 text-sm" />
-                           )}
+                           <div className="flex-shrink-0">
+                             {student.stud_gender === "Male" ? (
+                               <FaMars className="text-blue-600 text-xs sm:text-sm" />
+                             ) : (
+                               <FaVenus className="text-pink-600 text-xs sm:text-sm" />
+                             )}
+                           </div>
                          </div>
                        ));
                      })()}
@@ -1315,9 +1639,9 @@ export default function StudentProgress({ formData: initialFormData }) {
 
                                           {/* Selected Student Info - Only show on Assessment/Status tabs, not on Class Overview */}
            {selectedStudent && activeTab !== "Class Overview" && (
-             <div className="bg-[#232c67] flex flex-row items-center w-full px-8 py-6 gap-10 rounded-lg">
+             <div className="bg-[#232c67] flex flex-col md:flex-row items-start md:items-center w-full px-4 md:px-8 py-3 md:py-6 gap-3 md:gap-10 rounded-lg">
                {/* Left side with avatar and name - 40% */}
-               <div className="flex items-center gap-4 w-[40%]">
+               <div className="flex items-center gap-3 md:gap-4 w-full md:w-[40%]">
                  {(() => {
                    // Get real-time photo from UserContext, fallback to student.photo if not available
                    const realTimePhoto = getStudentPhoto(selectedStudent.student_id) || selectedStudent.photo;
@@ -1328,7 +1652,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                          <img
                            src={realTimePhoto}
                            alt="Profile"
-                           className="w-20 h-20 rounded-full object-cover shadow-md border-2 border-white"
+                           className="w-12 h-12 md:w-20 md:h-20 rounded-full object-cover shadow-md border-2 border-white"
                            onError={(e) => {
                              e.target.style.display = 'none';
                              if (e.target.nextSibling) {
@@ -1337,20 +1661,20 @@ export default function StudentProgress({ formData: initialFormData }) {
                            }}
                          />
                          {/* Fallback icon that shows when photo fails to load */}
-                         <div className="w-20 h-20 bg-blue-200 rounded-full flex items-center justify-center hidden">
-                           <FaUser className="text-white text-2xl" />
+                         <div className="w-12 h-12 md:w-20 md:h-20 bg-blue-200 rounded-full flex items-center justify-center hidden">
+                           <FaUser className="text-white text-lg md:text-2xl" />
                          </div>
                        </>
                      );
                    } else {
                      return (
-                       <div className="w-20 h-20 bg-blue-200 rounded-full flex items-center justify-center">
-                         <FaUser className="text-white text-2xl" />
+                       <div className="w-12 h-12 md:w-20 md:h-20 bg-blue-200 rounded-full flex items-center justify-center">
+                         <FaUser className="text-white text-lg md:text-2xl" />
                        </div>
                      );
                    }
                  })()}
-                 <span className="font-bold text-white text-3xl whitespace-nowrap">
+                 <span className="font-bold text-white text-lg md:text-3xl whitespace-nowrap truncate max-w-[220px] md:max-w-none">
                    {selectedStudent ? 
                      `${selectedStudent.stud_lastname}, ${selectedStudent.stud_firstname} ${selectedStudent.stud_middlename || ''}` : 
                      "Select a student to view progress"
@@ -1359,26 +1683,26 @@ export default function StudentProgress({ formData: initialFormData }) {
                </div>
                
                {/* Right side with student details in two rows - 60% */}
-               <div className="flex flex-col gap-4 w-[60%]">
+               <div className="flex flex-col gap-2 md:gap-4 w-full md:w-[60%]">
                  {/* First row - Schedule, Gender, Handedness */}
-                 <div className="flex items-center gap-8">
-                   <span className="text-white text-lg font-bold">
+                 <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-8">
+                   <span className="text-white text-sm md:text-lg font-bold">
                      <span className="text-white">Schedule:</span> <span className="font-normal ml-2">{selectedStudent.stud_schedule_class || "N/A"}</span>
                    </span>
-                   <span className="text-white text-lg font-bold">
+                   <span className="text-white text-sm md:text-lg font-bold">
                      <span className="text-white">Gender:</span> <span className="font-normal ml-2">{selectedStudent.stud_gender || "N/A"}</span>
                    </span>
-                   <span className="text-white text-lg font-bold">
+                   <span className="text-white text-sm md:text-lg font-bold">
                      <span className="text-white">Handedness:</span> <span className="font-normal ml-2">{selectedStudent.stud_handedness || "N/A"}</span>
                    </span>
                  </div>
                  
                  {/* Second row - Date of Birth and Parent */}
-                 <div className="flex items-center gap-8">
-                   <span className="text-white text-lg font-bold">
+                 <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-8">
+                   <span className="text-white text-sm md:text-lg font-bold">
                      <span className="text-white">Date of Birth:</span> <span className="font-normal ml-2">{formatDateOfBirth(selectedStudent.stud_birthdate)}</span>
                    </span>
-                   <span className="text-white text-lg font-bold">
+                   <span className="text-white text-sm md:text-lg font-bold">
                      <span className="text-white">Parent:</span> <span className="font-normal ml-2">
                        {selectedStudent.parent_lastname && selectedStudent.parent_firstname ? 
                          `${selectedStudent.parent_lastname}, ${selectedStudent.parent_firstname} ${selectedStudent.parent_middlename || ''}`.trim() : 
@@ -1396,9 +1720,9 @@ export default function StudentProgress({ formData: initialFormData }) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                      {/* Sticky Student Info Section for Assessment/Status tabs */}
            {selectedStudent && (
-             <div className="bg-[#232c67] flex flex-row items-center w-full px-6 py-4 gap-6 sticky top-0 z-10">
+             <div className="bg-[#232c67] flex flex-col sm:flex-row items-start sm:items-center w-full px-2 sm:px-6 py-2 sm:py-4 gap-2 sm:gap-6 sticky top-0 z-10">
                {/* Left side with avatar and name - 40% */}
-               <div className="flex items-center gap-3 w-[40%]">
+               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-[40%]">
                  {(() => {
                    // Get real-time photo from UserContext, fallback to student.photo if not available
                    const realTimePhoto = getStudentPhoto(selectedStudent.student_id) || selectedStudent.photo;
@@ -1409,7 +1733,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                          <img
                            src={realTimePhoto}
                            alt="Profile"
-                           className="w-16 h-16 rounded-full object-cover shadow-md border-2 border-white"
+                           className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover shadow-md border-2 border-white"
                            onError={(e) => {
                              e.target.style.display = 'none';
                              if (e.target.nextSibling) {
@@ -1418,20 +1742,20 @@ export default function StudentProgress({ formData: initialFormData }) {
                            }}
                          />
                          {/* Fallback icon that shows when photo fails to load */}
-                         <div className="w-16 h-16 bg-blue-200 rounded-full flex items-center justify-center hidden">
-                           <FaUser className="text-white text-lg" />
+                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-200 rounded-full flex items-center justify-center hidden">
+                           <FaUser className="text-white text-lg sm:text-xl" />
                          </div>
                        </>
                      );
                    } else {
                      return (
-                       <div className="w-16 h-16 bg-blue-200 rounded-full flex items-center justify-center">
-                         <FaUser className="text-white text-lg" />
+                       <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-200 rounded-full flex items-center justify-center">
+                         <FaUser className="text-white text-lg sm:text-xl" />
                        </div>
                      );
                    }
                  })()}
-                 <span className="font-bold text-white text-xl whitespace-nowrap">
+                 <span className="font-bold text-white text-lg sm:text-xl whitespace-nowrap truncate max-w-[200px] sm:max-w-none">
                    {selectedStudent ? 
                      `${selectedStudent.stud_lastname}, ${selectedStudent.stud_firstname} ${selectedStudent.stud_middlename || ''}` : 
                      "Select a student to view progress"
@@ -1440,22 +1764,22 @@ export default function StudentProgress({ formData: initialFormData }) {
                </div>
                
                {/* Right side with student details in two rows - 60% */}
-               <div className="flex flex-col gap-2 w-[60%]">
+               <div className="flex flex-col gap-2 w-full sm:w-[60%]">
                  {/* First row - Schedule, Gender, Handedness */}
-                 <div className="flex items-center gap-6">
-                   <span className="text-white text-base font-bold">
+                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
+                   <span className="text-white text-sm sm:text-base font-bold">
                      <span className="text-white">Schedule:</span> <span className="font-normal ml-2">{selectedStudent.stud_schedule_class || "N/A"}</span>
                    </span>
-                   <span className="text-white text-base font-bold">
+                   <span className="text-white text-sm sm:text-base font-bold">
                      <span className="text-white">Gender:</span> <span className="font-normal ml-2">{selectedStudent.stud_gender || "N/A"}</span>
                    </span>
-                   <span className="text-white text-base font-bold">
+                   <span className="text-white text-sm sm:text-base font-bold">
                      <span className="text-white">Handedness:</span> <span className="font-normal ml-2">{selectedStudent.stud_handedness || "N/A"}</span>
                    </span>
                  </div>
                  
                  {/* Second row - Date of Birth and Parent */}
-                 <div className="flex items-center gap-6">
+                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
                    <span className="text-white text-sm font-bold">
                      <span className="text-white">Date of Birth:</span> <span className="font-normal ml-2">{formatDateOfBirth(selectedStudent.stud_birthdate)}</span>
                    </span>
@@ -1473,9 +1797,386 @@ export default function StudentProgress({ formData: initialFormData }) {
            )}
 
         {/* Scrollable Content Area */}
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+        <div ref={activeTab === "Assessment" || activeTab === "Status" ? assessmentRef : null} className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+          {/* Print Layout - hidden on screen; shown via print CSS */}
+          <div ref={printRef} className="hidden print:block" style={{margin: 0, padding: 0}}>
+            {/* Page 1: Learner info */}
+            <div className="print-page p-10 pastel-blue border-soft rounded-xl text-[15px]" style={{margin: 0}}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-[72px] h-[72px] rounded-full bg-white/80 border border-white/70 p-2 flex items-center justify-center">
+                    <img src="/assets/image/villelogo.png" alt="School Logo" className="w-16 h-16 object-contain" />
+                  </div>
+                  <div>
+                    <div className="text-4xl font-extrabold tracking-tight text-[#232c67] leading-tight">LEARNERS' VILLE</div>
+                    <div className="text-lg text-gray-700">6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines</div>
+                  </div>
+                </div>
+                <div className="shrink-0">
+                  <div className="inline-flex items-center px-5 py-2 rounded-full bg-white/80 border border-white/70 text-[#232c67] font-semibold text-base">
+                    SY {new Date().getFullYear()} - {new Date().getFullYear()+1}
+                  </div>
+                </div>
+              </div>
+              <div className="h-0.5 w-full bg-white/70 rounded-full mb-8" />
+
+              <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7 mb-7">
+                <div className="section-title text-3xl font-bold text-gray-900 mb-5">Learner's Information</div>
+                <div className="grid grid-cols-2 gap-5 text-lg leading-relaxed">
+                  <div>
+                    <div className="text-gray-600 font-semibold text-base">Name</div>
+                    <div className="text-gray-900 font-semibold text-lg">
+                      {selectedStudent ? `${selectedStudent.stud_lastname || ''}, ${selectedStudent.stud_firstname || ''} ${selectedStudent.stud_middlename || ''}` : '-'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 font-semibold text-base">Sex</div>
+                    <div className="text-gray-900 font-semibold text-lg">{selectedStudent?.stud_gender || '-'}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 font-semibold text-base">Level</div>
+                    <div className="text-gray-900 font-semibold text-lg">{displayOrLine(studentLevelData?.level_name || studentLevelData?.levelName || studentLevelData?.level?.level_name || selectedStudent?.level_name || selectedStudent?.levelName || selectedStudent?.level?.level_name || (studentLevelData?.levelId ? (classes.find(c => c.level_id == studentLevelData.levelId)?.level_name || `Level ${studentLevelData.levelId}`) : ''))}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 font-semibold text-base">Date of Birth</div>
+                    <div className="text-gray-900 font-semibold text-lg">{formatDateOfBirth(selectedStudent?.stud_birthdate) || '-'}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 font-semibold text-base">Lead Teacher</div>
+                    <div className="text-gray-900 font-semibold text-lg">{displayOrLine(advisory?.lead_teacher_name ? formatName(advisory.lead_teacher_name) : '')}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 font-semibold text-base">Assistant Teacher</div>
+                    <div className="text-gray-900 font-semibold text-lg">{displayOrLine(advisory?.assistant_teacher_name ? formatName(advisory.assistant_teacher_name) : '')}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7">
+                <div className="section-title text-3xl font-bold text-gray-900 mb-5">Sociodemographic Profile</div>
+                <div className="grid grid-cols-2 gap-6 text-lg leading-relaxed">
+                  <div>
+                    <div className="text-gray-600 font-semibold text-base">Handedness</div>
+                    <div className="text-gray-900 font-semibold text-lg">{displayOrLine(selectedStudent?.stud_handedness)}</div>
+                  </div>
+                  <div></div>
+                  <div className="space-y-2">
+                    <div className="text-gray-800 font-semibold text-xl">Father's Details</div>
+                    <div className="grid grid-cols-3 gap-4 text-gray-900">
+                      <div className="col-span-3"><span className="text-gray-600">Name</span>: <span className="font-semibold">{displayOrLine(buildParentName(parentProfile, 'father'))}</span></div>
+                      <div><span className="text-gray-600">Age</span>: <span className="font-semibold">{displayOrLine(getParentAge(parentProfile, 'father'))}</span></div>
+                      <div className="col-span-2"><span className="text-gray-600">Occupation</span>: <span className="font-semibold">{displayOrLine(getParentOccupation(parentProfile, 'father'))}</span></div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-gray-800 font-semibold text-xl">Mother's Details</div>
+                    <div className="grid grid-cols-3 gap-4 text-gray-900">
+                      <div className="col-span-3"><span className="text-gray-600">Name</span>: <span className="font-semibold">{displayOrLine(buildParentName(parentProfile, 'mother'))}</span></div>
+                      <div><span className="text-gray-600">Age</span>: <span className="font-semibold">{displayOrLine(getParentAge(parentProfile, 'mother'))}</span></div>
+                      <div className="col-span-2"><span className="text-gray-600">Occupation</span>: <span className="font-semibold">{displayOrLine(getParentOccupation(parentProfile, 'mother'))}</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Page 2: Attendance + Parent Signatures */}
+            <div className="print-page p-10 pastel-green border-soft rounded-xl text-[15px]" style={{margin: 0}}>
+              <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7 mb-8">
+                <div className="section-title text-3xl font-bold text-gray-900 mb-5">Record of Attendance</div>
+                {(() => {
+                  const attendanceSummary = getAttendanceSummary();
+                  return attendanceSummary ? (
+                    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                      <table className="w-full text-lg no-break border-collapse table-fixed" style={{tableLayout: 'fixed'}}>
+                        <colgroup>
+                          <col style={{ width: '18%' }} />
+                          {attendanceSummary.summary.map((_, idx) => (
+                            <col key={idx} style={{ width: '8%' }} />
+                          ))}
+                          <col style={{ width: '10%' }} />
+                        </colgroup>
+                        <thead>
+                          <tr className="pastel-blue">
+                            <th className="px-4 py-3 text-left font-semibold text-gray-900 border-soft">Category</th>
+                            {attendanceSummary.summary.map((m, idx) => (
+                              <th key={idx} className="px-2 py-3 text-center font-semibold text-gray-900 border-soft">{m.label}</th>
+                            ))}
+                            <th className="px-2 py-3 text-center font-semibold text-gray-900 border-soft whitespace-nowrap min-w-[64px]">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-gray-800">
+                          <tr>
+                            <td className="px-4 py-3 border-soft font-medium bg-white">No. of School Days</td>
+                            {attendanceSummary.summary.map((m, idx) => (<td key={idx} className="px-2 py-3 text-center border-soft bg-white">{m.total}</td>))}
+                            <td className="px-2 py-3 text-center border-soft font-semibold whitespace-nowrap bg-white">{attendanceSummary.totalSchoolDays}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-4 py-3 border-soft font-medium bg-white">No. of Days Present</td>
+                            {attendanceSummary.summary.map((m, idx) => (<td key={idx} className="px-2 py-3 text-center border-soft bg-white">{m.present}</td>))}
+                            <td className="px-2 py-3 text-center border-soft font-semibold whitespace-nowrap bg-white">{attendanceSummary.totalPresent}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-4 py-3 border-soft font-medium bg-white">No. of Days Absent</td>
+                            {attendanceSummary.summary.map((m, idx) => (<td key={idx} className="px-2 py-3 text-center border-soft bg-white">{m.absent}</td>))}
+                            <td className="px-2 py-3 text-center border-soft font-semibold whitespace-nowrap bg-white">{attendanceSummary.totalAbsent}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-gray-600 italic">No attendance data available</div>
+                  );
+                })()}
+              </div>
+
+              <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7">
+                <div className="section-title text-3xl font-bold text-gray-900 mb-5">Parent/Guardian Signatures</div>
+                <div className="grid grid-cols-1 gap-5 text-lg leading-relaxed">
+                  {[1, 2, 3, 4].map((q) => {
+                    const suffix = q===1?'st':q===2?'nd':q===3?'rd':'th';
+                    const quarterComment = getQuarterCommentText(q);
+                    return (
+                      <div key={q} className="no-break">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3 min-w-[380px]">
+                            <span className="font-semibold text-gray-800">{`${q}${suffix} Quarter`}</span>
+                            <span className="h-px bg-gray-400 flex-1" style={{ minWidth: '240px' }}></span>
+                          </div>
+                          <div className="text-gray-600 text-base whitespace-nowrap">(Parent/Guardian Signature)</div>
+                        </div>
+                        <div className="mt-2 text-gray-800">
+                          <span className="text-gray-600 font-semibold text-base">Teacher Comment:</span>{' '}
+                          <span className="font-semibold">{quarterComment && quarterComment.length > 0 ? quarterComment : '____________________________'}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Page 3: Quarterly Assessment & Legend */}
+            <div className="print-page p-10 pastel-yellow border-soft rounded-xl text-[15px]" style={{margin: 0}}>
+              <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7 mb-8">
+                <div className="section-title text-3xl font-bold text-gray-900 mb-5">Quarterly Assessment</div>
+                <div className="no-break">
+                  <table className="w-full text-lg border-soft">
+                    <thead>
+                      <tr className="bg-white">
+                        <th className="px-4 py-2 text-left border-soft">Subjects</th>
+                        {quarters.map(q => (
+                          <th key={q.id} className="px-3 py-2 text-center border-soft">{q.name}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...subjects].sort((a,b)=>a.localeCompare(b)).map((subject, i)=> (
+                        <tr key={i}>
+                          <td className="px-4 py-1 border-soft font-medium text-gray-900">{subject}</td>
+                          {quarters.map(q => {
+                            if (q.id === 5) {
+                              const subjProgress = finalSubjectProgress.find(row => row.subject_name === subject);
+                              const vf = visualFeedback.find(v => v.visual_feedback_id == subjProgress?.finalsubj_visual_feedback_id);
+                              const shape = vf?.visual_feedback_shape || '';
+                              return (
+                                <td key={q.id} className="px-3 py-1 text-center border-soft bg-[#fffaf0]">
+                                  {shape ? (
+                                    <span style={{ color: shapeColorMap[shape] || 'inherit', fontSize: '1.5em' }}>{shape}</span>
+                                  ) : ''}
+                                </td>
+                              );
+                            }
+                            const card = progressCards.find(pc => Number(pc.quarter_id) === q.id);
+                            if (card) {
+                              const fb = quarterFeedback.find(f => f.subject_name === subject && Number(f.quarter_id) === q.id);
+                              const shape = fb?.shape || '';
+                              return (
+                                <td key={q.id} className="px-3 py-1 text-center border-soft bg-[#fffaf0]">
+                                  {shape ? (
+                                    <span style={{ color: shapeColorMap[shape] || 'inherit', fontSize: '1.5em' }}>{shape}</span>
+                                  ) : ''}
+                                </td>
+                              );
+                            }
+                            return <td key={q.id} className="px-3 py-1 text-center border-soft"></td>;
+                          })}
+                        </tr>
+                      ))}
+                      <tr className="bg-white">
+                        <td className="px-4 py-1 font-semibold border-soft">Quarter Result</td>
+                        {quarters.map(q => {
+                          if (q.id === 5) {
+                            const allQuartersFinalized = [1,2,3,4].every(quarterId => progressCards.some(pc => Number(pc.quarter_id) === quarterId));
+                            const shape = overallProgress && overallProgress.visual_shape && allQuartersFinalized ? overallProgress.visual_shape : '';
+                            const riskId = overallProgress?.risk_id;
+                            const riskColor = String(riskId) === '1' ? '#22c55e' : String(riskId) === '2' ? '#fbbf24' : String(riskId) === '3' ? '#ef4444' : '';
+                            return (
+                              <td key={q.id} className="px-3 py-1 text-center border-soft">
+                                {shape ? (
+                                  <div className="inline-flex items-center gap-2">
+                                    {riskColor && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor }}></span>}
+                                    <span style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 700 }}>{shape}</span>
+                                  </div>
+                                ) : ''}
+                              </td>
+                            );
+                          }
+                          const card = progressCards.find(pc => Number(pc.quarter_id) === q.id);
+                          if (card) {
+                            const vf = visualFeedback.find(v => v.visual_feedback_id == card.quarter_visual_feedback_id);
+                            const shape = vf?.visual_feedback_shape || '';
+                            const riskId = card?.risk_id;
+                            const riskColor = String(riskId) === '1' ? '#22c55e' : String(riskId) === '2' ? '#fbbf24' : String(riskId) === '3' ? '#ef4444' : '';
+                            return (
+                              <td key={q.id} className="px-3 py-1 text-center border-soft">
+                                {shape ? (
+                                  <div className="inline-flex items-center gap-2">
+                                    {riskColor && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor }}></span>}
+                                    <span style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 700 }}>{shape}</span>
+                                  </div>
+                                ) : ''}
+                              </td>
+                            );
+                          }
+                          return <td key={q.id} className="px-3 py-1 text-center border-soft"></td>;
+                        })}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 mt-6">
+                <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-5">
+                  <div className="section-title text-2xl font-bold text-gray-900 mb-4">Assessment Legend</div>
+                  <table className="w-full text-base border-soft">
+                    <thead>
+                      <tr className="bg-white">
+                        <th className="text-left px-4 py-2 border-soft">Shapes</th>
+                        <th className="text-left px-4 py-2 border-soft">Descriptions</th>
+                        <th className="text-left px-4 py-2 border-soft">Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(Array.isArray(visualFeedback) && visualFeedback.length > 0
+                        ? visualFeedback
+                        : [
+                            { visual_feedback_id: 1, visual_feedback_shape: '❤️', visual_feedback_description: 'Excellent' },
+                            { visual_feedback_id: 2, visual_feedback_shape: '⭐', visual_feedback_description: 'Very Good' },
+                            { visual_feedback_id: 3, visual_feedback_shape: '🔷', visual_feedback_description: 'Good' },
+                            { visual_feedback_id: 4, visual_feedback_shape: '▲', visual_feedback_description: 'Need Help' },
+                            { visual_feedback_id: 5, visual_feedback_shape: '●', visual_feedback_description: 'Not Met' }
+                          ]
+                      ).map((item) => (
+                        <tr key={item.visual_feedback_id} className="border-soft">
+                          <td className="px-4 py-2 border-soft">
+                            <span style={{ color: shapeColorMap[item.visual_feedback_shape] || 'inherit', fontSize: '1.5em' }}>
+                              {item.visual_feedback_shape}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 border-soft">{item.visual_feedback_description}</td>
+                          <td className="px-4 py-2 border-soft">{item.visual_feedback_description === 'Not Met' ? 'Failed' : 'Passed'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-5">
+                  <div className="section-title text-2xl font-bold text-gray-900 mb-4">Risk Levels</div>
+                  <table className="w-full text-base border-soft">
+                    <thead>
+                      <tr className="bg-white">
+                        <th className="text-left px-4 py-2 border-soft">Level</th>
+                        <th className="text-left px-4 py-2 border-soft">Meaning</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(Array.isArray(riskLevels) && riskLevels.length > 0 ? riskLevels : [
+                        { risk_id: 1 },
+                        { risk_id: 2 },
+                        { risk_id: 3 }
+                      ]).map((risk, idx) => {
+                        const info = getRiskInfo(risk.risk_id);
+                        const color = String(risk.risk_id) === '1' ? '#10B981' : String(risk.risk_id) === '2' ? '#F59E0B' : '#EF4444';
+                        const meaning = info.text === 'Low' ? 'Meeting Expectations' : info.text === 'Moderate' ? 'Needs Some Support' : info.text === 'High' ? 'Needs Close Attention' : '';
+                        return (
+                          <tr key={idx}>
+                            <td className="px-4 py-2 border-soft">
+                              <div className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
+                                <span className="font-medium">{info.text}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2 border-soft">{meaning}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Page 4: Performance Overview (only if overall progress) */}
+            {hasOverallProgress() && (
+              <div className="print-page p-10 pastel-pink border-soft rounded-xl text-[15px]" style={{margin: 0}}>
+                <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7 mb-8">
+                  <div className="section-title text-3xl font-bold text-gray-900 mb-5">Quarterly Performance Trend</div>
+                  <div className="no-break">{renderPrintStatusChartSVG()}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-6">
+                    <div className="section-title text-2xl font-bold text-gray-900 mb-4">Performance Summary</div>
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 text-base leading-relaxed">
+                      {milestoneSummary || milestoneOverallSummary ? (
+                        <>
+                          {milestoneSummary && <p className="mb-3">{milestoneSummary}</p>}
+                          {milestoneOverallSummary && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <p className="font-semibold text-blue-900">{milestoneOverallSummary}</p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <p className="italic text-gray-600">No summary available</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-6">
+                    <div className="section-title text-2xl font-bold text-gray-900 mb-4">Risk Level</div>
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 text-base">
+                      {hasOverallProgress() ? (
+                        (() => {
+                          const riskId = String(overallRisk?.risk || '');
+                          let label = 'No Data';
+                          let color = '';
+                          let description = 'Risk assessment data is not available.';
+                          if (riskId === '1') { label = 'Low'; color = '#22c55e'; description = 'Student is performing well and meeting expectations.'; }
+                          else if (riskId === '2') { label = 'Moderate'; color = '#fbbf24'; description = 'Student may need additional support in some areas.'; }
+                          else if (riskId === '3') { label = 'High'; color = '#ef4444'; description = 'Student requires immediate attention and intervention.'; }
+                          return (
+                            <>
+                              <div className="flex items-center gap-3 mb-2">
+                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
+                                <span className="font-semibold">{label}</span>
+                              </div>
+                              <p className="text-gray-700">{description}</p>
+                            </>
+                          );
+                        })()
+                      ) : (
+                        <div className="text-gray-600 italic">No Assessment Data</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
           {/* Main Content Grid */}
-          <div className="grid grid-cols-5 gap-8 bg-white px-8 pt-8 pb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-8 bg-white px-2 md:px-8 pt-2 md:pt-8 pb-2 md:pb-8">
             {activeTab === "Assessment" ? (
               assessmentLoading ? (
                 <div className="col-span-5 flex flex-col items-center justify-center py-12">
@@ -1501,7 +2202,8 @@ export default function StudentProgress({ formData: initialFormData }) {
                     
                       {/* Assessment Table */}
                     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                        <table className="w-full text-sm">
+                        <div className="overflow-x-auto">
+                        <table className="w-full text-sm min-w-[600px]">
                           <thead>
                             <tr>
                               <th className="border-b border-gray-200 px-4 py-1.5 bg-gray-50 text-left font-semibold text-gray-700">Subjects</th>
@@ -1657,23 +2359,25 @@ export default function StudentProgress({ formData: initialFormData }) {
 
                           </tbody>
                         </table>
+                        </div>
                       </div>
                   </div>
 
                   {/* Attendance Section */}
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <FaChartBar className="text-green-600 text-lg" />
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-2 md:p-4 border border-green-100">
+                    <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-4">
+                      <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <FaChartBar className="text-green-600 text-sm md:text-lg" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Record of Attendance</h3>
-                        <p className="text-sm text-gray-600">Monthly attendance tracking</p>
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900">Record of Attendance</h3>
+                        <p className="text-xs md:text-sm text-gray-600">Monthly attendance tracking</p>
                       </div>
                     </div>
                     
                     <div className="bg-white rounded-lg border border-gray-200">
-                        <table className="w-full text-sm">
+                        <div className="overflow-x-auto">
+                        <table className="w-full text-sm min-w-[600px]">
                           <thead>
                             <tr className="bg-green-50">
                               <th className="border-b border-gray-200 px-2 py-3 text-left font-semibold text-gray-700 w-[120px]">Category</th>
@@ -1716,47 +2420,49 @@ export default function StudentProgress({ formData: initialFormData }) {
                             })()}
                           </tbody>
                         </table>
+                        </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Right: Legend and Comments (2 columns) */}
-                <div className="col-span-2 space-y-8">
+                <div className="col-span-1 md:col-span-2 space-y-4 md:space-y-8">
                   {/* Legend Section */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <FaTable className="text-purple-600 text-lg" />
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2 md:p-4">
+                    <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-4">
+                      <div className="w-8 h-8 md:w-10 md:h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <FaTable className="text-purple-600 text-sm md:text-lg" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Assessment Legend</h3>
-                        <p className="text-sm text-gray-600">Performance indicators and meanings</p>
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900">Assessment Legend</h3>
+                        <p className="text-xs md:text-sm text-gray-600">Performance indicators and meanings</p>
                       </div>
                     </div>
                     
                     <div className="overflow-hidden">
+                        <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="bg-gray-50">
-                              <th className="border-b border-gray-200 px-4 py-3 text-left font-semibold text-gray-700">Shapes</th>
-                              <th className="border-b border-gray-200 px-4 py-3 text-left font-semibold text-gray-700">Descriptions</th>
-                              <th className="border-b border-gray-200 px-4 py-3 text-left font-semibold text-gray-700">Remarks</th>
+                              <th className="border-b border-gray-200 px-2 py-2 text-left font-semibold text-gray-700 w-16">Shapes</th>
+                              <th className="border-b border-gray-200 px-2 py-2 text-left font-semibold text-gray-700">Descriptions</th>
+                              <th className="border-b border-gray-200 px-2 py-2 text-left font-semibold text-gray-700 w-20">Remarks</th>
                             </tr>
                           </thead>
                           <tbody>
                             {visualFeedback.length > 0 ? (
                               visualFeedback.map((item, idx) => (
                                 <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                  <td className="px-4 py-3">
+                                  <td className="px-2 py-2">
                                     <span 
-                                      style={{ color: shapeColorMap[item.visual_feedback_shape] || 'inherit', fontSize: '1.5em' }}
+                                      style={{ color: shapeColorMap[item.visual_feedback_shape] || 'inherit', fontSize: '1.2em' }}
                                       className="inline-block hover:scale-110 transition-transform"
                                     >
                                       {item.visual_feedback_shape}
                                     </span>
                                   </td>
-                                  <td className="px-4 py-3 text-gray-700">- {item.visual_feedback_description}</td>
-                                  <td className="px-4 py-3 text-gray-700">- {item.visual_feedback_description === 'Not Met' ? 'Failed' : 'Passed'}</td>
+                                  <td className="px-2 py-2 text-gray-700 text-xs">{item.visual_feedback_description}</td>
+                                  <td className="px-2 py-2 text-gray-700 text-xs">{item.visual_feedback_description === 'Not Met' ? 'Failed' : 'Passed'}</td>
                                 </tr>
                               ))
                             ) : (
@@ -1771,18 +2477,19 @@ export default function StudentProgress({ formData: initialFormData }) {
                             )}
                           </tbody>
                         </table>
+                        </div>
                     </div>
                   </div>
 
                   {/* Risk Level Legend */}
-                  <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border border-red-100">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                        <FaExclamationTriangle className="text-red-600 text-lg" />
+                  <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-2 md:p-4 border border-red-100">
+                    <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-4">
+                      <div className="w-8 h-8 md:w-10 md:h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                        <FaExclamationTriangle className="text-red-600 text-sm md:text-lg" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Risk Level</h3>
-                        <p className="text-sm text-gray-600">Performance risk indicators</p>
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900">Risk Level</h3>
+                        <p className="text-xs md:text-sm text-gray-600">Performance risk indicators</p>
                       </div>
                     </div>
                     
@@ -1909,7 +2616,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                     </div>
                     
                     {finalSubjectProgress.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[...finalSubjectProgress].sort((a, b) => (a.subject_name || '').localeCompare(b.subject_name || '')).map((row, idx) => {
                           const percent = Math.round(Number(row.finalsubj_avg_score));
                           const uniqueColors = [
@@ -1926,25 +2633,25 @@ export default function StudentProgress({ formData: initialFormData }) {
                           return (
                             <div key={row.subject_id} className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                               <div className="relative w-16 h-16">
-                                <svg className="absolute top-0 left-0 w-full h-full">
+                                <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 48 48" preserveAspectRatio="xMidYMid meet">
                                   <circle
-                                    cx="32"
-                                    cy="32"
-                                    r="28"
+                                    cx="24"
+                                    cy="24"
+                                    r="20"
                                     stroke="#e5e7eb"
-                                    strokeWidth="4"
+                                    strokeWidth="3"
                                     fill="none"
                                   />
                                   <circle
-                                    cx="32"
-                                    cy="32"
-                                    r="28"
+                                    cx="24"
+                                    cy="24"
+                                    r="20"
                                     stroke={color.border}
-                                    strokeWidth="4"
+                                    strokeWidth="3"
                                     fill="none"
-                                    strokeDasharray={`${(2 * Math.PI * 28 * percent) / 100} ${2 * Math.PI * 28}`}
+                                    strokeDasharray={`${(2 * Math.PI * 20 * percent) / 100} ${2 * Math.PI * 20}`}
                                     strokeLinecap="round"
-                                    transform="rotate(-90 32 32)"
+                                    transform="rotate(-90 24 24)"
                                   />
                                 </svg>
                                 <div className="absolute inset-0 flex items-center justify-center">

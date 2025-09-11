@@ -1,12 +1,23 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { FaArrowLeft, FaUser, FaEdit, FaSave, FaTimes, FaChartLine, FaExclamationTriangle, FaCheckCircle } from "react-icons/fa";
+import React, { useState, useEffect, useRef } from "react";
+import { FaArrowLeft, FaUser, FaEdit, FaSave, FaTimes, FaChartLine, FaExclamationTriangle, FaCheckCircle, FaPrint } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
 import "../../../../lib/chart-config.js";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import SharedExport from '../SharedExport';
 
-export default function StudentStatus({ student, renderChart, onBack }) {
+export default function StudentStatus({ student, renderChart, onBack, triggerExport, onExportComplete, parentProfile, studentLevelData, advisory }) {
+  // Handle export trigger from parent
+  useEffect(() => {
+    if (triggerExport) {
+      handleExportAssessment();
+      if (onExportComplete) {
+        onExportComplete();
+      }
+    }
+  }, [triggerExport]);
+
   // Helper to format date of birth
   function formatDateOfBirth(dateStr) {
     if (!dateStr) return <span className="italic text-gray-400">-</span>;
@@ -42,6 +53,22 @@ export default function StudentStatus({ student, renderChart, onBack }) {
   const [overallSummaryDraft, setOverallSummaryDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const printRef = useRef(null);
+  
+  // Additional state for SharedExport component
+  const [subjects, setSubjects] = useState([]);
+  const [quarterFeedback, setQuarterFeedback] = useState([]);
+  const [progressCards, setProgressCards] = useState([]);
+  const [overallProgress, setOverallProgress] = useState(null);
+  const [visualFeedback, setVisualFeedback] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [quarters] = useState([
+    { id: 1, name: '1st Quarter' },
+    { id: 2, name: '2nd Quarter' },
+    { id: 3, name: '3rd Quarter' },
+    { id: 4, name: '4th Quarter' },
+    { id: 5, name: 'Final' },
+  ]);
 
   useEffect(() => {
     if (!student || !student.student_id || !student.advisory_id) return;
@@ -61,7 +88,14 @@ export default function StudentStatus({ student, renderChart, onBack }) {
           fetch(`/php/Assessment/get_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
           fetch("/php/Assessment/get_visual_feedback.php"),
           fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch(`/php/Assessment/get_milestone_interpretation.php?student_id=${student.student_id}`)
+          fetch(`/php/Assessment/get_milestone_interpretation.php?student_id=${student.student_id}`),
+          fetch('/php/Users/get_user_profile.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: student.parentId || student.parent_id }) }),
+          fetch('/php/Users/get_student_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) }),
+          fetch('/php/Advisory/get_advisory_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) }),
+          // Additional data for SharedExport
+          fetch(`/php/Assessment/get_subjects_by_advisory.php?advisory_id=${student.advisory_id}`),
+          fetch(`/php/Assessment/get_student_quarter_feedback.php?student_id=${student.student_id}`),
+          fetch(`/php/Assessment/get_comments.php?student_id=${student.student_id}`)
         ];
 
         const responses = await Promise.all(promises);
@@ -80,6 +114,7 @@ export default function StudentStatus({ student, renderChart, onBack }) {
         // Process overall risk
         if (data[2].status === 'success' && data[2].progress && data[2].progress.risk_id) {
           setOverallRisk({ risk: data[2].progress.risk_id });
+          setOverallProgress(data[2].progress);
         }
 
         // Process visual feedback
@@ -89,11 +124,13 @@ export default function StudentStatus({ student, renderChart, onBack }) {
             map[fb.visual_feedback_id] = fb.visual_feedback_description;
           });
           setVisualFeedbackMap(map);
+          setVisualFeedback(data[3].feedback);
         }
 
         // Process progress cards
         if (data[4].status === 'success' && Array.isArray(data[4].cards)) {
           setQuarterlyPerformance(data[4].cards);
+          setProgressCards(data[4].cards);
         }
 
         // Process milestone interpretation
@@ -103,6 +140,24 @@ export default function StudentStatus({ student, renderChart, onBack }) {
           setMilestoneRecordedAt(data[5].milestone.recorded_at);
           setMilestoneId(data[5].milestone.milestone_id);
         }
+
+        // Process additional data for SharedExport
+        if (data[9].status === 'success' && Array.isArray(data[9].subjects)) {
+          const subjectNames = data[9].subjects.map(subject => subject.subject_name);
+          setSubjects(subjectNames);
+        }
+
+        if (data[10].status === 'success') {
+          setQuarterFeedback(data[10].feedback || []);
+        }
+
+        if (data[11].status === 'success') {
+          setComments(data[11].comments);
+        }
+
+        // Parent profile and student level data are now passed as props from parent component
+
+        // Advisory details are now passed as props from parent component
 
         setLoading(false);
       } catch (err) {
@@ -125,6 +180,197 @@ export default function StudentStatus({ student, renderChart, onBack }) {
   };
 
   const { text: riskText, color: riskColor, textColor: riskTextColor } = getRiskInfo(overallRisk.risk);
+
+  // Helper to format names as "Lastname, Firstname Middlename"
+  function formatName(fullName) {
+    if (!fullName) return "-";
+    
+    // Handle special cases that shouldn't be formatted as names
+    const specialCases = ['Not assigned', 'Not Assigned', 'not assigned', 'N/A', 'n/a', 'None', 'none', 'TBD', 'tbd'];
+    if (specialCases.includes(fullName.trim())) {
+      return fullName.trim();
+    }
+    
+    const nameParts = fullName.trim().split(' ');
+    if (nameParts.length < 2) return fullName;
+    
+    const lastName = nameParts[nameParts.length - 1];
+    const firstName = nameParts[0];
+    const middleName = nameParts.slice(1, -1).join(' ');
+    
+    if (middleName) {
+      return `${lastName}, ${firstName} ${middleName}`;
+    } else {
+      return `${lastName}, ${firstName}`;
+    }
+  }
+
+  // General helpers for printable data fallbacks
+  function displayOrLine(value, line = '____________________________') {
+    if (value === 0) return '0';
+    if (value === false) return 'No';
+    const str = typeof value === 'string' ? value.trim() : value;
+    return str ? String(str) : line;
+  }
+
+  function computeAge(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    const diff = Date.now() - d.getTime();
+    const ageDate = new Date(diff);
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
+  }
+
+  function buildParentName(profile, prefix) {
+    if (!profile) return '';
+    const direct = profile[`${prefix}_name`] || profile[`${prefix}Name`];
+    const first = profile[`${prefix}_firstname`] || profile[`${prefix}_first_name`] || profile[`${prefix}_first`] || profile[`${prefix}_fname`] || profile[`${prefix}FirstName`];
+    const middle = profile[`${prefix}_middlename`] || profile[`${prefix}_middle_name`] || profile[`${prefix}_mname`] || profile[`${prefix}MiddleName`];
+    const last = profile[`${prefix}_lastname`] || profile[`${prefix}_last_name`] || profile[`${prefix}_lname`] || profile[`${prefix}LastName`];
+    if (direct && String(direct).trim()) return String(direct).trim();
+    const parts = [first, middle, last].filter(Boolean).map(v => String(v).trim());
+    return parts.join(' ');
+  }
+
+  function getParentAge(profile, prefix) {
+    if (!profile) return '';
+    const age = profile[`${prefix}_age`] || profile[`${prefix}Age`];
+    if (age) return String(age);
+    const bday = profile[`${prefix}_birthdate`] || profile[`${prefix}_dob`] || profile[`${prefix}Birthdate`];
+    const computed = computeAge(bday);
+    return Number.isFinite(computed) ? String(computed) : '';
+  }
+
+  function getParentOccupation(profile, prefix) {
+    if (!profile) return '';
+    return (
+      profile[`${prefix}_occupation`] ||
+      profile[`${prefix}Occupation`] ||
+      ''
+    );
+  }
+
+  // Helper to get latest teacher comment text for a given quarter (1-4)
+  function getQuarterCommentText(quarterId) {
+    if (!Array.isArray(comments) || comments.length === 0) return "";
+
+    const matches = comments.filter((c) => {
+      const qid = Number(c.quarter_id ?? c.quarterId);
+      if (!isNaN(qid)) return qid === Number(quarterId);
+      if (c.quarter_name && typeof c.quarter_name === 'string') {
+        const suffix = quarterId === 1 ? 'st' : quarterId === 2 ? 'nd' : quarterId === 3 ? 'rd' : 'th';
+        return c.quarter_name.toLowerCase().startsWith(`${quarterId}${suffix} quarter`.toLowerCase());
+      }
+      return false;
+    });
+
+    if (matches.length === 0) return "";
+
+    const getTime = (c) => {
+      const t = c.updated_at || c.created_at || c.comment_date;
+      const d = t ? new Date(t) : null;
+      return d && !isNaN(d) ? d.getTime() : 0;
+    };
+
+    const latest = matches.sort((a, b) => getTime(a) - getTime(b))[matches.length - 1];
+    const text = latest.comment_text || latest.feedback || latest.comment || "";
+    return (typeof text === 'string' ? text.trim() : '') || "";
+  }
+
+  // Export/Print function
+  const handleExportAssessment = () => {
+    try {
+      const printableElement = printRef.current;
+      if (!printableElement) {
+        toast.error("Nothing to export yet.");
+        return;
+      }
+
+      const originalTitle = document.title;
+
+      // Clone printable element to body to avoid clipping by scroll containers
+      const tempId = "reportcard-printable";
+      const cloned = printableElement.cloneNode(true);
+      cloned.setAttribute("id", tempId);
+      cloned.style.display = 'block';
+      cloned.style.margin = '0';
+      cloned.style.padding = '0';
+      document.body.appendChild(cloned);
+
+      const style = document.createElement("style");
+      style.setAttribute("media", "print");
+      style.innerHTML = `
+        @page { size: auto; margin: 0; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; }
+          /* Ensure colors are kept */
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          /* Hide everything except the cloned print container */
+          body > *:not(#${tempId}) { display: none !important; }
+          /* Normalize the printable container */
+          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; padding: 0; margin: 0; font-family: Calibri, 'Arial Rounded MT Bold', 'Comic Sans MS', Arial, sans-serif; display: flex !important; flex-direction: column !important; max-width: none !important; }
+          /* Remove clipping/overflow from ancestors inside the container */
+          #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
+          /* Avoid page breaks inside table rows/cards */
+          table, tr, td, th { page-break-inside: avoid !important; }
+          .rounded-xl, .rounded-lg { box-shadow: none !important; }
+          /* Page breaks: start a new page only from the second section onward */
+          .print-page { width: 100% !important; position: relative !important; min-height: 100vh !important; box-sizing: border-box !important; }
+          .print-page + .print-page { page-break-before: always; break-before: page; }
+          .no-break { page-break-inside: avoid; break-inside: avoid; }
+          .section-title { font-weight: 700; color: #1f2937; }
+          .pastel-blue { background: #eef5ff; }
+          .pastel-green { background: #eaf7f1; }
+          .pastel-yellow { background: #fff7e6; }
+          .pastel-pink { background: #ffeef2; }
+          .border-soft { border: 1px solid #e5e7eb; }
+          /* Custom page number footer (bottom-right) */
+          .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
+        }
+      `;
+
+      document.head.appendChild(style);
+
+      // Assign page numbers to each print page
+      const pages = cloned.querySelectorAll('.print-page');
+      const totalPages = pages.length;
+      pages.forEach((pageEl, index) => {
+        pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
+      });
+
+      // Set a descriptive title for the print/PDF
+      const studentName = student ? `${student.stud_lastname || student.lastName || ''}, ${student.stud_firstname || student.firstName || ''}`.trim() : "";
+      document.title = `Report Card ${studentName ? `- ${studentName}` : ''}`;
+
+      const cleanup = () => {
+        try {
+          if (style && style.parentNode) document.head.removeChild(style);
+          if (cloned && cloned.parentNode) cloned.parentNode.removeChild(cloned);
+          document.title = originalTitle;
+        } catch (e) {
+          // no-op
+        }
+      };
+
+      const afterPrint = () => {
+        window.removeEventListener('afterprint', afterPrint);
+        cleanup();
+      };
+      window.addEventListener('afterprint', afterPrint);
+
+      // Give React a beat to render the print layout
+      setTimeout(() => {
+        window.print();
+      }, 300);
+
+      // Fallback cleanup for browsers that don't fire afterprint reliably
+      setTimeout(() => { cleanup(); }, 1500);
+    } catch (err) {
+      console.error('Error exporting assessment:', err);
+      toast.error("Failed to export. Please try again.");
+    }
+  };
 
   // Helper to process attendance data
   function getAttendanceSummary() {
@@ -325,6 +571,7 @@ export default function StudentStatus({ student, renderChart, onBack }) {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-5 gap-8 bg-white px-8 pt-8 pb-8">
         {/* Left: Progress Circles (2 columns) */}
@@ -342,7 +589,7 @@ export default function StudentStatus({ student, renderChart, onBack }) {
             </div>
             
             {(s.scores && Object.entries(s.scores).length > 0) || finalSubjectProgress.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(s.scores && Object.entries(s.scores).length > 0
                   ? Object.entries(s.scores)
                       .sort((a, b) => getDisplayName(a[0]).localeCompare(getDisplayName(b[0])))
@@ -362,25 +609,25 @@ export default function StudentStatus({ student, renderChart, onBack }) {
                       return (
                         <div key={key} className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                           <div className="relative w-16 h-16">
-                            <svg className="absolute top-0 left-0 w-full h-full">
+                            <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 48 48" preserveAspectRatio="xMidYMid meet">
                               <circle
-                                cx="32"
-                                cy="32"
-                                r="28"
+                                cx="24"
+                                cy="24"
+                                r="20"
                                 stroke="#e5e7eb"
-                                strokeWidth="4"
+                                strokeWidth="3"
                                 fill="none"
                               />
                               <circle
-                                cx="32"
-                                cy="32"
-                                r="28"
+                                cx="24"
+                                cy="24"
+                                r="20"
                                 stroke={color.border}
-                                strokeWidth="4"
+                                strokeWidth="3"
                                 fill="none"
-                                strokeDasharray={`${(2 * Math.PI * 28 * val) / 100} ${2 * Math.PI * 28}`}
+                                strokeDasharray={`${(2 * Math.PI * 20 * val) / 100} ${2 * Math.PI * 20}`}
                                 strokeLinecap="round"
-                                transform="rotate(-90 32 32)"
+                                transform="rotate(-90 24 24)"
                               />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -428,25 +675,25 @@ export default function StudentStatus({ student, renderChart, onBack }) {
                       return (
                         <div key={row.subject_id} className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                           <div className="relative w-16 h-16">
-                            <svg className="absolute top-0 left-0 w-full h-full">
+                            <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 48 48" preserveAspectRatio="xMidYMid meet">
                               <circle
-                                cx="32"
-                                cy="32"
-                                r="28"
+                                cx="24"
+                                cy="24"
+                                r="20"
                                 stroke="#e5e7eb"
-                                strokeWidth="4"
+                                strokeWidth="3"
                                 fill="none"
                               />
                               <circle
-                                cx="32"
-                                cy="32"
-                                r="28"
+                                cx="24"
+                                cy="24"
+                                r="20"
                                 stroke={color.border}
-                                strokeWidth="4"
+                                strokeWidth="3"
                                 fill="none"
-                                strokeDasharray={`${(2 * Math.PI * 28 * percent) / 100} ${2 * Math.PI * 28}`}
+                                strokeDasharray={`${(2 * Math.PI * 20 * percent) / 100} ${2 * Math.PI * 20}`}
                                 strokeLinecap="round"
-                                transform="rotate(-90 32 32)"
+                                transform="rotate(-90 24 24)"
                               />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -686,6 +933,27 @@ export default function StudentStatus({ student, renderChart, onBack }) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Shared Export Component */}
+      <div ref={printRef} className="hidden print:block" style={{margin: 0, padding: 0}}>
+        <SharedExport
+          student={student}
+          parentProfile={parentProfile}
+          studentLevelData={studentLevelData}
+          advisory={advisory}
+          attendanceData={attendanceData}
+          subjects={subjects}
+          quarterFeedback={quarterFeedback}
+          progressCards={progressCards}
+          finalSubjectProgress={finalSubjectProgress}
+          overallProgress={overallProgress}
+          visualFeedback={visualFeedback}
+          comments={comments}
+          milestoneSummary={milestoneSummary}
+          milestoneOverallSummary={milestoneOverallSummary}
+          quarters={quarters}
+        />
       </div>
     </div>
   );

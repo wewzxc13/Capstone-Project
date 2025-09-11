@@ -439,62 +439,65 @@ export default function ViewLinkedStudentPage() {
     );
   }
 
-       return (
+  return (
     <ProtectedRoute role="Super Admin">
         {/* Combined Header and Search Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-0 flex-shrink-0 z-10 fixed top-0 left-64 right-0">
-          <div className="flex items-center gap-4 mb-3">
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-            >
-              <FaArrowLeft className="text-sm" />
-              <span className="text-sm">Back to Users</span>
-            </button>
-            <h2 className="text-lg font-bold text-gray-900">Linked Students Management</h2>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 mb-0 flex-shrink-0 z-10 fixed top-0 left-0 sm:left-64 right-0">
+          <div className="flex flex-col gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                <FaArrowLeft className="text-xs sm:text-sm" />
+                <span className="text-xs sm:text-sm">Back to Users</span>
+              </button>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 truncate">Linked Students Management</h2>
+            </div>
           </div>
 
           {/* Search and Filter Section */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex gap-4 flex-1 max-w-md">
-              <div className="relative flex-1">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+          <div className="flex flex-col lg:flex-row lg:items-center gap-2 sm:gap-4 mb-2 sm:mb-3">
+            {/* Left side: Search bar and parent count */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1">
+              <div className="relative w-full sm:w-1/2">
+                <FaSearch className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-sm" />
                 <input
                   type="text"
-                  placeholder="Search parents by name, email, or contact..."
+                  placeholder="Search parents..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors caret-[#232c67]"
+                  className="w-full pl-8 sm:pl-10 pr-8 sm:pr-10 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors caret-[#232c67]"
                 />
                 {searchTerm && (
                   <button
                     onClick={clearSearch}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    <FaTimes className="text-sm" />
+                    <FaTimes className="text-xs sm:text-sm" />
                   </button>
                 )}
               </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-2 py-1 bg-[#e8ecf7] rounded-full">
-                <FaUsers className="text-[#232c67] text-sm" />
-                <span className="text-sm font-medium text-[#232c67]">
+              
+              <div className="flex items-center gap-1 sm:gap-2 px-2 py-1 bg-[#e8ecf7] rounded-full w-fit flex-shrink-0">
+                <FaUsers className="text-[#232c67] text-xs" />
+                <span className="text-xs font-medium text-[#232c67]">
                   {filteredParentList.length} {filteredParentList.length === 1 ? 'Parent' : 'Parents'}
                 </span>
               </div>
-              
-              <div className="relative parent-view-dropdown">
+            </div>
+            
+            {/* Right side: Dropdown with proper spacing on desktop */}
+            <div className="relative parent-view-dropdown w-full lg:w-auto lg:ml-8">
                 <button
                   type="button"
                   onClick={() => setParentViewDropdownOpen(!parentViewDropdownOpen)}
-                  className="flex items-center justify-between bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md min-w-[200px]"
+                  className="flex items-center justify-between bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm hover:shadow-md w-full sm:min-w-[200px]"
                 >
-                  <span>
-                    {parentView === 'linked' ? 'Parents with Linked Students' : parentView === 'unlinked' ? 'Parents with No Linked Students' : 'Parents with Only Inactive Students'}
+                  <span className="truncate text-xs sm:text-sm">
+                    {parentView === 'linked' ? 'With Linked Students' : parentView === 'unlinked' ? 'No Linked Students' : 'Only Inactive Students'}
                   </span>
-                  <FaChevronDown className={`text-xs transition-transform ml-2 ${parentViewDropdownOpen ? 'rotate-180' : ''}`} />
+                  <FaChevronDown className={`text-xs transition-transform ml-1 sm:ml-2 flex-shrink-0 ${parentViewDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {parentViewDropdownOpen && (
@@ -511,7 +514,7 @@ export default function ViewLinkedStudentPage() {
                             setParentView(option.value);
                             setParentViewDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 transition-colors text-sm ${
+                          className={`w-full text-left px-2 sm:px-3 py-2 transition-colors text-xs sm:text-sm ${
                             parentView === option.value 
                               ? 'bg-[#e8ecf7] text-[#232c67]' 
                               : 'text-gray-700 hover:bg-[#f0f3fa]'
@@ -528,43 +531,42 @@ export default function ViewLinkedStudentPage() {
           </div>
 
           {searchTerm && (
-            <div className="text-sm text-gray-600 mb-1">
+            <div className="text-xs text-gray-600 mb-1">
               Found {filteredParentList.length} parent{filteredParentList.length !== 1 ? 's' : ''} matching "{searchTerm}"
             </div>
           )}
-        </div>
 
         {error ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex-shrink-0 mt-32">
-            <div className="flex flex-col justify-center items-center h-48 text-center">
-              <p className="text-red-600 mb-4 text-lg font-medium">{error}</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 flex-shrink-0 mt-32 sm:mt-32">
+            <div className="flex flex-col justify-center items-center h-32 sm:h-48 text-center">
+              <p className="text-red-600 mb-3 sm:mb-4 text-sm sm:text-lg font-medium">{error}</p>
               <button 
                 onClick={() => window.location.reload()} 
-                className="bg-[#232c67] text-white px-6 py-2 rounded-lg hover:bg-[#1a1f4d] transition-colors font-medium"
+                className="bg-[#232c67] text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg hover:bg-[#1a1f4d] transition-colors font-medium text-xs sm:text-base"
               >
                 Retry
               </button>
             </div>
           </div>
         ) : (
-          <div className="mt-32 h-[550px] overflow-y-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 p-1">
+          <div className="mt-32 sm:mt-32 h-[calc(100vh-10rem)] sm:h-[550px] overflow-y-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3 p-2 sm:p-3">
             {filteredParentList.length === 0 ? (
-              <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+              <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-6 flex flex-col">
                 <div className="flex flex-col justify-center items-center text-center">
-                  <FaUsers className="text-4xl text-gray-300 mb-4" />
-                  <p className="text-lg font-medium text-gray-500">No parents found</p>
-                  <p className="text-sm text-gray-400 mt-2">Parents will appear here once they are added to the system.</p>
+                  <FaUsers className="text-2xl sm:text-4xl text-gray-300 mb-2 sm:mb-4" />
+                  <p className="text-sm sm:text-lg font-medium text-gray-500">No parents found</p>
+                  <p className="text-xs text-gray-400 mt-1 sm:mt-2">Parents will appear here once they are added to the system.</p>
                 </div>
               </div>
             ) : (
               <>
                                  {parentView === 'linked' ? (
                    sortedParentsWithActiveStudents.length === 0 ? (
-                     <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+                     <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-6 flex flex-col">
                        <div className="flex flex-col justify-center items-center text-center">
-                         <FaUsers className="text-4xl text-gray-300 mb-4" />
-                         <p className="text-lg font-medium text-gray-500">No parents with active students found</p>
+                         <FaUsers className="text-2xl sm:text-4xl text-gray-300 mb-2 sm:mb-4" />
+                         <p className="text-sm sm:text-lg font-medium text-gray-500">No parents with active students found</p>
                        </div>
                      </div>
                    ) : (
@@ -573,10 +575,10 @@ export default function ViewLinkedStudentPage() {
                       const isCollapsed = collapsedParents.has(parent.id);
                       
                       return (
-                       <div key={parent.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?id=${parent.id}&role=Parent`)}>
+                       <div key={parent.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?id=${parent.id}&role=Parent`)}>
                         {/* Parent Header */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 mb-2 sm:mb-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
                             {(() => {
                               // Get real-time photo from UserContext, fallback to parent.photo if not available
                               const realTimePhoto = getUserPhoto(parent.id) || parent.photo;
@@ -587,7 +589,7 @@ export default function ViewLinkedStudentPage() {
                                     <img
                                       src={realTimePhoto}
                                       alt="Profile"
-                                      className="w-12 h-12 rounded-full object-cover shadow-sm"
+                                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-sm flex-shrink-0"
                                       onError={(e) => {
                                         e.target.style.display = 'none';
                                         if (e.target.nextSibling) {
@@ -596,55 +598,56 @@ export default function ViewLinkedStudentPage() {
                                       }}
                                     />
                                     {/* Fallback icon that shows when photo fails to load */}
-                                    <div className="w-12 h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-lg shadow-sm hidden">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                                       <FaUser />
                                     </div>
                                   </>
                                 );
                               } else {
                                 return (
-                                  <div className="w-12 h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-lg shadow-sm">
+                                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-sm sm:text-lg shadow-sm flex-shrink-0">
                                     <FaUser />
                                   </div>
                                 );
                               }
                             })()}
-                            <div>
-                              <div className="font-semibold text-gray-900">{formatName(parent.name)}</div>
-                              <div className="text-sm text-gray-600">{parent.email}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">{formatName(parent.name)}</div>
+                              <div className="text-xs sm:text-sm text-gray-600 truncate">{parent.email}</div>
                               {parent.contactNo && (
-                                <div className="text-sm text-gray-600">{formatPhoneForDisplay(parent.contactNo)}</div>
+                                <div className="text-xs sm:text-sm text-gray-600 truncate">{formatPhoneForDisplay(parent.contactNo)}</div>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 sm:ml-auto">
                             <button
-                              className="flex items-center gap-2 px-4 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-sm"
+                              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-xs sm:text-sm"
                               onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); setModalParent(parent); setSearch(""); setSelectedStudent(null); }}
                             >
-                              <FaUsers className="text-sm" />
-                              Link Student
+                              <FaUsers className="text-xs sm:text-sm" />
+                              <span className="hidden sm:inline">Link Student</span>
+                              <span className="sm:hidden">Link</span>
                             </button>
                           </div>
                         </div>
 
                         {/* Linked Students */}
                         <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <FaUsers className="text-green-600 text-sm" />
-                            <span className="text-sm font-semibold text-gray-700">
+                          <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                            <FaUsers className="text-green-600 text-xs sm:text-sm" />
+                            <span className="text-xs sm:text-sm font-semibold text-gray-700">
                               {parent.linkedStudents.length === 1 ? 'Child (1)' : `Children (${parent.linkedStudents.length})`}
                             </span>
                           </div>
                           
                           {/* Show students only if not collapsed (for parents with only inactive students) */}
                           {(!hasOnlyInactiveStudents || !isCollapsed) && (
-                            <div className={`${parent.linkedStudents.length > 1 ? 'max-h-24 overflow-y-auto' : ''}`}>
-                              <div className="space-y-2">
+                            <div className={`${parent.linkedStudents.length > 1 ? 'max-h-16 sm:max-h-24 overflow-y-auto' : ''}`}>
+                              <div className="space-y-1">
                                 {sortStudentsAlphabetically([...parent.linkedStudents]).map((student, index) => (
-                                  <div key={`${student.id}-${student.schoolStatus}-${index}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleViewStudent(student); }}>
+                                  <div key={`${student.id}-${student.schoolStatus}-${index}`} className="flex items-center gap-2 sm:gap-3 p-1 sm:p-2 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleViewStudent(student); }}>
                                     <div 
-                                      className="flex items-center gap-3 flex-1"
+                                      className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0"
                                     >
                                       {(() => {
                                         // Get real-time photo from UserContext, fallback to student.photo if not available
@@ -656,7 +659,7 @@ export default function ViewLinkedStudentPage() {
                                               <img
                                                 src={realTimePhoto}
                                                 alt="Profile"
-                                                className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
                                                 onError={(e) => {
                                                   e.target.style.display = 'none';
                                                   if (e.target.nextSibling) {
@@ -665,37 +668,37 @@ export default function ViewLinkedStudentPage() {
                                                 }}
                                               />
                                               {/* Fallback icon that shows when photo fails to load */}
-                                              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm hidden">
+                                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                                                 <FaUser />
                                               </div>
                                             </>
                                           );
                                         } else {
                                           return (
-                                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm">
+                                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
                                               <FaUser />
                                             </div>
                                           );
                                         }
                                       })()}
-                                      <div className="flex-1">
-                                        <div className="font-medium text-gray-900">{formatName(student.name)}</div>
-                                        <div className="text-sm text-gray-500">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-gray-900 text-xs sm:text-sm truncate">{formatName(student.name)}</div>
+                                        <div className="text-xs text-gray-500 truncate">
                                           {student.levelName && `${student.levelName} • `}
                                           {student.scheduleClass && `${student.scheduleClass} • `}
                                           {student.gender}
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-2">
+                                    <div className="flex flex-col items-end gap-1 sm:gap-2 flex-shrink-0">
                                       <button
-                                        className="text-red-500 hover:text-red-700 focus:outline-none p-1"
+                                        className="text-red-500 hover:text-red-700 focus:outline-none p-0.5 sm:p-1"
                                         title="Unlink Student"
                                         onClick={e => { e.stopPropagation(); handleRemoveStudent(student); }}
                                       >
-                                        <FaTimesCircle className="text-lg" />
+                                        <FaTimesCircle className="text-sm sm:text-lg" />
                                       </button>
-                                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      <div className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
                                         student.schoolStatus === 'Active' 
                                           ? 'bg-green-100 text-green-800' 
                                           : 'bg-gray-100 text-gray-600'
@@ -711,7 +714,7 @@ export default function ViewLinkedStudentPage() {
                           
                           {/* Show collapsed message for parents with only inactive students */}
                           {hasOnlyInactiveStudents && isCollapsed && (
-                            <div className="text-sm text-gray-500 italic">
+                            <div className="text-xs sm:text-sm text-gray-500 italic">
                               Students hidden (click "Show" to expand)
                             </div>
                           )}
@@ -721,10 +724,10 @@ export default function ViewLinkedStudentPage() {
                   )
                                  ) : parentView === 'inactive-only' ? (
                    sortedParentsWithOnlyInactiveStudents.length === 0 ? (
-                     <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+                     <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-6 flex flex-col">
                        <div className="flex flex-col justify-center items-center text-center">
-                         <FaUsers className="text-4xl text-gray-300 mb-4" />
-                         <p className="text-lg font-medium text-gray-500">No parents with only inactive students found</p>
+                         <FaUsers className="text-2xl sm:text-4xl text-gray-300 mb-2 sm:mb-4" />
+                         <p className="text-sm sm:text-lg font-medium text-gray-500">No parents with only inactive students found</p>
                        </div>
                      </div>
                    ) : (
@@ -732,10 +735,10 @@ export default function ViewLinkedStudentPage() {
                        const isCollapsed = collapsedParents.has(parent.id);
                        
                        return (
-                         <div key={parent.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?id=${parent.id}&role=Parent`)}>
+                         <div key={parent.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?id=${parent.id}&role=Parent`)}>
                           {/* Parent Header */}
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 mb-2 sm:mb-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                               {(() => {
                                 // Get real-time photo from UserContext, fallback to parent.photo if not available
                                 const realTimePhoto = getUserPhoto(parent.id) || parent.photo;
@@ -746,7 +749,7 @@ export default function ViewLinkedStudentPage() {
                                       <img
                                         src={realTimePhoto}
                                         alt="Profile"
-                                        className="w-12 h-12 rounded-full object-cover shadow-sm"
+                                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-sm flex-shrink-0"
                                         onError={(e) => {
                                           e.target.style.display = 'none';
                                           if (e.target.nextSibling) {
@@ -755,56 +758,56 @@ export default function ViewLinkedStudentPage() {
                                         }}
                                       />
                                       {/* Fallback icon that shows when photo fails to load */}
-                                      <div className="w-12 h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-lg shadow-sm hidden">
+                                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                                         <FaUser />
                                       </div>
                                     </>
                                   );
                                 } else {
                                   return (
-                                    <div className="w-12 h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-lg shadow-sm">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-sm sm:text-lg shadow-sm flex-shrink-0">
                                       <FaUser />
                                     </div>
                                   );
                                 }
                               })()}
-                              <div>
-                                <div className="font-semibold text-gray-900">{formatName(parent.name)}</div>
-                                <div className="text-sm text-gray-600">{parent.email}</div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">{formatName(parent.name)}</div>
+                                <div className="text-xs sm:text-sm text-gray-600 truncate">{parent.email}</div>
                                 {parent.contactNo && (
-                                  <div className="text-sm text-gray-600">{formatPhoneForDisplay(parent.contactNo)}</div>
+                                  <div className="text-xs sm:text-sm text-gray-600 truncate">{formatPhoneForDisplay(parent.contactNo)}</div>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 sm:ml-auto">
                               <button
-                                className="flex items-center gap-2 px-4 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-sm"
+                                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-xs sm:text-sm"
                                 onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); setModalParent(parent); setSearch(""); setSelectedStudent(null); }}
                               >
-                                <FaUsers className="text-sm" />
-                                Link Student
+                                <FaUsers className="text-xs sm:text-sm" />
+                                <span className="hidden sm:inline">Link Student</span>
+                                <span className="sm:hidden">Link</span>
                               </button>
                             </div>
                           </div>
 
                           {/* Linked Students */}
                           <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <FaUsers className="text-orange-600 text-sm" />
-                              <span className="text-sm font-semibold text-gray-700">
+                            <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                              <FaUsers className="text-orange-600 text-xs sm:text-sm" />
+                              <span className="text-xs sm:text-sm font-semibold text-gray-700">
                                 {parent.linkedStudents.length === 1 ? 'Child (1)' : `Children (${parent.linkedStudents.length})`}
                               </span>
-                            
                             </div>
                             
                             {/* Show students only if not collapsed */}
                             {!isCollapsed && (
-                              <div className={`${parent.linkedStudents.length > 1 ? 'max-h-24 overflow-y-auto' : ''}`}>
-                                <div className="space-y-2">
+                              <div className={`${parent.linkedStudents.length > 1 ? 'max-h-16 sm:max-h-24 overflow-y-auto' : ''}`}>
+                                <div className="space-y-1">
                                   {sortStudentsAlphabetically([...parent.linkedStudents]).map((student, index) => (
-                                    <div key={`${student.id}-${student.schoolStatus}-${index}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleViewStudent(student); }}>
+                                    <div key={`${student.id}-${student.schoolStatus}-${index}`} className="flex items-center gap-2 sm:gap-3 p-1 sm:p-2 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleViewStudent(student); }}>
                                      <div 
-                                       className="flex items-center gap-3 flex-1"
+                                       className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0"
                                      >
                                         {(() => {
                                           // Get real-time photo from UserContext, fallback to student.photo if not available
@@ -816,7 +819,7 @@ export default function ViewLinkedStudentPage() {
                                                 <img
                                                   src={realTimePhoto}
                                                   alt="Profile"
-                                                  className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
                                                   onError={(e) => {
                                                     e.target.style.display = 'none';
                                                     if (e.target.nextSibling) {
@@ -825,37 +828,37 @@ export default function ViewLinkedStudentPage() {
                                                   }}
                                                 />
                                                 {/* Fallback icon that shows when photo fails to load */}
-                                                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm hidden">
+                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                                                   <FaUser />
                                                 </div>
                                               </>
                                             );
                                           } else {
                                             return (
-                                              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm">
+                                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
                                                 <FaUser />
                                               </div>
                                             );
                                           }
                                         })()}
-                                        <div className="flex-1">
-                                          <div className="font-medium text-gray-900">{formatName(student.name)}</div>
-                                          <div className="text-sm text-gray-500">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="font-medium text-gray-900 text-xs sm:text-sm truncate">{formatName(student.name)}</div>
+                                          <div className="text-xs text-gray-500 truncate">
                                             {student.levelName && `${student.levelName} • `}
                                             {student.scheduleClass && `${student.scheduleClass} • `}
                                             {student.gender}
                                           </div>
                                         </div>
                                       </div>
-                                      <div className="flex flex-col items-end gap-2">
+                                      <div className="flex flex-col items-end gap-1 sm:gap-2 flex-shrink-0">
                                         <button
-                                          className="text-red-500 hover:text-red-700 focus:outline-none p-1"
+                                          className="text-red-500 hover:text-red-700 focus:outline-none p-0.5 sm:p-1"
                                           title="Unlink Student"
                                           onClick={e => { e.stopPropagation(); handleRemoveStudent(student); }}
                                         >
-                                          <FaTimesCircle className="text-lg" />
+                                          <FaTimesCircle className="text-sm sm:text-lg" />
                                         </button>
-                                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        <div className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
                                           student.schoolStatus === 'Active' 
                                             ? 'bg-green-100 text-green-800' 
                                             : 'bg-gray-100 text-gray-600'
@@ -871,7 +874,7 @@ export default function ViewLinkedStudentPage() {
                             
                             {/* Show collapsed message */}
                             {isCollapsed && (
-                              <div className="text-sm text-gray-500 italic">
+                              <div className="text-xs sm:text-sm text-gray-500 italic">
                                 Students hidden (click "Show" to expand)
                               </div>
                             )}
@@ -881,18 +884,18 @@ export default function ViewLinkedStudentPage() {
                     )
                                  ) : (
                    sortedParentsWithoutLinked.length === 0 ? (
-                     <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+                     <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-6 flex flex-col">
                        <div className="flex flex-col justify-center items-center text-center">
-                         <FaUsers className="text-4xl text-gray-300 mb-4" />
-                         <p className="text-lg font-medium text-gray-500">All parents have linked students</p>
+                         <FaUsers className="text-2xl sm:text-4xl text-gray-300 mb-2 sm:mb-4" />
+                         <p className="text-sm sm:text-lg font-medium text-gray-500">All parents have linked students</p>
                        </div>
                      </div>
                    ) : (
                                            sortedParentsWithoutLinked.map((parent) => (
-                       <div key={parent.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?id=${parent.id}&role=Parent`)}>
+                       <div key={parent.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?id=${parent.id}&role=Parent`)}>
                         {/* Parent Header */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 mb-3 sm:mb-4">
+                          <div className="flex items-center gap-2 sm:gap-3">
                             {(() => {
                               // Get real-time photo from UserContext, fallback to parent.photo if not available
                               const realTimePhoto = getUserPhoto(parent.id) || parent.photo;
@@ -903,7 +906,7 @@ export default function ViewLinkedStudentPage() {
                                     <img
                                       src={realTimePhoto}
                                       alt="Profile"
-                                      className="w-12 h-12 rounded-full object-cover shadow-sm"
+                                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-sm flex-shrink-0"
                                       onError={(e) => {
                                         e.target.style.display = 'none';
                                         if (e.target.nextSibling) {
@@ -912,40 +915,41 @@ export default function ViewLinkedStudentPage() {
                                       }}
                                     />
                                     {/* Fallback icon that shows when photo fails to load */}
-                                    <div className="w-12 h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-lg shadow-sm hidden">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                                       <FaUser />
                                     </div>
                                   </>
                                 );
                               } else {
                                 return (
-                                  <div className="w-12 h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-lg shadow-sm">
+                                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67] text-sm sm:text-lg shadow-sm flex-shrink-0">
                                     <FaUser />
                                   </div>
                                 );
                               }
                             })()}
-                            <div>
-                              <div className="font-semibold text-gray-900">{formatName(parent.name)}</div>
-                              <div className="text-sm text-gray-600">{parent.email}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">{formatName(parent.name)}</div>
+                              <div className="text-xs sm:text-sm text-gray-600 truncate">{parent.email}</div>
                               {parent.contactNo && (
-                                <div className="text-sm text-gray-600">{formatPhoneForDisplay(parent.contactNo)}</div>
+                                <div className="text-xs sm:text-sm text-gray-600 truncate">{formatPhoneForDisplay(parent.contactNo)}</div>
                               )}
                             </div>
                           </div>
                           <button
-                            className="flex items-center gap-2 px-4 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-sm"
+                            className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-xs sm:text-sm sm:ml-auto"
                             onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); setModalParent(parent); setSearch(""); setSelectedStudent(null); }}
                           >
-                            <FaUsers className="text-sm" />
-                            Link Student
+                            <FaUsers className="text-xs sm:text-sm" />
+                            <span className="hidden sm:inline">Link Student</span>
+                            <span className="sm:hidden">Link</span>
                           </button>
                         </div>
 
                         {/* No students message */}
-                        <div className="flex flex-col justify-center items-center text-center py-8">
-                          <FaUsers className="text-4xl text-gray-300 mb-2" />
-                          <p className="text-gray-500">No students linked to this parent</p>
+                        <div className="flex flex-col justify-center items-center text-center py-2 sm:py-8">
+                          <FaUsers className="text-xl sm:text-4xl text-gray-300 mb-1 sm:mb-2" />
+                          <p className="text-gray-500 text-xs sm:text-sm">No students linked to this parent</p>
                         </div>
                       </div>
                     ))
@@ -956,38 +960,38 @@ export default function ViewLinkedStudentPage() {
 
             {/* Modal for Link to Student */}
             {isModalOpen && (
-              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-                <div className="bg-white rounded-xl shadow-2xl p-8 min-w-[480px] max-w-[98vw] w-[520px] relative border border-gray-100">
-                  <div className="mb-4">
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">Link Student to Parent</h3>
-                    <p className="text-gray-600 text-sm">Select a student to link to {formatName(modalParent?.name)}</p>
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-2 sm:p-4">
+                <div className="bg-white rounded-xl shadow-2xl p-3 sm:p-8 w-full max-w-[520px] relative border border-gray-100 max-h-[90vh] overflow-y-auto">
+                  <div className="mb-2 sm:mb-4">
+                    <h3 className="text-base sm:text-xl font-bold text-gray-800 mb-1">Link Student to Parent</h3>
+                    <p className="text-gray-600 text-xs sm:text-sm">Select a student to link to {formatName(modalParent?.name)}</p>
                   </div>
                   
-                  <div className="mb-4">
+                  <div className="mb-3 sm:mb-4">
                     <div className="relative">
-                      <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+                      <FaSearch className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-sm" />
                       <input
                         type="text"
                         placeholder="Search students..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors caret-[#232c67]"
+                        className="w-full pl-8 sm:pl-10 pr-4 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors caret-[#232c67]"
                       />
                     </div>
                   </div>
 
-                  <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+                  <div className="max-h-32 sm:max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
                     {availableStudents.length === 0 ? (
-                      <div className="flex flex-col justify-center items-center h-32 text-center">
-                        <FaUsers className="text-4xl text-gray-300 mb-2" />
-                        <p className="text-gray-500">No available students to link</p>
+                      <div className="flex flex-col justify-center items-center h-20 sm:h-32 text-center">
+                        <FaUsers className="text-2xl sm:text-4xl text-gray-300 mb-1 sm:mb-2" />
+                        <p className="text-gray-500 text-xs sm:text-base">No available students to link</p>
                       </div>
                     ) : (
                       <div className="divide-y divide-gray-100">
                         {availableStudents.map((student, idx) => (
                           <div
                             key={student.id || idx}
-                            className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                            className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-3 cursor-pointer transition-colors ${
                               selectedStudent === student ? 'bg-[#e8ecf7]' : 'hover:bg-gray-50'
                             }`}
                             onClick={() => setSelectedStudent(student)}
@@ -1002,7 +1006,7 @@ export default function ViewLinkedStudentPage() {
                                     <img
                                       src={realTimePhoto}
                                       alt="Profile"
-                                      className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
                                       onError={(e) => {
                                         e.target.style.display = 'none';
                                         if (e.target.nextSibling) {
@@ -1011,22 +1015,22 @@ export default function ViewLinkedStudentPage() {
                                       }}
                                     />
                                     {/* Fallback icon that shows when photo fails to load */}
-                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm hidden">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                                       <FaUser />
                                     </div>
                                   </>
                                 );
                               } else {
                                 return (
-                                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm">
+                                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
                                     <FaUser />
                                   </div>
                                 );
                               }
                             })()}
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900">{formatName(student.name)}</div>
-                              <div className="text-sm text-gray-500">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 text-xs sm:text-base truncate">{formatName(student.name)}</div>
+                              <div className="text-xs text-gray-500 truncate">
                                 {student.levelName && `${student.levelName} • `}
                                 {student.scheduleClass && `${student.scheduleClass} • `}
                                 {student.gender}
@@ -1038,16 +1042,16 @@ export default function ViewLinkedStudentPage() {
                     )}
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
+                  <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-2 sm:pt-4 border-t border-gray-200 mt-3 sm:mt-6">
                     <button 
-                      className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors" 
+                      className="flex items-center justify-center gap-1 sm:gap-2 bg-gray-500 hover:bg-gray-600 text-white px-3 sm:px-6 py-1.5 sm:py-2.5 rounded-lg font-medium transition-colors w-full sm:w-auto text-xs sm:text-sm" 
                       onClick={() => setIsModalOpen(false)} 
                     >
-                      <FaTimes className="text-sm" />
+                      <FaTimes className="text-xs sm:text-sm" />
                       Close
                     </button>
                     <button 
-                      className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md ${
+                      className={`flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-1.5 sm:py-2.5 rounded-lg font-medium transition-colors shadow-md w-full sm:w-auto text-xs sm:text-sm ${
                         !selectedStudent
                           ? 'bg-gray-400 text-gray-200 cursor-not-allowed shadow-none'
                           : 'bg-[#232c67] hover:bg-[#1a1f4d] text-white hover:shadow-lg'
@@ -1055,7 +1059,7 @@ export default function ViewLinkedStudentPage() {
                       disabled={!selectedStudent}
                       onClick={handleLinkStudent}
                     >
-                      <FaUsers className="text-sm" />
+                      <FaUsers className="text-xs sm:text-sm" />
                       Link Student
                     </button>
                   </div>
@@ -1065,15 +1069,15 @@ export default function ViewLinkedStudentPage() {
 
             {/* Remove Confirmation Modal */}
             {showRemoveModal && (
-              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-                <div className="bg-white rounded-xl shadow-2xl p-8 min-w-[480px] max-w-[98vw] w-[520px] relative border border-gray-100">
-                  <div className="mb-4">
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">Remove Linked Student</h3>
-                    <p className="text-gray-600 text-sm">Are you sure you want to unlink this student?</p>
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-2 sm:p-4">
+                <div className="bg-white rounded-xl shadow-2xl p-3 sm:p-8 w-full max-w-[520px] relative border border-gray-100">
+                  <div className="mb-2 sm:mb-4">
+                    <h3 className="text-base sm:text-xl font-bold text-gray-800 mb-1">Remove Linked Student</h3>
+                    <p className="text-gray-600 text-xs sm:text-sm">Are you sure you want to unlink this student?</p>
                   </div>
                   
-                  <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
+                  <div className="mb-3 sm:mb-6 p-2 sm:p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       {(() => {
                         // Get real-time photo from UserContext, fallback to student.photo if not available
                         const realTimePhoto = getStudentPhoto(studentToRemove?.id) || studentToRemove?.photo;
@@ -1084,7 +1088,7 @@ export default function ViewLinkedStudentPage() {
                               <img
                                 src={realTimePhoto}
                                 alt="Profile"
-                                className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
                                   if (e.target.nextSibling) {
@@ -1093,37 +1097,37 @@ export default function ViewLinkedStudentPage() {
                                 }}
                               />
                               {/* Fallback icon that shows when photo fails to load */}
-                              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm hidden">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
                                 <FaUser />
                               </div>
                             </>
                           );
                         } else {
                           return (
-                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg shadow-sm">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
                               <FaUser />
                             </div>
                           );
                         }
                       })()}
-                      <div>
-                        <div className="font-medium text-gray-900">{formatName(studentToRemove?.name)}</div>
-                        <div className="text-sm text-gray-500">Student will be unlinked from parent</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-gray-900 text-xs sm:text-base truncate">{formatName(studentToRemove?.name)}</div>
+                        <div className="text-xs text-gray-500">Student will be unlinked from parent</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                  <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-2 sm:pt-4 border-t border-gray-200">
                     <button 
-                      className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors" 
+                      className="flex items-center justify-center gap-1 sm:gap-2 bg-gray-500 hover:bg-gray-600 text-white px-3 sm:px-6 py-1.5 sm:py-2.5 rounded-lg font-medium transition-colors w-full sm:w-auto text-xs sm:text-sm" 
                       onClick={() => { setShowRemoveModal(false); setStudentToRemove(null); }} 
                       disabled={removing}
                     >
-                      <FaTimes className="text-sm" />
+                      <FaTimes className="text-xs sm:text-sm" />
                       Close
                     </button>
                     <button 
-                      className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md ${
+                      className={`flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-1.5 sm:py-2.5 rounded-lg font-medium transition-colors shadow-md w-full sm:w-auto text-xs sm:text-sm ${
                         removing
                           ? 'bg-gray-400 text-gray-200 cursor-not-allowed shadow-none'
                           : 'bg-red-600 hover:bg-red-700 text-white hover:shadow-lg'
@@ -1132,13 +1136,13 @@ export default function ViewLinkedStudentPage() {
                       onClick={confirmRemoveStudent}
                     >
                       {removing ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Removing...
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white"></div>
+                          <span className="text-xs sm:text-sm">Removing...</span>
                         </div>
                       ) : (
                         <>
-                          <FaTimesCircle className="text-sm" />
+                          <FaTimesCircle className="text-xs sm:text-sm" />
                           Remove
                         </>
                       )}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { FaEllipsisV, FaSearch, FaChevronDown, FaUser, FaUsers, FaCalendarAlt, FaFilter, FaMars, FaVenus, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaEllipsisV, FaSearch, FaChevronDown, FaUser, FaUsers, FaCalendarAlt, FaFilter, FaMars, FaVenus, FaSort, FaSortUp, FaSortDown, FaPrint } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useUser } from "../../Context/UserContext";
@@ -60,6 +60,10 @@ export default function StudentsPage() {
   const [scheduleFilter, setScheduleFilter] = useState("All");
   const [isScheduleDropdownOpen, setIsScheduleDropdownOpen] = useState(false);
   const [studentRisks, setStudentRisks] = useState({});
+  const [triggerExport, setTriggerExport] = useState(false);
+  const [parentProfile, setParentProfile] = useState(null);
+  const [studentLevelData, setStudentLevelData] = useState(null);
+  const [teacherAdvisory, setTeacherAdvisory] = useState(null);
 
 // Helper functions
   const getName = (s) => {
@@ -73,6 +77,38 @@ export default function StudentsPage() {
   const getSchedule = (s) => s.schedule || s.stud_schedule_class || '';
   const getAge = (s) => s.age || s.stud_age || '';
   const getRisk = (s) => s.risk || s.stud_risk || s.risk_level || <span className="italic text-gray-400">No Data</span>;
+
+  // Helper to format names as "Lastname, Firstname Middlename"
+  function formatName(fullName) {
+    if (!fullName) return "-";
+    
+    // Handle special cases that shouldn't be formatted as names
+    const specialCases = ['Not assigned', 'Not Assigned', 'not assigned', 'N/A', 'n/a', 'None', 'none', 'TBD', 'tbd'];
+    if (specialCases.includes(fullName.trim())) {
+      return fullName.trim();
+    }
+    
+    const nameParts = fullName.trim().split(' ');
+    if (nameParts.length < 2) return fullName;
+    
+    const lastName = nameParts[nameParts.length - 1];
+    const firstName = nameParts[0];
+    const middleName = nameParts.slice(1, -1).join(' ');
+    
+    if (middleName) {
+      return `${lastName}, ${firstName} ${middleName}`;
+    } else {
+      return `${lastName}, ${firstName}`;
+    }
+  }
+
+  // General helpers for printable data fallbacks
+  function displayOrLine(value, line = '____________________________') {
+    if (value === 0) return '0';
+    if (value === false) return 'No';
+    const str = typeof value === 'string' ? value.trim() : value;
+    return str ? String(str) : line;
+  }
 
   // Sorting function
   const handleSort = (field) => {
@@ -230,6 +266,12 @@ export default function StudentsPage() {
   // Helper to format names as "Lastname, Firstname Middlename"
   function formatName(fullName) {
     if (!fullName) return "-";
+    
+    // Handle special cases that shouldn't be formatted as names
+    const specialCases = ['Not assigned', 'Not Assigned', 'not assigned', 'N/A', 'n/a', 'None', 'none', 'TBD', 'tbd'];
+    if (specialCases.includes(fullName.trim())) {
+      return fullName.trim();
+    }
     
     const nameParts = fullName.trim().split(' ');
     if (nameParts.length < 2) return fullName;
@@ -451,7 +493,40 @@ export default function StudentsPage() {
           dob: data.student.user_birthdate || '',
           parent: '',
           parentContact: '',
+          level_name: data.student.level_name || data.student.levelName || '',
+          levelId: data.student.levelId || data.student.level_id || '',
         };
+        
+        // Store student level data
+        console.log('=== DEBUG: Student Details API Response ===');
+        console.log('Student data:', data.student);
+        console.log('Student level info:', {
+          level_name: data.student.level_name,
+          levelName: data.student.levelName,
+          level_id: data.student.level_id,
+          levelId: data.student.levelId
+        });
+        
+        // Fetch level name from tbl_student_levels
+        if (data.student.levelId) {
+          try {
+            const levelRes = await fetch("/php/Advisory/get_student_levels.php");
+            const levelData = await levelRes.json();
+            if (levelData.status === 'success' && levelData.levels) {
+              const levelInfo = levelData.levels.find(l => l.level_id == data.student.levelId);
+              if (levelInfo) {
+                data.student.level_name = levelInfo.level_name;
+                data.student.levelName = levelInfo.level_name;
+                console.log('Level name fetched:', levelInfo.level_name);
+              }
+            }
+          } catch (levelError) {
+            console.error('Error fetching level name:', levelError);
+          }
+        }
+        
+        setStudentLevelData(data.student);
+        
         // Fetch parent info if parentId exists
         if (data.student.parentId) {
           const parentRes = await fetch("/php/Users/get_user_details.php", {
@@ -463,6 +538,132 @@ export default function StudentsPage() {
           if (parentData.status === 'success' && parentData.user) {
             studentDetail.parent = parentData.user.fullName || '';
             studentDetail.parentContact = parentData.user.contactNo || '';
+          }
+          
+          // Fetch parent profile for detailed info
+          const parentProfileRes = await fetch("/php/Users/get_user_profile.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: data.student.parentId })
+          });
+          const parentProfileData = await parentProfileRes.json();
+          if (parentProfileData.status === "success") {
+            setParentProfile(parentProfileData.user || parentProfileData.profile || parentProfileData);
+          }
+        }
+        
+        // Fetch advisory details for teacher information
+        console.log('=== DEBUG: Fetching advisory for student ===');
+        console.log('Student ID:', s.student_id || s.id);
+        console.log('Student level_id:', s.level_id || s.levelId);
+        
+        const advisoryRes = await fetch("/php/Advisory/get_advisory_details.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ student_id: s.student_id || s.id })
+        });
+        const advisoryData = await advisoryRes.json();
+        console.log('=== DEBUG: Advisory API Response ===');
+        console.log('Advisory data:', advisoryData);
+        console.log('Advisory object:', advisoryData.advisory);
+        console.log('Debug info:', advisoryData.debug_info);
+        
+        if (advisoryData.status === "success" && advisoryData.advisory) {
+          console.log('Setting teacher advisory:', advisoryData.advisory);
+          console.log('Lead teacher name:', advisoryData.advisory.lead_teacher_name);
+          console.log('Assistant teacher name:', advisoryData.advisory.assistant_teacher_name);
+          console.log('Lead teacher ID:', advisoryData.advisory.lead_teacher_id);
+          console.log('Assistant teacher ID:', advisoryData.advisory.assistant_teacher_id);
+          
+          // Check if teacher names are null/empty and provide fallback
+          const leadTeacherName = (advisoryData.advisory.lead_teacher_name && advisoryData.advisory.lead_teacher_name.trim() !== '') 
+            ? advisoryData.advisory.lead_teacher_name 
+            : 'Not assigned';
+          const assistantTeacherName = (advisoryData.advisory.assistant_teacher_name && advisoryData.advisory.assistant_teacher_name.trim() !== '') 
+            ? advisoryData.advisory.assistant_teacher_name 
+            : 'Not assigned';
+          
+          console.log('Processed lead teacher name:', leadTeacherName);
+          console.log('Processed assistant teacher name:', assistantTeacherName);
+          
+          // Normalize the advisory data to ensure correct property names
+          const normalizedAdvisory = {
+            ...advisoryData.advisory,
+            lead_teacher_name: leadTeacherName,
+            assistant_teacher_name: assistantTeacherName
+          };
+          
+          console.log('Normalized advisory:', normalizedAdvisory);
+          setTeacherAdvisory(normalizedAdvisory);
+          console.log('Teacher advisory state set to:', normalizedAdvisory);
+        } else {
+          console.log('No advisory data found or API failed');
+          console.log('Advisory data status:', advisoryData.status);
+          console.log('Advisory data message:', advisoryData.message);
+          
+          // Try alternative approach - fetch by level_id
+          if (s.level_id || s.levelId) {
+            console.log('Trying to fetch advisory by level_id:', s.level_id || s.levelId);
+            try {
+              const levelAdvisoryRes = await fetch("/php/Advisory/get_advisory_details.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ level_id: s.level_id || s.levelId })
+              });
+              const levelAdvisoryData = await levelAdvisoryRes.json();
+              console.log('Level advisory data:', levelAdvisoryData);
+              if (levelAdvisoryData.status === "success" && levelAdvisoryData.advisory) {
+                console.log('Setting teacher advisory from level:', levelAdvisoryData.advisory);
+                console.log('Lead teacher name from level:', levelAdvisoryData.advisory.lead_teacher_name);
+                console.log('Assistant teacher name from level:', levelAdvisoryData.advisory.assistant_teacher_name);
+                console.log('Lead teacher ID from level:', levelAdvisoryData.advisory.lead_teacher_id);
+                console.log('Assistant teacher ID from level:', levelAdvisoryData.advisory.assistant_teacher_id);
+                
+                // Check if teacher names are null/empty and provide fallback
+                const leadTeacherName = (levelAdvisoryData.advisory.lead_teacher_name && levelAdvisoryData.advisory.lead_teacher_name.trim() !== '') 
+                  ? levelAdvisoryData.advisory.lead_teacher_name 
+                  : 'Not assigned';
+                const assistantTeacherName = (levelAdvisoryData.advisory.assistant_teacher_name && levelAdvisoryData.advisory.assistant_teacher_name.trim() !== '') 
+                  ? levelAdvisoryData.advisory.assistant_teacher_name 
+                  : 'Not assigned';
+                
+                console.log('Processed lead teacher name from level:', leadTeacherName);
+                console.log('Processed assistant teacher name from level:', assistantTeacherName);
+                
+                // Normalize the advisory data to ensure correct property names
+                const normalizedLevelAdvisory = {
+                  ...levelAdvisoryData.advisory,
+                  lead_teacher_name: leadTeacherName,
+                  assistant_teacher_name: assistantTeacherName
+                };
+                
+                console.log('Normalized level advisory:', normalizedLevelAdvisory);
+                setTeacherAdvisory(normalizedLevelAdvisory);
+              } else {
+                console.log('Level advisory also failed:', levelAdvisoryData);
+                // Set fallback data if no advisory is found
+                console.log('Setting fallback advisory data');
+                setTeacherAdvisory({
+                  lead_teacher_name: "Not assigned",
+                  assistant_teacher_name: "Not assigned"
+                });
+              }
+            } catch (levelError) {
+              console.error('Error fetching advisory by level:', levelError);
+              // Set fallback data on error
+              console.log('Setting fallback advisory data due to error');
+              setTeacherAdvisory({
+                lead_teacher_name: "Not assigned",
+                assistant_teacher_name: "Not assigned"
+              });
+            }
+          } else {
+            // No level_id available, set fallback data
+            console.log('No level_id available, setting fallback advisory data');
+            setTeacherAdvisory({
+              lead_teacher_name: "Not assigned",
+              assistant_teacher_name: "Not assigned"
+            });
           }
         }
       }
@@ -558,22 +759,32 @@ export default function StudentsPage() {
     
     return (
       <div className="h-full flex flex-col">
-        {/* Sticky Tabs */}
+        {/* Navigation Tabs with Export PDF */}
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10 flex-shrink-0">
-          <div className="flex">
-            {["Assessment", "Status"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className="flex items-center justify-between px-6 py-3">
+            <div className="flex">
+              {["Assessment", "Status"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === tab
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setTriggerExport(true)}
+              className="inline-flex items-center gap-2 bg-[#2c2f6f] text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+              title="Print or Save Assessment as PDF"
+            >
+              <FaPrint />
+              <span className="font-semibold">Export PDF</span>
+            </button>
           </div>
         </div>
 
@@ -660,6 +871,30 @@ export default function StudentsPage() {
                   <span className="text-base font-normal">{s.parent ? formatName(s.parent) : <span className="italic">-</span>}</span>
                 </div>
               </div>
+              {/* Third row: Level, Lead Teacher, Assistant Teacher */}
+              <div className="flex flex-row items-center gap-6 mt-0.5">
+                {/* Level */}
+                <div className="flex flex-row items-center mx-2">
+                  <span className="font-bold text-base text-blue-200 mr-1">Level:</span>
+                  <span className="text-base font-normal">
+                    {studentLevelData?.level_name || studentLevelData?.levelName || s.level_name || s.levelName || <span className="italic">-</span>}
+                  </span>
+                </div>
+                {/* Lead Teacher */}
+                <div className="flex flex-row items-center mx-2">
+                  <span className="font-bold text-base text-blue-200 mr-1">Lead Teacher:</span>
+                  <span className="text-base font-normal">
+                    {advisory?.lead_teacher_name ? formatName(advisory.lead_teacher_name) : <span className="italic">Not assigned</span>}
+                  </span>
+                </div>
+                {/* Assistant Teacher */}
+                <div className="flex flex-row items-center mx-2">
+                  <span className="font-bold text-base text-blue-200 mr-1">Assistant Teacher:</span>
+                  <span className="text-base font-normal">
+                    {advisory?.assistant_teacher_name ? formatName(advisory.assistant_teacher_name) : <span className="italic">Not assigned</span>}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -668,14 +903,39 @@ export default function StudentsPage() {
         <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
           <div className="p-6 flex flex-col bg-white rounded-xl shadow">
             {activeTab === "Status" && (
-              <StudentStatus student={s} renderChart={renderChart} onBack={() => setSelected(null)} />
+              <StudentStatus 
+                student={s} 
+                renderChart={renderChart} 
+                onBack={() => setSelected(null)} 
+                triggerExport={triggerExport}
+                onExportComplete={() => setTriggerExport(false)}
+                parentProfile={parentProfile}
+                studentLevelData={studentLevelData}
+                advisory={advisory}
+              />
             )}
             {activeTab === "Assessment" && (
-              <StudentAssessment 
-                student={s} 
-                onBack={() => setSelected(null)} 
-                onRiskUpdate={() => refreshStudentRisk(s.student_id)}
-              />
+              <>
+                {console.log('=== DEBUG: Passing props to StudentAssessment ===', {
+                  student: s,
+                  parentProfile,
+                  studentLevelData,
+                  advisory: advisory,
+                  teacherAdvisoryState: teacherAdvisory,
+                  leadTeacherName: advisory?.lead_teacher_name,
+                  assistantTeacherName: advisory?.assistant_teacher_name
+                })}
+                <StudentAssessment 
+                  student={s} 
+                  onBack={() => setSelected(null)} 
+                  onRiskUpdate={() => refreshStudentRisk(s.student_id)}
+                  triggerExport={triggerExport}
+                  onExportComplete={() => setTriggerExport(false)}
+                  parentProfile={parentProfile}
+                  studentLevelData={studentLevelData}
+                  advisory={advisory}
+                />
+              </>
             )}
           </div>
         </div>

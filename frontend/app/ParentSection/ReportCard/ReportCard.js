@@ -1,6 +1,6 @@
 ﻿"use client";
-import React, { useState, useMemo, useEffect } from "react";
-import { FaArrowLeft, FaUser, FaMale, FaFemale, FaUsers, FaChalkboardTeacher, FaMars, FaVenus, FaChartBar, FaTable, FaExclamationTriangle, FaComments, FaTimes, FaCheckCircle, FaRegClock, FaPlusCircle, FaChartLine, FaSearch, FaChevronDown, FaLock } from "react-icons/fa";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { FaArrowLeft, FaUser, FaMale, FaFemale, FaUsers, FaChalkboardTeacher, FaMars, FaVenus, FaChartBar, FaTable, FaExclamationTriangle, FaComments, FaTimes, FaCheckCircle, FaRegClock, FaPlusCircle, FaChartLine, FaSearch, FaChevronDown, FaLock, FaPrint, FaDownload } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
 import '../../../lib/chart-config.js';
 import ProtectedRoute from "../../Context/ProtectedRoute";
@@ -54,6 +54,11 @@ export default function StudentProgress({ formData: initialFormData }) {
   // Tooltip state
   const [showStatusTooltip, setShowStatusTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
+  // Refs for printable content
+  const assessmentRef = useRef(null);
+  const printRef = useRef(null);
+  const [showPrintLayout, setShowPrintLayout] = useState(false);
 
   const quarters = [
     { id: 1, name: '1st Quarter' },
@@ -657,6 +662,64 @@ export default function StudentProgress({ formData: initialFormData }) {
     }
   }
 
+  // General helpers for printable data fallbacks
+  function displayOrLine(value, line = '____________________________') {
+    if (value === 0) return '0';
+    if (value === false) return 'No';
+    const str = typeof value === 'string' ? value.trim() : value;
+    return str ? String(str) : line;
+  }
+
+  function computeAge(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    const diff = Date.now() - d.getTime();
+    const ageDate = new Date(diff);
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
+  }
+
+  function getStudentAddressString() {
+    const candidates = [
+      selectedStudent?.address,
+      selectedStudent?.stud_address,
+      parentProfile?.address,
+      parentProfile?.home_address,
+      parentProfile?.residential_address
+    ];
+    const found = candidates.find(v => v && String(v).trim());
+    return found ? String(found).trim() : '';
+  }
+
+  function buildParentName(profile, prefix) {
+    if (!profile) return '';
+    const direct = profile[`${prefix}_name`] || profile[`${prefix}Name`];
+    const first = profile[`${prefix}_firstname`] || profile[`${prefix}_first_name`] || profile[`${prefix}_first`] || profile[`${prefix}_fname`] || profile[`${prefix}FirstName`];
+    const middle = profile[`${prefix}_middlename`] || profile[`${prefix}_middle_name`] || profile[`${prefix}_mname`] || profile[`${prefix}MiddleName`];
+    const last = profile[`${prefix}_lastname`] || profile[`${prefix}_last_name`] || profile[`${prefix}_lname`] || profile[`${prefix}LastName`];
+    if (direct && String(direct).trim()) return String(direct).trim();
+    const parts = [first, middle, last].filter(Boolean).map(v => String(v).trim());
+    return parts.join(' ');
+  }
+
+  function getParentAge(profile, prefix) {
+    if (!profile) return '';
+    const age = profile[`${prefix}_age`] || profile[`${prefix}Age`];
+    if (age) return String(age);
+    const bday = profile[`${prefix}_birthdate`] || profile[`${prefix}_dob`] || profile[`${prefix}Birthdate`];
+    const computed = computeAge(bday);
+    return Number.isFinite(computed) ? String(computed) : '';
+  }
+
+  function getParentOccupation(profile, prefix) {
+    if (!profile) return '';
+    return (
+      profile[`${prefix}_occupation`] ||
+      profile[`${prefix}Occupation`] ||
+      ''
+    );
+  }
+
   const getDisplayName = (key) => {
     if (key === "Socio") return "Socio Emotional";
     if (key === "Literacy") return "Literacy/English";
@@ -780,6 +843,102 @@ export default function StudentProgress({ formData: initialFormData }) {
     setShowStatusTooltip(false);
   };
 
+  // Export/Print: use dedicated 4-page printable layout when available, otherwise fall back to Assessment section
+  const handleExportAssessment = () => {
+    try {
+      // Do NOT mutate screen layout; only prepare a print-only stylesheet
+
+      const printableElement = printRef.current || assessmentRef.current;
+      if (!printableElement) {
+        toast.error("Nothing to export yet.");
+        return;
+      }
+
+      const originalTitle = document.title;
+
+      // Clone printable element to body to avoid clipping by scroll containers
+      const tempId = "reportcard-printable";
+      const cloned = printableElement.cloneNode(true);
+      cloned.setAttribute("id", tempId);
+      cloned.style.display = 'block';
+      cloned.style.margin = '0';
+      cloned.style.padding = '0';
+      document.body.appendChild(cloned);
+
+      const style = document.createElement("style");
+      style.setAttribute("media", "print");
+      style.innerHTML = `
+        @page { size: auto; margin: 0; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; }
+          /* Ensure colors are kept */
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          /* Hide everything except the cloned print container */
+          body > *:not(#${tempId}) { display: none !important; }
+          /* Normalize the printable container */
+          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; padding: 0; margin: 0; font-family: Calibri, 'Arial Rounded MT Bold', 'Comic Sans MS', Arial, sans-serif; display: flex !important; flex-direction: column !important; max-width: none !important; }
+          /* Remove clipping/overflow from ancestors inside the container */
+          #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
+          /* Avoid page breaks inside table rows/cards */
+          table, tr, td, th { page-break-inside: avoid !important; }
+          .rounded-xl, .rounded-lg { box-shadow: none !important; }
+          /* Page breaks: start a new page only from the second section onward */
+          .print-page { width: 100% !important; position: relative !important; min-height: 100vh !important; box-sizing: border-box !important; }
+          .print-page + .print-page { page-break-before: always; break-before: page; }
+          .no-break { page-break-inside: avoid; break-inside: avoid; }
+          .section-title { font-weight: 700; color: #1f2937; }
+          .pastel-blue { background: #eef5ff; }
+          .pastel-green { background: #eaf7f1; }
+          .pastel-yellow { background: #fff7e6; }
+          .pastel-pink { background: #ffeef2; }
+          .border-soft { border: 1px solid #e5e7eb; }
+          /* Custom page number footer (bottom-right) */
+          .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
+        }
+      `;
+
+      document.head.appendChild(style);
+
+      // Assign page numbers to each print page (enables footer while allowing browser header/footer to be turned off)
+      const pages = cloned.querySelectorAll('.print-page');
+      const totalPages = pages.length;
+      pages.forEach((pageEl, index) => {
+        pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
+      });
+
+      // Set a descriptive title for the print/PDF
+      const studentName = selectedStudent ? `${selectedStudent.lastName || selectedStudent.stud_lastname || ''}, ${selectedStudent.firstName || selectedStudent.stud_firstname || ''}`.trim() : "";
+      document.title = `Report Card ${studentName ? `- ${studentName}` : ''}`;
+
+      const cleanup = () => {
+        try {
+          if (style && style.parentNode) document.head.removeChild(style);
+          if (cloned && cloned.parentNode) cloned.parentNode.removeChild(cloned);
+          document.title = originalTitle;
+        } catch (e) {
+          // no-op
+        }
+      };
+
+      const afterPrint = () => {
+        window.removeEventListener('afterprint', afterPrint);
+        cleanup();
+      };
+      window.addEventListener('afterprint', afterPrint);
+
+      // Give React a beat to render the print layout
+      setTimeout(() => {
+        window.print();
+      }, 300);
+
+      // Fallback cleanup for browsers that don't fire afterprint reliably
+      setTimeout(() => { cleanup(); }, 1500);
+    } catch (err) {
+      console.error('Error exporting assessment:', err);
+      toast.error("Failed to export. Please try again.");
+    }
+  };
+
   const getStatusTooltipMessage = () => {
     if (!hasOverallProgress() && !hasAnyProgress()) {
       return "No Assessment Data Available - No quarterly assessments have been completed yet. Assessment data is required to generate progress analysis.";
@@ -831,6 +990,33 @@ export default function StudentProgress({ formData: initialFormData }) {
     const totalAbsent = summary.reduce((a, b) => a + b.absent, 0);
     
     return { summary, totalSchoolDays, totalPresent, totalAbsent };
+  }
+
+  // Helper: Get latest teacher comment text for a given quarter (1-4)
+  function getQuarterCommentText(quarterId) {
+    if (!Array.isArray(comments) || comments.length === 0) return "";
+
+    const matches = comments.filter((c) => {
+      const qid = Number(c.quarter_id ?? c.quarterId);
+      if (!isNaN(qid)) return qid === Number(quarterId);
+      if (c.quarter_name && typeof c.quarter_name === 'string') {
+        const suffix = quarterId === 1 ? 'st' : quarterId === 2 ? 'nd' : quarterId === 3 ? 'rd' : 'th';
+        return c.quarter_name.toLowerCase().startsWith(`${quarterId}${suffix} quarter`.toLowerCase());
+      }
+      return false;
+    });
+
+    if (matches.length === 0) return "";
+
+    const getTime = (c) => {
+      const t = c.updated_at || c.created_at || c.comment_date;
+      const d = t ? new Date(t) : null;
+      return d && !isNaN(d) ? d.getTime() : 0;
+    };
+
+    const latest = matches.sort((a, b) => getTime(a) - getTime(b))[matches.length - 1];
+    const text = latest.comment_text || latest.feedback || latest.comment || "";
+    return (typeof text === 'string' ? text.trim() : '') || "";
   }
 
   // Helper to render status chart
@@ -947,6 +1133,89 @@ export default function StudentProgress({ formData: initialFormData }) {
             },
           }}
         />
+      </div>
+    );
+  }
+
+  // Printable SVG line chart (works even when print layout is hidden on screen)
+  function renderPrintStatusChartSVG() {
+    const yMap = { 'Excellent': 5, 'Very Good': 4, 'Good': 3, 'Need Help': 2, 'Not Met': 1 };
+    const xLabels = ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
+    const dataPoints = [1,2,3,4].map(qid => {
+      const card = quarterlyPerformance.find(c => Number(c.quarter_id) === qid);
+      const desc = card && visualFeedbackMap[card.quarter_visual_feedback_id];
+      return yMap[desc] || null;
+    });
+
+    // Show placeholder when there's no data
+    if (dataPoints.every(v => v === null)) {
+      return (
+        <div className="flex flex-col items-center justify-center h-48 text-gray-400 italic border-2 border-dashed border-gray-200 rounded-lg bg-white p-4">
+          <FaChartLine className="text-3xl mb-2 text-gray-300" />
+          <span className="text-base">No chart data available</span>
+        </div>
+      );
+    }
+
+    const width = 700; // px
+    const height = 240; // px
+    // Extra padding to keep line and points inside the inner chart rectangle
+    const margin = { top: 20, right: 50, bottom: 42, left: 70 };
+    const chartW = width - margin.left - margin.right;
+    const chartH = height - margin.top - margin.bottom;
+    const innerPadX = 12;
+    const innerPadY = 12;
+    const plotLeft = margin.left + innerPadX;
+    const plotRight = margin.left + chartW - innerPadX;
+    const plotTop = margin.top + innerPadY;
+    const plotBottom = margin.top + chartH - innerPadY;
+    const xs = (i) => plotLeft + ((plotRight - plotLeft) / 3) * i; // 0..3
+    const ys = (v) => plotBottom - ((v - 1) / 4) * (plotBottom - plotTop); // 1..5
+
+    // Build path with gaps for nulls
+    let path = '';
+    dataPoints.forEach((v, i) => {
+      if (v == null) return;
+      const cmd = path ? 'L' : 'M';
+      path += `${cmd}${xs(i)},${ys(v)} `;
+    });
+
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-2">
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+          {/* Grid lines and axes */}
+          {[1,2,3,4,5].map((lvl) => (
+            <g key={lvl}>
+              <line x1={plotLeft} y1={ys(lvl)} x2={plotRight} y2={ys(lvl)} stroke="#e5e7eb" strokeWidth="1" />
+              <text x={plotLeft - 12} y={ys(lvl) + 4} textAnchor="end" fontSize="12" fill="#6b7280">
+                {['','Not Met','Need Help','Good','Very Good','Excellent'][lvl]}
+              </text>
+            </g>
+          ))}
+          <line x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} stroke="#9ca3af" strokeWidth="1" />
+          <line x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} stroke="#9ca3af" strokeWidth="1" />
+
+          {/* Line path */}
+          <path d={path.trim()} fill="none" stroke="#2563eb" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+
+          {/* Points */}
+          {dataPoints.map((v, i) => v == null ? null : (
+            <circle key={i} cx={xs(i)} cy={ys(v)} r={5} fill="#2563eb" stroke="#ffffff" strokeWidth="2" />
+          ))}
+
+          {/* X labels */}
+          {xLabels.map((lbl, i) => {
+            const isFirst = i === 0;
+            const isLast = i === xLabels.length - 1;
+            const anchor = isFirst ? 'start' : isLast ? 'end' : 'middle';
+            const xOffset = isFirst ? 4 : isLast ? -4 : 0;
+            return (
+              <text key={i} x={xs(i) + xOffset} y={plotBottom + 20} textAnchor={anchor} fontSize="13" fill="#6b7280">{lbl}</text>
+            );
+          })}
+          <text x={(plotLeft + plotRight)/2} y={height - 6} textAnchor="middle" fontSize="12" fill="#374151">Quarter</text>
+          <text x={16} y={margin.top - 6} textAnchor="start" fontSize="13" fill="#374151">Performance Level</text>
+        </svg>
       </div>
     );
   }
@@ -1253,6 +1522,17 @@ export default function StudentProgress({ formData: initialFormData }) {
               </button>
             </div>
 
+            {(activeTab === "Assessment" || activeTab === "Status") && (
+              <button
+                onClick={handleExportAssessment}
+                className="ml-auto inline-flex items-center gap-2 bg-[#2c2f6f] text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                title="Print or Save Assessment as PDF"
+              >
+                <FaPrint />
+                <span className="font-semibold">Export PDF</span>
+              </button>
+            )}
+
             {/* Custom Tooltip for Status Tab */}
             {showStatusTooltip && !hasOverallProgress() && (
               <div
@@ -1293,8 +1573,409 @@ export default function StudentProgress({ formData: initialFormData }) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Scrollable Content Area */}
           <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 360px)' }}>
+            {/* Print Layout - kept hidden on screen; print CSS reveals it without touching app layout */}
+            <div ref={printRef} className="hidden print:block" style={{margin: 0, padding: 0}}>
+              {/* Page 1: School & Learner Info (refined UI for readability) */}
+              <div className="print-page p-10 pastel-blue border-soft rounded-xl text-[15px]" style={{margin: 0}}>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-[72px] h-[72px] rounded-full bg-white/80 border border-white/70 p-2 flex items-center justify-center">
+                      <img src="/assets/image/villelogo.png" alt="School Logo" className="w-16 h-16 object-contain" />
+                    </div>
+                    <div>
+                      <div className="text-4xl font-extrabold tracking-tight text-[#232c67] leading-tight">LEARNERS' VILLE</div>
+                      <div className="text-lg text-gray-700">6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines</div>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <div className="inline-flex items-center px-5 py-2 rounded-full bg-white/80 border border-white/70 text-[#232c67] font-semibold text-base">
+                      SY {new Date().getFullYear()} - {new Date().getFullYear()+1}
+                    </div>
+                  </div>
+                </div>
+                <div className="h-0.5 w-full bg-white/70 rounded-full mb-8" />
+
+                {/* Learner Information Card */}
+                <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7 mb-7">
+                  <div className="section-title text-3xl font-bold text-gray-900 mb-5">Learner's Information</div>
+                  <div className="grid grid-cols-2 gap-5 text-lg leading-relaxed">
+                    <div>
+                      <div className="text-gray-600 font-semibold text-base">Name</div>
+                      <div className="text-gray-900 font-semibold text-lg">
+                        {selectedStudent ? `${selectedStudent.lastName || selectedStudent.stud_lastname || ''}, ${selectedStudent.firstName || selectedStudent.stud_firstname || ''} ${selectedStudent.middleName || selectedStudent.stud_middlename || ''}` : '-'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600 font-semibold text-base">Sex</div>
+                      <div className="text-gray-900 font-semibold text-lg">{selectedStudent?.stud_gender || '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600 font-semibold text-base">Level</div>
+                      <div className="text-gray-900 font-semibold text-lg">{selectedStudent?.levelName || '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600 font-semibold text-base">Date of Birth</div>
+                      <div className="text-gray-900 font-semibold text-lg">{formatDateOfBirth(selectedStudent?.stud_birthdate) || '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600 font-semibold text-base">Lead Teacher</div>
+                      <div className="text-gray-900 font-semibold text-lg">{displayOrLine(selectedStudent?.lead_teacher_name ? formatName(selectedStudent.lead_teacher_name) : '')}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600 font-semibold text-base">Assistant Teacher</div>
+                      <div className="text-gray-900 font-semibold text-lg">{displayOrLine(selectedStudent?.assistant_teacher_name ? formatName(selectedStudent.assistant_teacher_name) : '')}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Socio-demographic Card */}
+                <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7">
+                  <div className="section-title text-3xl font-bold text-gray-900 mb-5">Sociodemographic Profile</div>
+                  <div className="grid grid-cols-2 gap-6 text-lg leading-relaxed">
+                    <div>
+                      <div className="text-gray-600 font-semibold text-base">Handedness</div>
+                      <div className="text-gray-900 font-semibold text-lg">{displayOrLine(selectedStudent?.stud_handedness)}</div>
+                    </div>
+                    <div></div>
+                    <div className="space-y-2">
+                      <div className="text-gray-800 font-semibold text-xl">Father's Details</div>
+                      <div className="grid grid-cols-3 gap-4 text-gray-900">
+                        <div className="col-span-3"><span className="text-gray-600">Name</span>: <span className="font-semibold">{displayOrLine(buildParentName(parentProfile, 'father'))}</span></div>
+                        <div><span className="text-gray-600">Age</span>: <span className="font-semibold">{displayOrLine(getParentAge(parentProfile, 'father'))}</span></div>
+                        <div className="col-span-2"><span className="text-gray-600">Occupation</span>: <span className="font-semibold">{displayOrLine(getParentOccupation(parentProfile, 'father'))}</span></div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-gray-800 font-semibold text-xl">Mother's Details</div>
+                      <div className="grid grid-cols-3 gap-4 text-gray-900">
+                        <div className="col-span-3"><span className="text-gray-600">Name</span>: <span className="font-semibold">{displayOrLine(buildParentName(parentProfile, 'mother'))}</span></div>
+                        <div><span className="text-gray-600">Age</span>: <span className="font-semibold">{displayOrLine(getParentAge(parentProfile, 'mother'))}</span></div>
+                        <div className="col-span-2"><span className="text-gray-600">Occupation</span>: <span className="font-semibold">{displayOrLine(getParentOccupation(parentProfile, 'mother'))}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Page 2: Attendance + Parent Signatures (refined UI) */}
+              <div className="print-page p-10 pastel-green border-soft rounded-xl text-[15px]" style={{margin: 0}}>
+                {/* Attendance Card */}
+                <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7 mb-8">
+                  <div className="section-title text-3xl font-bold text-gray-900 mb-5">Record of Attendance</div>
+                  {(() => {
+                    const attendanceSummary = getAttendanceSummary();
+                    return attendanceSummary ? (
+                      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                        <table className="w-full text-lg no-break border-collapse table-fixed" style={{tableLayout: 'fixed'}}>
+                          <colgroup>
+                            <col style={{ width: '18%' }} />
+                            {attendanceSummary.summary.map((_, idx) => (
+                              <col key={idx} style={{ width: '8%' }} />
+                            ))}
+                            <col style={{ width: '10%' }} />
+                          </colgroup>
+                          <thead>
+                            <tr className="pastel-blue">
+                              <th className="px-4 py-3 text-left font-semibold text-gray-900 border-soft">Category</th>
+                              {attendanceSummary.summary.map((m, idx) => (
+                                <th key={idx} className="px-2 py-3 text-center font-semibold text-gray-900 border-soft">{m.label}</th>
+                              ))}
+                              <th className="px-2 py-3 text-center font-semibold text-gray-900 border-soft whitespace-nowrap min-w-[64px]">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-gray-800">
+                            <tr>
+                              <td className="px-4 py-3 border-soft font-medium bg-white">No. of School Days</td>
+                              {attendanceSummary.summary.map((m, idx) => (<td key={idx} className="px-2 py-3 text-center border-soft bg-white">{m.total}</td>))}
+                              <td className="px-2 py-3 text-center border-soft font-semibold whitespace-nowrap bg-white">{attendanceSummary.totalSchoolDays}</td>
+                            </tr>
+                            <tr>
+                              <td className="px-4 py-3 border-soft font-medium bg-white">No. of Days Present</td>
+                              {attendanceSummary.summary.map((m, idx) => (<td key={idx} className="px-2 py-3 text-center border-soft bg-white">{m.present}</td>))}
+                              <td className="px-2 py-3 text-center border-soft font-semibold whitespace-nowrap bg-white">{attendanceSummary.totalPresent}</td>
+                            </tr>
+                            <tr>
+                              <td className="px-4 py-3 border-soft font-medium bg-white">No. of Days Absent</td>
+                              {attendanceSummary.summary.map((m, idx) => (<td key={idx} className="px-2 py-3 text-center border-soft bg-white">{m.absent}</td>))}
+                              <td className="px-2 py-3 text-center border-soft font-semibold whitespace-nowrap bg-white">{attendanceSummary.totalAbsent}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-gray-600 italic">No attendance data available</div>
+                    );
+                  })()}
+                </div>
+
+                {/* Parent Signatures Card */}
+                <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7">
+                  <div className="section-title text-3xl font-bold text-gray-900 mb-5">Parent/Guardian Signatures</div>
+                  <div className="grid grid-cols-1 gap-5 text-lg leading-relaxed">
+                    {[1, 2, 3, 4].map((q) => {
+                      const suffix = q===1?'st':q===2?'nd':q===3?'rd':'th';
+                      const quarterComment = getQuarterCommentText(q);
+                      return (
+                        <div key={q} className="no-break">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 min-w-[380px]">
+                              <span className="font-semibold text-gray-800">{`${q}${suffix} Quarter`}</span>
+                              <span className="h-px bg-gray-400 flex-1" style={{ minWidth: '240px' }}></span>
+                            </div>
+                            <div className="text-gray-600 text-base whitespace-nowrap">(Parent/Guardian Signature)</div>
+                          </div>
+                          <div className="mt-2 text-gray-800">
+                            <span className="text-gray-600 font-semibold text-base">Teacher Comment:</span>{' '}
+                            <span className="font-semibold">{quarterComment && quarterComment.length > 0 ? quarterComment : '____________________________'}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              
+
+              {/* Page 3: Learning Progress & Assessment (refined UI) */}
+              <div className="print-page p-10 pastel-yellow border-soft rounded-xl text-[15px]" style={{margin: 0}}>
+                <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7 mb-8">
+                  <div className="section-title text-3xl font-bold text-gray-900 mb-5">Quarterly Assessment</div>
+                  <div className="no-break">
+                    <table className="w-full text-lg border-soft">
+                    <thead>
+                      <tr className="bg-white">
+                        <th className="px-4 py-2 text-left border-soft">Subjects</th>
+                        {quarters.map(q => (
+                          <th key={q.id} className="px-3 py-2 text-center border-soft">{q.name}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...subjects].sort((a,b)=>a.localeCompare(b)).map((subject, i)=> (
+                        <tr key={i}>
+                          <td className="px-4 py-1 border-soft font-medium text-gray-900">{subject}</td>
+                          {quarters.map(q => {
+                            if (q.id === 5) {
+                              const subjProgress = finalSubjectProgress.find(row => row.subject_name === subject);
+                              const vf = visualFeedback.find(v => v.visual_feedback_id == subjProgress?.finalsubj_visual_feedback_id);
+                              const shape = vf?.visual_feedback_shape || '';
+                              return (
+                                <td key={q.id} className="px-3 py-1 text-center border-soft bg-[#fffaf0]">
+                                  {shape ? (
+                                    <span style={{ color: shapeColorMap[shape] || 'inherit', fontSize: '1.5em' }}>{shape}</span>
+                                  ) : ''}
+                                </td>
+                              );
+                            }
+                            const card = progressCards.find(pc => Number(pc.quarter_id) === q.id);
+                            if (card) {
+                              const fb = quarterFeedback.find(f => f.subject_name === subject && Number(f.quarter_id) === q.id);
+                              const shape = fb?.shape || '';
+                              return (
+                                <td key={q.id} className="px-3 py-1 text-center border-soft bg-[#fffaf0]">
+                                  {shape ? (
+                                    <span style={{ color: shapeColorMap[shape] || 'inherit', fontSize: '1.5em' }}>{shape}</span>
+                                  ) : ''}
+                                </td>
+                              );
+                            }
+                            return <td key={q.id} className="px-3 py-1 text-center border-soft"></td>;
+                          })}
+                        </tr>
+                      ))}
+                      <tr className="bg-white">
+                        <td className="px-4 py-1 font-semibold border-soft">Quarter Result</td>
+                        {quarters.map(q => {
+                          if (q.id === 5) {
+                            const allQuartersFinalized = [1,2,3,4].every(quarterId => progressCards.some(pc => Number(pc.quarter_id) === quarterId));
+                            const shape = overallProgress && overallProgress.visual_shape && allQuartersFinalized ? overallProgress.visual_shape : '';
+                            const riskId = overallProgress?.risk_id;
+                            const riskColor = String(riskId) === '1' ? '#22c55e' : String(riskId) === '2' ? '#fbbf24' : String(riskId) === '3' ? '#ef4444' : '';
+                            return (
+                              <td key={q.id} className="px-3 py-1 text-center border-soft">
+                                {shape ? (
+                                  <div className="inline-flex items-center gap-2">
+                                    {riskColor && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor }}></span>}
+                                    <span style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 700 }}>{shape}</span>
+                                  </div>
+                                ) : ''}
+                              </td>
+                            );
+                          }
+                          const card = progressCards.find(pc => Number(pc.quarter_id) === q.id);
+                          if (card) {
+                            const vf = visualFeedback.find(v => v.visual_feedback_id == card.quarter_visual_feedback_id);
+                            const shape = vf?.visual_feedback_shape || '';
+                            const riskId = card?.risk_id;
+                            const riskColor = String(riskId) === '1' ? '#22c55e' : String(riskId) === '2' ? '#fbbf24' : String(riskId) === '3' ? '#ef4444' : '';
+                            return (
+                              <td key={q.id} className="px-3 py-1 text-center border-soft">
+                                {shape ? (
+                                  <div className="inline-flex items-center gap-2">
+                                    {riskColor && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor }}></span>}
+                                    <span style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 700 }}>{shape}</span>
+                                  </div>
+                                ) : ''}
+                              </td>
+                            );
+                          }
+                          return <td key={q.id} className="px-3 py-1 text-center border-soft"></td>;
+                        })}
+                      </tr>
+                    </tbody>
+                  </table>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-6 mt-6">
+                  {/* Left: Assessment Legend */}
+                  <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-5">
+                    <div className="section-title text-2xl font-bold text-gray-900 mb-4">Assessment Legend</div>
+                    <table className="w-full text-base border-soft">
+                      <thead>
+                        <tr className="bg-white">
+                          <th className="text-left px-4 py-2 border-soft">Shapes</th>
+                          <th className="text-left px-4 py-2 border-soft">Descriptions</th>
+                          <th className="text-left px-4 py-2 border-soft">Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(Array.isArray(visualFeedback) && visualFeedback.length > 0
+                          ? visualFeedback
+                          : [
+                              { visual_feedback_id: 1, visual_feedback_shape: '❤️', visual_feedback_description: 'Excellent' },
+                              { visual_feedback_id: 2, visual_feedback_shape: '⭐', visual_feedback_description: 'Very Good' },
+                              { visual_feedback_id: 3, visual_feedback_shape: '🔷', visual_feedback_description: 'Good' },
+                              { visual_feedback_id: 4, visual_feedback_shape: '▲', visual_feedback_description: 'Need Help' },
+                              { visual_feedback_id: 5, visual_feedback_shape: '●', visual_feedback_description: 'Not Met' }
+                            ]
+                        ).map((item) => (
+                          <tr key={item.visual_feedback_id} className="border-soft">
+                            <td className="px-4 py-2 border-soft">
+                              <span style={{ color: shapeColorMap[item.visual_feedback_shape] || 'inherit', fontSize: '1.5em' }}>
+                                {item.visual_feedback_shape}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 border-soft">{item.visual_feedback_description}</td>
+                            <td className="px-4 py-2 border-soft">{item.visual_feedback_description === 'Not Met' ? 'Failed' : 'Passed'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Right: Risk Levels Table */}
+                  <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-5">
+                    <div className="section-title text-2xl font-bold text-gray-900 mb-4">Risk Levels</div>
+                    <table className="w-full text-base border-soft">
+                      <thead>
+                        <tr className="bg-white">
+                          <th className="text-left px-4 py-2 border-soft">Level</th>
+                          <th className="text-left px-4 py-2 border-soft">Meaning</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(Array.isArray(riskLevels) && riskLevels.length > 0 ? riskLevels : [
+                          { risk_id: 1 },
+                          { risk_id: 2 },
+                          { risk_id: 3 }
+                        ]).map((risk, idx) => {
+                          const info = getRiskInfo(risk.risk_id);
+                          const color = String(risk.risk_id) === '1' ? '#10B981' : String(risk.risk_id) === '2' ? '#F59E0B' : '#EF4444';
+                          const meaning = info.text === 'Low' ? 'Meeting Expectations' : info.text === 'Moderate' ? 'Needs Some Support' : info.text === 'High' ? 'Needs Close Attention' : '';
+                          return (
+                            <tr key={idx}>
+                              <td className="px-4 py-2 border-soft">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
+                                  <span className="font-medium">{info.text}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-2 border-soft">{meaning}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Page 4: Performance Overview (refined UI) */}
+              {hasOverallProgress() && (
+                <div className="print-page p-10 pastel-pink border-soft rounded-xl text-[15px]" style={{margin: 0}}>
+                  {/* Trend Card */}
+                  <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-7 mb-8">
+                    <div className="section-title text-3xl font-bold text-gray-900 mb-5">Quarterly Performance Trend</div>
+                    <div className="no-break">
+                      {renderPrintStatusChartSVG()}
+                    </div>
+                  </div>
+
+                  {/* Summary & Risk Side-by-side */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-6">
+                      <div className="section-title text-2xl font-bold text-gray-900 mb-4">Performance Summary</div>
+                      <div className="bg-white rounded-lg p-4 border border-gray-200 text-base leading-relaxed">
+                        {milestoneSummary || milestoneOverallSummary ? (
+                          <>
+                            {milestoneSummary && <p className="mb-3">{milestoneSummary}</p>}
+                            {milestoneOverallSummary && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <p className="font-semibold text-blue-900">{milestoneOverallSummary}</p>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="italic text-gray-600">No summary available</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-white/80 border border-white/70 rounded-xl shadow-sm p-6">
+                      <div className="section-title text-2xl font-bold text-gray-900 mb-4">Risk Level</div>
+                      <div className="bg-white rounded-lg p-4 border border-gray-200 text-base">
+                        {hasOverallProgress() ? (
+                          (() => {
+                            const riskId = String(overallRisk?.risk || '');
+                            let label = 'No Data';
+                            let color = '';
+                            let description = 'Risk assessment data is not available.';
+                            if (riskId === '1') {
+                              label = 'Low';
+                              color = '#22c55e';
+                              description = 'Student is performing well and meeting expectations.';
+                            } else if (riskId === '2') {
+                              label = 'Moderate';
+                              color = '#fbbf24';
+                              description = 'Student may need additional support in some areas.';
+                            } else if (riskId === '3') {
+                              label = 'High';
+                              color = '#ef4444';
+                              description = 'Student requires immediate attention and intervention.';
+                            }
+                            return (
+                              <>
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
+                                  <span className="font-semibold">{label}</span>
+                                </div>
+                                <p className="text-gray-700">{description}</p>
+                              </>
+                            );
+                          })()
+                        ) : (
+                          <div className="text-gray-600 italic">No Assessment Data</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 bg-white px-1 sm:px-1 pt-1 pb-1">
+            <div ref={activeTab === "Assessment" ? assessmentRef : null} className="grid grid-cols-1 lg:grid-cols-5 gap-2 bg-white px-1 sm:px-1 pt-1 pb-1">
               {activeTab === "Assessment" ? (
                 assessmentLoading ? (
                   <div className="col-span-1 lg:col-span-5 flex flex-col items-center justify-center py-12">
@@ -1785,7 +2466,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                 return (
                                   <div key={row.subject_id} className="flex items-center gap-2 sm:gap-4 p-2 sm:p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                                     <div className="relative w-12 h-12 sm:w-16 sm:h-16">
-                                      <svg className="absolute top-0 left-0 w-full h-full">
+                                      <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 48 48" preserveAspectRatio="xMidYMid meet">
                                         <circle
                                           cx="24"
                                           cy="24"

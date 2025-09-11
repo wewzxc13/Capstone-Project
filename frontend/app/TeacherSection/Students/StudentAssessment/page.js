@@ -1,12 +1,23 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { FaArrowLeft, FaUser, FaSave, FaEdit, FaTrash, FaCheckCircle, FaRegClock, FaPlusCircle, FaExclamationTriangle, FaChartBar, FaTable, FaComments } from "react-icons/fa";
+import { FaArrowLeft, FaUser, FaSave, FaEdit, FaTrash, FaCheckCircle, FaRegClock, FaPlusCircle, FaExclamationTriangle, FaChartBar, FaTable, FaComments, FaPrint } from "react-icons/fa";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from 'next/navigation';
+import SharedExport from '../SharedExport';
 
-export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
+export default function StudentAssessment({ student, onBack, onRiskUpdate, triggerExport, onExportComplete, parentProfile, studentLevelData, advisory }) {
   const router = useRouter();
+  
+  // Debug: Log the props received
+  console.log('=== DEBUG: StudentAssessment received props ===', {
+    student,
+    parentProfile,
+    studentLevelData,
+    advisory,
+    leadTeacherName: advisory?.lead_teacher_name,
+    assistantTeacherName: advisory?.assistant_teacher_name
+  });
   
   // Redirect to login if not logged in
   useEffect(() => {
@@ -15,6 +26,16 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
       router.replace('/LoginSection');
     }
   }, [router]);
+
+  // Handle export trigger from parent
+  useEffect(() => {
+    if (triggerExport) {
+      handleExportAssessment();
+      if (onExportComplete) {
+        onExportComplete();
+      }
+    }
+  }, [triggerExport]);
 
   // Helper to format date of birth
   function formatDateOfBirth(dateStr) {
@@ -69,6 +90,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
   const insertedProgressCards = useRef({});
   const [finalizedQuarters, setFinalizedQuarters] = useState({});
   const [finalizeLoading, setFinalizeLoading] = useState({}); // quarter_id: true/false
+  const printRef = useRef(null);
   const [progressCards, setProgressCards] = useState([]);
   const [quartersData, setQuartersData] = useState([]);
   const [currentQuarter, setCurrentQuarter] = useState(null);
@@ -79,6 +101,8 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
   const [finalSubjectProgress, setFinalSubjectProgress] = useState([]);
   const [overallProgress, setOverallProgress] = useState(null);
   const [overallProgressLoading, setOverallProgressLoading] = useState(false);
+  const [milestoneSummary, setMilestoneSummary] = useState(null);
+  const [milestoneOverallSummary, setMilestoneOverallSummary] = useState(null);
 
   // Helper to get display name for sorting
   const getDisplayName = (key) => {
@@ -87,6 +111,206 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
     if (key === "Math") return "Mathematical Skills";
     if (key === "Physical Activities") return "Physical Activities";
     return key;
+  };
+
+  // Helper to format names as "Lastname, Firstname Middlename"
+  function formatName(fullName) {
+    if (!fullName) return "-";
+    
+    // Handle special cases that shouldn't be formatted as names
+    const specialCases = ['Not assigned', 'Not Assigned', 'not assigned', 'N/A', 'n/a', 'None', 'none', 'TBD', 'tbd'];
+    if (specialCases.includes(fullName.trim())) {
+      return fullName.trim();
+    }
+    
+    const nameParts = fullName.trim().split(' ');
+    if (nameParts.length < 2) return fullName;
+    
+    const lastName = nameParts[nameParts.length - 1];
+    const firstName = nameParts[0];
+    const middleName = nameParts.slice(1, -1).join(' ');
+    
+    if (middleName) {
+      return `${lastName}, ${firstName} ${middleName}`;
+    } else {
+      return `${lastName}, ${firstName}`;
+    }
+  }
+
+  // General helpers for printable data fallbacks
+  function displayOrLine(value, line = '____________________________') {
+    if (value === 0) return '0';
+    if (value === false) return 'No';
+    const str = typeof value === 'string' ? value.trim() : value;
+    return str ? String(str) : line;
+  }
+
+  function computeAge(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    const diff = Date.now() - d.getTime();
+    const ageDate = new Date(diff);
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
+  }
+
+  function buildParentName(profile, prefix) {
+    if (!profile) return '';
+    const direct = profile[`${prefix}_name`] || profile[`${prefix}Name`];
+    const first = profile[`${prefix}_firstname`] || profile[`${prefix}_first_name`] || profile[`${prefix}_first`] || profile[`${prefix}_fname`] || profile[`${prefix}FirstName`];
+    const middle = profile[`${prefix}_middlename`] || profile[`${prefix}_middle_name`] || profile[`${prefix}_mname`] || profile[`${prefix}MiddleName`];
+    const last = profile[`${prefix}_lastname`] || profile[`${prefix}_last_name`] || profile[`${prefix}_lname`] || profile[`${prefix}LastName`];
+    if (direct && String(direct).trim()) return String(direct).trim();
+    const parts = [first, middle, last].filter(Boolean).map(v => String(v).trim());
+    return parts.join(' ');
+  }
+
+  function getParentAge(profile, prefix) {
+    if (!profile) return '';
+    const age = profile[`${prefix}_age`] || profile[`${prefix}Age`];
+    if (age) return String(age);
+    const bday = profile[`${prefix}_birthdate`] || profile[`${prefix}_dob`] || profile[`${prefix}Birthdate`];
+    const computed = computeAge(bday);
+    return Number.isFinite(computed) ? String(computed) : '';
+  }
+
+  function getParentOccupation(profile, prefix) {
+    if (!profile) return '';
+    return (
+      profile[`${prefix}_occupation`] ||
+      profile[`${prefix}Occupation`] ||
+      ''
+    );
+  }
+
+  // Helper to determine risk status color and text from risk_id
+  const getRiskInfo = (riskId) => {
+    if (!riskId) return { text: 'No Data', color: 'bg-gray-400', textColor: 'text-gray-600' };
+    if (riskId === 1 || riskId === '1') return { text: 'Low', color: 'bg-green-500', textColor: 'text-green-700' };
+    if (riskId === 2 || riskId === '2') return { text: 'Moderate', color: 'bg-yellow-400', textColor: 'text-yellow-700' };
+    if (riskId === 3 || riskId === '3') return { text: 'High', color: 'bg-red-500', textColor: 'text-red-700' };
+    return { text: 'No Data', color: 'bg-gray-400', textColor: 'text-gray-600' };
+  };
+
+  // Helper to get latest teacher comment text for a given quarter (1-4)
+  function getQuarterCommentText(quarterId) {
+    if (!Array.isArray(comments) || comments.length === 0) return "";
+
+    const matches = comments.filter((c) => {
+      const qid = Number(c.quarter_id ?? c.quarterId);
+      if (!isNaN(qid)) return qid === Number(quarterId);
+      if (c.quarter_name && typeof c.quarter_name === 'string') {
+        const suffix = quarterId === 1 ? 'st' : quarterId === 2 ? 'nd' : quarterId === 3 ? 'rd' : 'th';
+        return c.quarter_name.toLowerCase().startsWith(`${quarterId}${suffix} quarter`.toLowerCase());
+      }
+      return false;
+    });
+
+    if (matches.length === 0) return "";
+
+    const getTime = (c) => {
+      const t = c.updated_at || c.created_at || c.comment_date;
+      const d = t ? new Date(t) : null;
+      return d && !isNaN(d) ? d.getTime() : 0;
+    };
+
+    const latest = matches.sort((a, b) => getTime(a) - getTime(b))[matches.length - 1];
+    const text = latest.comment_text || latest.feedback || latest.comment || "";
+    return (typeof text === 'string' ? text.trim() : '') || "";
+  }
+
+  // Export/Print function
+  const handleExportAssessment = () => {
+    try {
+      const printableElement = printRef.current;
+      if (!printableElement) {
+        toast.error("Nothing to export yet.");
+        return;
+      }
+
+      const originalTitle = document.title;
+
+      // Clone printable element to body to avoid clipping by scroll containers
+      const tempId = "reportcard-printable";
+      const cloned = printableElement.cloneNode(true);
+      cloned.setAttribute("id", tempId);
+      cloned.style.display = 'block';
+      cloned.style.margin = '0';
+      cloned.style.padding = '0';
+      document.body.appendChild(cloned);
+
+      const style = document.createElement("style");
+      style.setAttribute("media", "print");
+      style.innerHTML = `
+        @page { size: auto; margin: 0; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; }
+          /* Ensure colors are kept */
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          /* Hide everything except the cloned print container */
+          body > *:not(#${tempId}) { display: none !important; }
+          /* Normalize the printable container */
+          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; padding: 0; margin: 0; font-family: Calibri, 'Arial Rounded MT Bold', 'Comic Sans MS', Arial, sans-serif; display: flex !important; flex-direction: column !important; max-width: none !important; }
+          /* Remove clipping/overflow from ancestors inside the container */
+          #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
+          /* Avoid page breaks inside table rows/cards */
+          table, tr, td, th { page-break-inside: avoid !important; }
+          .rounded-xl, .rounded-lg { box-shadow: none !important; }
+          /* Page breaks: start a new page only from the second section onward */
+          .print-page { width: 100% !important; position: relative !important; min-height: 100vh !important; box-sizing: border-box !important; }
+          .print-page + .print-page { page-break-before: always; break-before: page; }
+          .no-break { page-break-inside: avoid; break-inside: avoid; }
+          .section-title { font-weight: 700; color: #1f2937; }
+          .pastel-blue { background: #eef5ff; }
+          .pastel-green { background: #eaf7f1; }
+          .pastel-yellow { background: #fff7e6; }
+          .pastel-pink { background: #ffeef2; }
+          .border-soft { border: 1px solid #e5e7eb; }
+          /* Custom page number footer (bottom-right) */
+          .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
+        }
+      `;
+
+      document.head.appendChild(style);
+
+      // Assign page numbers to each print page
+      const pages = cloned.querySelectorAll('.print-page');
+      const totalPages = pages.length;
+      pages.forEach((pageEl, index) => {
+        pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
+      });
+
+      // Set a descriptive title for the print/PDF
+      const studentName = student ? `${student.stud_lastname || student.lastName || ''}, ${student.stud_firstname || student.firstName || ''}`.trim() : "";
+      document.title = `Report Card ${studentName ? `- ${studentName}` : ''}`;
+
+      const cleanup = () => {
+        try {
+          if (style && style.parentNode) document.head.removeChild(style);
+          if (cloned && cloned.parentNode) cloned.parentNode.removeChild(cloned);
+          document.title = originalTitle;
+        } catch (e) {
+          // no-op
+        }
+      };
+
+      const afterPrint = () => {
+        window.removeEventListener('afterprint', afterPrint);
+        cleanup();
+      };
+      window.addEventListener('afterprint', afterPrint);
+
+      // Give React a beat to render the print layout
+      setTimeout(() => {
+        window.print();
+      }, 300);
+
+      // Fallback cleanup for browsers that don't fire afterprint reliably
+      setTimeout(() => { cleanup(); }, 1500);
+    } catch (err) {
+      console.error('Error exporting assessment:', err);
+      toast.error("Failed to export. Please try again.");
+    }
   };
 
   // Fetch all data on component mount
@@ -111,7 +335,11 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
           fetch('/php/Assessment/get_quarters.php'),
           fetch(`/php/Assessment/get_comments.php?student_id=${student.student_id}`),
           fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch('/php/Assessment/get_overall_progress.php?student_id=' + student.student_id + '&advisory_id=' + student.advisory_id)
+          fetch('/php/Assessment/get_overall_progress.php?student_id=' + student.student_id + '&advisory_id=' + student.advisory_id),
+          fetch(`/php/Assessment/get_milestone_interpretation.php?student_id=${student.student_id}`),
+          fetch('/php/Users/get_user_profile.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: student.parentId || student.parent_id }) }),
+          fetch('/php/Users/get_student_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) }),
+          fetch('/php/Advisory/get_advisory_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) })
         ];
 
         const responses = await Promise.all(promises);
@@ -177,6 +405,16 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
         if (data[8].status === 'success' && data[8].progress) {
           setOverallProgress(data[8].progress);
         }
+
+        // Process milestone interpretation
+        if (data[9].status === 'success' && data[9].milestone) {
+          setMilestoneSummary(data[9].milestone.summary);
+          setMilestoneOverallSummary(data[9].milestone.overall_summary);
+        }
+
+        // Parent profile and student level data are now passed as props from parent component
+
+        // Advisory details are now passed as props from parent component
 
         setLoading(false);
       } catch (err) {
@@ -324,8 +562,9 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+
       {/* Main Content Grid */}
-      <div className="grid grid-cols-5 gap-8 bg-white px-8 pt-8 pb-8">
+      <div className="grid grid-cols-5 gap-8 bg-white">
         {/* Left: Quarterly Assessment and Attendance (3 columns) */}
         <div className="col-span-3 space-y-8">
           {/* Quarterly Assessment Section */}
@@ -1129,6 +1368,27 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate }) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Shared Export Component */}
+      <div ref={printRef} className="hidden print:block" style={{margin: 0, padding: 0}}>
+        <SharedExport
+          student={student}
+          parentProfile={parentProfile}
+          studentLevelData={studentLevelData}
+          advisory={advisory}
+          attendanceData={attendanceData}
+          subjects={subjects}
+          quarterFeedback={quarterFeedback}
+          progressCards={progressCards}
+          finalSubjectProgress={finalSubjectProgress}
+          overallProgress={overallProgress}
+          visualFeedback={visualFeedback}
+          comments={comments}
+          milestoneSummary={milestoneSummary}
+          milestoneOverallSummary={milestoneOverallSummary}
+          quarters={quarters}
+        />
       </div>
     </div>
   );

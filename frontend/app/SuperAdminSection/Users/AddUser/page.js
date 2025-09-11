@@ -1592,14 +1592,14 @@ function getInputClassName(fieldName, formData, validationErrors) {
         
         {/* Form Section */}
         {userType && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 max-h-[calc(100vh-250px)] flex flex-col">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-auto md:h-[calc(100vh-250px)] flex flex-col">
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <h3 className="text-lg font-bold text-gray-900">Add {userType} Details</h3>
               <p className="text-sm text-gray-600">Fill in the required information to create a new {userType.toLowerCase()} account</p>
            
             </div>
             
-            <form onSubmit={handleSubmit} className="p-4 space-y-6 flex-1 overflow-y-auto">
+            <form onSubmit={handleSubmit} className="p-4 space-y-6 flex-1 overflow-y-auto md:overflow-y-auto overflow-y-visible">
               {userType === "Admin" && renderTeacherParentAdminFields(false, true)}
               {userType === "Teacher" && renderTeacherParentAdminFields(true, false)}
               {userType === "Parent" && renderTeacherParentAdminFields(false, false)}
