@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import fullAddress from '../../../../data/full_misamis_oriental_psgc.json';
 
 
+// Admin users can only add Teacher, Parent, and Student users (not other Admin users)
 const userTypes = ["Teacher", "Parent", "Student"];
 
 function capitalizeWords(str) {
@@ -156,7 +157,7 @@ const validators = {
     return { isValid: true, message: "" };
   },
 
-  // Date of birth validation - must be 18-100 years old (for Admin/Teacher/Parent)
+  // Date of birth validation - must be 18-100 years old (for Teacher/Parent)
   dob: (value) => {
     if (!value) return { isValid: false, message: "" };
     
@@ -389,7 +390,7 @@ export default function AddUserPage() {
   
   
   const handleBack = () => {
-            router.push("/AdminSection/Users");
+    router.push("/AdminSection/Users");
   };
 
   const handleClear = () => {
@@ -463,7 +464,7 @@ export default function AddUserPage() {
         errors.dob = dobValidation.message;
       }
     } else {
-      // Admin/Teacher/Parent validation - use dob for age 18+ validation
+      // Teacher/Parent validation - use dob for age 18+ validation
       ['first_name', 'middle_name', 'last_name', 'dob', 'email', 'country', 'provinceCode', 'cityCode', 'barangay'].forEach(field => {
         const validation = validateField(field, formData[field]);
         if (!validation.isValid) {
@@ -471,7 +472,7 @@ export default function AddUserPage() {
         }
       });
       
-      // Contact validation for all non-student users (Admin/Teacher/Parent)
+      // Contact validation for all non-student users (Teacher/Parent)
       console.log('validateForm: About to validate contact field with value:', formData.contact);
       const contactValidation = validateField('contact', formData.contact);
       console.log('validateForm: Contact validation result:', contactValidation);
@@ -847,7 +848,7 @@ function getInputClassName(fieldName, formData, validationErrors) {
         return `${baseClass} border-green-500 bg-green-50 focus:border-green-500 focus:ring-green-500`;
       }
     } else {
-      // Admin/Teacher/Parent validation - use dob validator (18+ years)
+      // Teacher/Parent validation - use dob validator (18+ years)
       const dobValidation = validators.dob(formData[fieldName]);
       if (!dobValidation.isValid) {
         return `${baseClass} border-red-500 bg-red-500 focus:border-red-500 focus:ring-red-500`;

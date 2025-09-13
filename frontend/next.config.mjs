@@ -1,10 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    allowedDevOrigins: (process.env.ALLOWED_DEV_ORIGINS || '')
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean),
+    optimizeCss: true,
+    optimizePackageImports: ['react-icons', 'chart.js', 'react-chartjs-2'],
   },
   async redirects() {
     return [

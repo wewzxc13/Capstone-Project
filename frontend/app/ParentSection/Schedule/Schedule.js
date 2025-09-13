@@ -110,6 +110,33 @@ export default function Schedule() {
             const firstStudent = activeStudents.length > 0 ? activeStudents[0] : sortedStudents[0];
             console.log('🎯 Setting first student as default:', firstStudent.name, 'ID:', firstStudent.id);
             setSelectedStudent(firstStudent);
+            
+            // Enhance students data with photo information if available
+            // This will help the navigation tabs display photos
+            sortedStudents.forEach(async (student) => {
+              try {
+                const studentRes = await fetch("/php/Users/get_student_details.php", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ student_id: student.id })
+                });
+                const studentData = await studentRes.json();
+                if (studentData.status === "success" && studentData.student) {
+                  // Update the student in the students array with photo data
+                  // Only update if we don't already have photo data to avoid overwriting
+                  setStudents(prevStudents => 
+                    prevStudents.map(s => 
+                      s.id === student.id && !s.stud_photo && !s.photo
+                        ? { ...s, stud_photo: studentData.student.stud_photo || studentData.student.photo }
+                        : s
+                    )
+                  );
+                }
+              } catch (error) {
+                console.error(`Error fetching photo for student ${student.id}:`, error);
+              }
+            });
+            
             // Only initialize photos once, not on every render
             if (data.users) {
               initializeAllUsersPhotos(data.users);
@@ -208,56 +235,56 @@ export default function Schedule() {
 
   return (
     <div className="flex-1 p-4 bg-gray-50">
-             {/* Student Tabs - Only show if parent has 2+ active students */}
-               {students.filter(s => s.schoolStatus === 'Active').length > 1 && (
-         <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-4">
-           <div className="px-2 sm:px-4 py-2 border-b border-gray-200 overflow-x-auto pb-2">
+      {/* Student Tabs - Only show if parent has 2+ active students */}
+      {students.filter(s => s.schoolStatus === 'Active').length > 1 && (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-4">
+          <div className="px-2 sm:px-4 pt-6 pb-4 border-b border-gray-200 overflow-x-auto pb-2">
             <div className="flex gap-2 sm:gap-3">
-                              {students.filter(s => s.schoolStatus === 'Active').map((student) => (
-                 <button
-                   key={student.id}
-                   className={`px-2 sm:px-3 py-2 rounded-lg focus:outline-none transition-all duration-200 flex items-center gap-1 sm:gap-2 min-w-[140px] sm:min-w-[170px] flex-shrink-0 ${
-                     selectedStudent?.id === student.id
-                       ? 'bg-[#2c2f6f] text-white shadow-lg transform scale-105'
-                       : 'bg-white text-[#2c2f6f] border-2 border-gray-200 hover:border-[#2c2f6f] hover:bg-[#f3f7fd] hover:shadow-md'
-                   }`}
-                   onClick={() => handleStudentTabClick(student)}
-                 >
-                   {/* Student Photo */}
-                   <div className={`w-6 h-6 rounded-full flex items-center justify-center overflow-hidden ${
-                     selectedStudent?.id === student.id ? 'bg-white' : 'bg-[#2c2f6f]'
-                   }`}>
-                     {student.photo ? (
-                       <img
-                         src={getPhotoUrl(student.photo)}
-                         alt="Profile"
-                         className="w-full h-full object-cover rounded-full"
-                         onError={(e) => {
-                           e.target.style.display = 'none';
-                           if (e.target.nextSibling) {
-                             e.target.nextSibling.style.display = 'flex';
-                           }
-                         }}
-                       />
-                     ) : null}
-                     <FaUser className={`w-3 h-3 ${selectedStudent?.id === student.id ? 'text-[#2c2f6f]' : 'text-white'}`} style={{ display: student.photo ? 'none' : 'flex' }} />
-                   </div>
+              {students.filter(s => s.schoolStatus === 'Active').map((student) => (
+                <button
+                  key={student.id}
+                  className={`px-2 sm:px-3 py-2 rounded-lg focus:outline-none transition-all duration-200 flex items-center gap-1 sm:gap-2 min-w-[140px] sm:min-w-[170px] flex-shrink-0 ${
+                    selectedStudent?.id === student.id
+                      ? 'bg-[#2c2f6f] text-white shadow-lg transform scale-105'
+                      : 'bg-white text-[#2c2f6f] border-2 border-gray-200 hover:border-[#2c2f6f] hover:bg-[#f3f7fd] hover:shadow-md'
+                  }`}
+                  onClick={() => handleStudentTabClick(student)}
+                >
+                  {/* Student Photo */}
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                    selectedStudent?.id === student.id ? 'bg-white' : 'bg-[#2c2f6f]'
+                  }`}>
+                    {student.stud_photo || student.photo ? (
+                      <img
+                        src={getPhotoUrl(student.stud_photo || student.photo)}
+                        alt={`${student.firstName || student.name} photo`}
+                        className="w-full h-full object-cover rounded-full"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          if (e.target.nextSibling) {
+                            e.target.nextSibling.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <FaUser className={`w-3 h-3 ${selectedStudent?.id === student.id ? 'text-[#2c2f6f]' : 'text-white'}`} style={{ display: (student.stud_photo || student.photo) ? 'none' : 'flex' }} />
+                  </div>
 
-                   {/* Student Info */}
-                   <div className="text-left">
-                    <div className="font-semibold text-[11px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
-                       {student.lastName ? `${student.lastName}, ${student.firstName} ${student.middleName || ''}`.trim() : student.name}
-                     </div>
-                    <div className="text-[11px] sm:text-xs opacity-80 truncate max-w-[100px] sm:max-w-none">
-                       {student.levelName || 'Class N/A'}
-                     </div>
-                   </div>
-                 </button>
-               ))}
-             </div>
-           </div>
-         </div>
-       )}
+                  {/* Student Info */}
+                  <div className="flex flex-col items-start text-left">
+                    <div className="font-semibold text-xs sm:text-sm leading-tight truncate max-w-[100px] sm:max-w-none">
+                      {student.lastName ? `${student.lastName}, ${student.firstName} ${student.middleName || ''}`.trim() : student.name}
+                    </div>
+                    <div className="text-xs opacity-80 leading-tight truncate max-w-[100px] sm:max-w-none">
+                      {student.levelName || 'Class N/A'}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
              {/* Schedule Content - Always show when there's a selected student */}
        {selectedStudent && (

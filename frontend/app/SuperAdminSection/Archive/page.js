@@ -237,13 +237,10 @@ export default function SuperAdminArchivePage() {
   const sortedParentUsers = sortUsers(filteredParentOnlyUsers);
   const sortedStudentUsers = sortUsers(filteredStudents);
 
-  // Show all rows, but the container height fits ~4 rows so extras scroll
-  const PAGE_SIZE = 4; // used only to size container consistently
+  // Show 5 users initially, rest will be scrollable
   const paginatedStaff = sortedStaffUsers;
   const paginatedParents = sortedParentUsers;
   const paginatedStudents = sortedStudentUsers;
-
-
 
   if (loading) {
     return (
@@ -278,7 +275,7 @@ export default function SuperAdminArchivePage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Tab Navigation */}
           <div className="px-5 py-2 border-b border-gray-200">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {[
                 { name: 'Staff', icon: <FaUserTie className="text-sm" /> },
                 { name: 'Parent', icon: <FaUsers className="text-sm" /> },
@@ -286,7 +283,7 @@ export default function SuperAdminArchivePage() {
               ].map(tab => (
                 <button
                   key={tab.name}
-                  className={`px-4 py-1.5 rounded-lg font-medium border-2 transition-colors duration-150 flex items-center gap-2 ${
+                  className={`px-3 sm:px-4 py-1.5 rounded-lg font-medium border-2 transition-colors duration-150 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none justify-center sm:justify-start ${
                     activeTab === tab.name 
                       ? 'bg-[#232c67] text-white border-[#232c67]' 
                       : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
@@ -296,7 +293,7 @@ export default function SuperAdminArchivePage() {
                   }}
                 >
                   {tab.icon}
-                  {tab.name}
+                  <span className="whitespace-nowrap">{tab.name}</span>
                 </button>
               ))}
             </div>
@@ -305,16 +302,15 @@ export default function SuperAdminArchivePage() {
           {/* Controls Section */}
           <div className="p-3 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        {/* Search Bar */}
+              {/* Search Bar */}
               <div className="relative flex-1 max-w-md">
-                
                 <div className="relative">
                   <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
-            <input
-              type="text"
-              placeholder="Search by name, email, or contact number"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+                  <input
+                    type="text"
+                    placeholder="Search by name, email, or contact number"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 pr-8 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full caret-[#232c67]"
                   />
                   {searchTerm && (
@@ -328,8 +324,8 @@ export default function SuperAdminArchivePage() {
                       </svg>
                     </button>
                   )}
-          </div>
-        </div>
+                </div>
+              </div>
 
               {/* Summary Stats */}
               <div className="flex items-center gap-3">
@@ -341,7 +337,7 @@ export default function SuperAdminArchivePage() {
                 </div>
               </div>
             </div>
-        </div>
+          </div>
 
         {/* Tab Content */}
         {activeTab === 'Staff' && (
@@ -357,7 +353,7 @@ export default function SuperAdminArchivePage() {
                   </div>
                 </div>
               </div>
-                             {paginatedStaff.length === 0 ? (
+              {paginatedStaff.length === 0 ? (
                  <div className="flex flex-col justify-center items-center text-center px-6 h-80">
                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
                      <FaUsers className="text-4xl text-gray-400" />
@@ -381,17 +377,17 @@ export default function SuperAdminArchivePage() {
                    )}
                </div>
             ) : (
-              <>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
-                    <colgroup>
-                      <col style={{ width: '30%' }} />
-                      <col style={{ width: '12%' }} />
-                      <col style={{ width: '30%' }} />
-                      <col style={{ width: '20%' }} />
-                      <col style={{ width: '8%' }} />
-                    </colgroup>
-                      <thead className="bg-[#232c67] text-white border-b border-gray-200">
+                  <div className="max-h-[320px] overflow-y-auto custom-thin-scroll">
+                    <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
+                      <colgroup>
+                        <col style={{ width: '30%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '30%' }} />
+                        <col style={{ width: '20%' }} />
+                        <col style={{ width: '8%' }} />
+                      </colgroup>
+                      <thead className="bg-[#232c67] text-white border-b border-gray-200 sticky top-0 z-10">
                         <tr>
                           <th 
                             className="px-6 py-4 font-semibold text-white cursor-pointer"
@@ -415,10 +411,7 @@ export default function SuperAdminArchivePage() {
                             className="px-6 py-4 font-semibold text-white cursor-pointer"
                             onClick={() => handleSort("email")}
                           >
-                            <div className="flex items-center gap-2">
-                              Email
-                              {getSortIcon("email")}
-                            </div>
+                            <div className="flex items-center gap-2">Email {getSortIcon("email")}</div>
                           </th>
                           <th 
                             className="px-6 py-4 font-semibold text-white cursor-pointer"
@@ -432,97 +425,79 @@ export default function SuperAdminArchivePage() {
                           <th className="px-6 py-4 font-semibold text-white text-center">Action</th>
                       </tr>
                     </thead>
-                  </table>
-                  <div className={`max-h-[272px] overflow-y-auto`}>
-                    <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
-                      <colgroup>
-                        <col style={{ width: '30%' }} />
-                        <col style={{ width: '12%' }} />
-                        <col style={{ width: '30%' }} />
-                        <col style={{ width: '20%' }} />
-                        <col style={{ width: '8%' }} />
-                      </colgroup>
-                      <tbody className="divide-y divide-gray-200">
-                        {paginatedStaff.map((user) => (
-                          <tr key={`${user.role}-${user.id}`} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                {(() => {
-                                  // Get real-time photo from UserContext, fallback to user.photo if not available
-                                  const realTimePhoto = getUserPhoto(user.id) || user.photo;
-                                  
-                                  // Debug logging for photo retrieval
-                                  console.log('Photo retrieval for archived staff:', user.id, {
-                                    userName: user.name || `${user.lastName}, ${user.firstName}`,
-                                    userRole: user.role,
-                                    realTimePhoto: getUserPhoto(user.id),
-                                    fallbackPhoto: user.photo,
-                                    finalPhoto: realTimePhoto
-                                  });
-                                  
-                                  if (realTimePhoto) {
-                                    return (
-                                      <>
-                                        <img
-                                          src={realTimePhoto}
-                                          alt="Profile"
-                                          className="w-8 h-8 rounded-full object-cover shadow-sm"
-                                          onError={(e) => {
-                                            e.target.style.display = 'none';
-                                            if (e.target.nextSibling) {
-                                              e.target.nextSibling.style.display = 'flex';
-                                            }
-                                          }}
-                                        />
-                                        {/* Fallback icon that shows when photo fails to load */}
-                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center hidden">
-                                          <FaUser className="text-blue-600 text-sm" />
-                                        </div>
-                                      </>
-                                    );
-                                  } else {
-                                    return (
-                                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <FaUser className="text-blue-600 text-sm" />
-                                      </div>
-                                    );
-                                  }
-                                })()}
-                                <span className="font-medium text-gray-900">
-                                  {user.lastName && user.firstName 
-                                    ? `${user.lastName}, ${user.firstName}${user.middleName ? ` ${user.middleName}` : ''}`
-                                    : user.name || 'Not specified'
-                                  }
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                user.role === 'Admin' 
-                                  ? 'bg-blue-100 text-blue-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {user.role}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-gray-600">{user.email || "Not specified"}</td>
-                            <td className="px-6 py-4 text-gray-600">{user.contactNo ? formatPhoneForDisplay(user.contactNo) : "Not specified"}</td>
-                            <td className="px-6 py-4 text-center">
-                              <button
-                                onClick={() => handleViewUser(user.id, user.role)}
-                                className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center justify-center p-2 rounded-lg hover:bg-blue-50 transition-colors mx-auto"
-                                title="View Details"
-                              >
-                                <FaEye />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                    <tbody className="divide-y divide-gray-200">
+                    {paginatedStaff.map((user) => (
+                    <tr key={`${user.role}-${user.id}`} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {(() => {
+                            // Get real-time photo from UserContext, fallback to user.photo if not available
+                            const realTimePhoto = getUserPhoto(user.id) || user.photo;
+                            
+                            if (realTimePhoto) {
+                              return (
+                                <>
+                                  <img
+                                    src={realTimePhoto}
+                                    alt="Profile"
+                                    className="w-8 h-8 rounded-full object-cover shadow-sm flex-shrink-0"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      if (e.target.nextSibling) {
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                  {/* Fallback icon that shows when photo fails to load */}
+                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center hidden">
+                                    <FaUser className="text-blue-600 text-sm" />
+                                  </div>
+                                </>
+                              );
+                            } else {
+                              return (
+                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <FaUser className="text-blue-600 text-sm" />
+                                </div>
+                              );
+                            }
+                          })()}
+                          <span className="font-medium text-gray-900 text-sm">
+                            {user.lastName && user.firstName 
+                              ? `${user.lastName}, ${user.firstName}${user.middleName ? ` ${user.middleName}` : ''}`
+                              : user.name || 'Not specified'
+                            }
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          user.role === 'Admin' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 text-sm">{user.email || "Not specified"}</td>
+                      <td className="px-6 py-4 text-gray-600 text-sm">
+                        {user.contactNo ? formatPhoneForDisplay(user.contactNo) : "Not specified"}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleViewUser(user.id, user.role)}
+                          className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center justify-center p-2 rounded-lg hover:bg-blue-50 transition-colors mx-auto"
+                          title="View Details"
+                        >
+                          <FaEye className="text-sm" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                       </tbody>
                     </table>
                   </div>
                 </div>
-              </>
             )}
             </>
         )}
@@ -540,7 +515,7 @@ export default function SuperAdminArchivePage() {
                   </div>
                 </div>
               </div>
-                             {paginatedParents.length === 0 ? (
+              {paginatedParents.length === 0 ? (
                  <div className="flex flex-col justify-center items-center text-center px-6 h-80">
                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
                      <FaUsers className="text-4xl text-gray-400" />
@@ -564,16 +539,16 @@ export default function SuperAdminArchivePage() {
                    )}
                </div>
             ) : (
-              <>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
-                    <colgroup>
-                      <col style={{ width: '40%' }} />
-                      <col style={{ width: '35%' }} />
-                      <col style={{ width: '17%' }} />
-                      <col style={{ width: '8%' }} />
-                    </colgroup>
-                      <thead className="bg-[#232c67] text-white border-b border-gray-200">
+                  <div className="max-h-[320px] overflow-y-auto custom-thin-scroll">
+                    <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
+                      <colgroup>
+                        <col style={{ width: '40%' }} />
+                        <col style={{ width: '35%' }} />
+                        <col style={{ width: '17%' }} />
+                        <col style={{ width: '8%' }} />
+                      </colgroup>
+                      <thead className="bg-[#232c67] text-white border-b border-gray-200 sticky top-0 z-10">
                         <tr>
                           <th 
                             className="px-6 py-4 font-semibold text-white cursor-pointer"
@@ -588,10 +563,7 @@ export default function SuperAdminArchivePage() {
                             className="px-6 py-4 font-semibold text-white cursor-pointer"
                             onClick={() => handleSort("email")}
                           >
-                            <div className="flex items-center gap-2">
-                              Email
-                              {getSortIcon("email")}
-                            </div>
+                            <div className="flex items-center gap-2">Email {getSortIcon("email")}</div>
                           </th>
                           <th 
                             className="px-6 py-4 font-semibold text-white cursor-pointer"
@@ -605,78 +577,70 @@ export default function SuperAdminArchivePage() {
                           <th className="px-6 py-4 font-semibold text-white text-center">Action</th>
                       </tr>
                     </thead>
-                  </table>
-                  <div className={`max-h-[272px] overflow-y-auto`}>
-                    <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
-                      <colgroup>
-                        <col style={{ width: '40%' }} />
-                        <col style={{ width: '35%' }} />
-                        <col style={{ width: '17%' }} />
-                        <col style={{ width: '8%' }} />
-                      </colgroup>
-                      <tbody className="divide-y divide-gray-200">
-                        {paginatedParents.map((user) => (
-                          <tr key={`parent-${user.id}`} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                {(() => {
-                                  // Get real-time photo from UserContext, fallback to user.photo if not available
-                                  const realTimePhoto = getUserPhoto(user.id) || user.photo;
-                                  
-                                  if (realTimePhoto) {
-                                    return (
-                                      <>
-                                        <img
-                                          src={realTimePhoto}
-                                          alt="Profile"
-                                          className="w-8 h-8 rounded-full object-cover shadow-sm"
-                                          onError={(e) => {
-                                            e.target.style.display = 'none';
-                                            if (e.target.nextSibling) {
-                                              e.target.nextSibling.style.display = 'flex';
-                                            }
-                                          }}
-                                        />
-                                        {/* Fallback icon that shows when photo fails to load */}
-                                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center hidden">
-                                          <FaUser className="text-green-600 text-sm" />
-                                        </div>
-                                      </>
-                                    );
-                                  } else {
-                                    return (
-                                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                        <FaUser className="text-green-600 text-sm" />
-                                      </div>
-                                    );
-                                  }
-                                })()}
-                                <span className="font-medium text-gray-900">
-                                  {user.lastName && user.firstName 
-                                    ? `${user.lastName}, ${user.firstName}${user.middleName ? ` ${user.middleName}` : ''}`
-                                    : user.name || 'Not specified'
-                                  }
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-gray-600">{user.email || "Not specified"}</td>
-                            <td className="px-6 py-4 text-gray-600">{user.contactNo ? formatPhoneForDisplay(user.contactNo) : "Not specified"}</td>
-                            <td className="px-6 py-4 text-center">
-                              <button
-                                onClick={() => handleViewUser(user.id, user.role)}
-                                className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center justify-center p-2 rounded-lg hover:bg-blue-50 transition-colors mx-auto"
-                                title="View Details"
-                              >
-                                <FaEye />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                    <tbody className="divide-y divide-gray-200">
+                    {paginatedParents.map((user) => (
+                    <tr key={`parent-${user.id}`} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {(() => {
+                            // Get real-time photo from UserContext, fallback to user.photo if not available
+                            const realTimePhoto = getUserPhoto(user.id) || user.photo;
+                            
+                            if (realTimePhoto) {
+                              return (
+                                <>
+                                  <img
+                                    src={realTimePhoto}
+                                    alt="Profile"
+                                    className="w-8 h-8 rounded-full object-cover shadow-sm flex-shrink-0"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      if (e.target.nextSibling) {
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                  {/* Fallback icon that shows when photo fails to load */}
+                                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center hidden">
+                                    <FaUser className="text-green-600 text-sm" />
+                                  </div>
+                                </>
+                              );
+                            } else {
+                              return (
+                                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <FaUser className="text-green-600 text-sm" />
+                                </div>
+                              );
+                            }
+                          })()}
+                          <span className="font-medium text-gray-900 text-sm">
+                            {user.lastName && user.firstName 
+                              ? `${user.lastName}, ${user.firstName}${user.middleName ? ` ${user.middleName}` : ''}`
+                              : user.name || 'Not specified'
+                            }
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 text-sm">{user.email || "Not specified"}</td>
+                      <td className="px-6 py-4 text-gray-600 text-sm">
+                        {user.contactNo ? formatPhoneForDisplay(user.contactNo) : "Not specified"}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleViewUser(user.id, user.role)}
+                          className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center justify-center p-2 rounded-lg hover:bg-blue-50 transition-colors mx-auto"
+                          title="View Details"
+                        >
+                          <FaEye className="text-sm" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                       </tbody>
                     </table>
                   </div>
                 </div>
-              </>
             )}
             </>
         )}
@@ -694,7 +658,7 @@ export default function SuperAdminArchivePage() {
                   </div>
                 </div>
               </div>
-                             {paginatedStudents.length === 0 ? (
+              {paginatedStudents.length === 0 ? (
                  <div className="flex flex-col justify-center items-center text-center px-6 h-80">
                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
                      <FaUsers className="text-4xl text-gray-400" />
@@ -718,16 +682,16 @@ export default function SuperAdminArchivePage() {
                    )}
                </div>
             ) : (
-              <>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
-                    <colgroup>
-                      <col style={{ width: '45%' }} />
-                      <col style={{ width: '25%' }} />
-                      <col style={{ width: '22%' }} />
-                      <col style={{ width: '8%' }} />
-                    </colgroup>
-                      <thead className="bg-[#232c67] text-white border-b border-gray-200">
+                  <div className="max-h-[320px] overflow-y-auto custom-thin-scroll">
+                    <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
+                      <colgroup>
+                        <col style={{ width: '45%' }} />
+                        <col style={{ width: '25%' }} />
+                        <col style={{ width: '22%' }} />
+                        <col style={{ width: '8%' }} />
+                      </colgroup>
+                      <thead className="bg-[#232c67] text-white border-b border-gray-200 sticky top-0 z-10">
                         <tr>
                           <th 
                             className="px-6 py-4 font-semibold text-white cursor-pointer"
@@ -751,98 +715,85 @@ export default function SuperAdminArchivePage() {
                             className="px-6 py-4 font-semibold text-white cursor-pointer"
                             onClick={() => handleSort("gender")}
                           >
-                            <div className="flex items-center gap-2">
-                              Gender
-                              {getSortIcon("gender")}
-                            </div>
+                            <div className="flex items-center gap-2">Gender {getSortIcon("gender")}</div>
                           </th>
                           <th className="px-6 py-4 font-semibold text-white text-center">Action</th>
                       </tr>
                     </thead>
-                  </table>
-                  <div className={`max-h-[272px] overflow-y-auto`}>
-                    <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
-                      <colgroup>
-                        <col style={{ width: '45%' }} />
-                        <col style={{ width: '25%' }} />
-                        <col style={{ width: '22%' }} />
-                        <col style={{ width: '8%' }} />
-                      </colgroup>
-                      <tbody className="divide-y divide-gray-200">
-                        {paginatedStudents.map((student) => (
-                          <tr key={`student-${student.id}`} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                {(() => {
-                                  // Get real-time photo from UserContext, fallback to student.photo if not available
-                                  const realTimePhoto = getStudentPhoto(student.id) || student.photo;
-                                  
-                                  if (realTimePhoto) {
-                                    return (
-                                      <>
-                                        <img
-                                          src={realTimePhoto}
-                                          alt="Profile"
-                                          className="w-8 h-8 rounded-full object-cover shadow-sm"
-                                          onError={(e) => {
-                                            e.target.style.display = 'none';
-                                            if (e.target.nextSibling) {
-                                              e.target.nextSibling.style.display = 'flex';
-                                            }
-                                          }}
-                                        />
-                                        {/* Fallback icon that shows when photo fails to load */}
-                                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center hidden">
-                                          <FaUser className="text-purple-600 text-sm" />
-                                        </div>
-                                      </>
-                                    );
-                                  } else {
-                                    return (
-                                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                                        <FaUser className="text-purple-600 text-sm" />
-                                      </div>
-                                    );
-                                  }
-                                })()}
-                                <span className="font-medium text-gray-900">
-                                  {student.lastName && student.firstName 
-                                    ? `${student.lastName}, ${student.firstName}${student.middleName ? ` ${student.middleName}` : ''}`
-                                    : student.name || 'Not specified'
-                                  }
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-gray-600">
-                              {student.birthdate ? new Date(student.birthdate).toLocaleDateString() : "Not specified"}
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                student.gender?.toLowerCase() === "male"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : student.gender?.toLowerCase() === "female"
-                                  ? "bg-pink-100 text-pink-800"
-                                  : "bg-gray-100 text-gray-800"
-                              }`}>
-                                {student.gender || "Not specified"}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <button
-                                onClick={() => handleViewUser(student.id, 'Student')}
-                                className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center justify-center p-2 rounded-lg hover:bg-blue-50 transition-colors mx-auto"
-                                title="View Details"
-                              >
-                                <FaEye />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                    <tbody className="divide-y divide-gray-200">
+                    {paginatedStudents.map((student) => (
+                    <tr key={`student-${student.id}`} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {(() => {
+                            // Get real-time photo from UserContext, fallback to student.photo if not available
+                            const realTimePhoto = getStudentPhoto(student.id) || student.photo;
+                            
+                            if (realTimePhoto) {
+                              return (
+                                <>
+                                  <img
+                                    src={realTimePhoto}
+                                    alt="Profile"
+                                    className="w-8 h-8 rounded-full object-cover shadow-sm flex-shrink-0"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      if (e.target.nextSibling) {
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                  {/* Fallback icon that shows when photo fails to load */}
+                                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center hidden">
+                                    <FaUser className="text-purple-600 text-sm" />
+                                  </div>
+                                </>
+                              );
+                            } else {
+                              return (
+                                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <FaUser className="text-purple-600 text-sm" />
+                                </div>
+                              );
+                            }
+                          })()}
+                          <span className="font-medium text-gray-900 text-sm">
+                            {student.lastName && student.firstName 
+                              ? `${student.lastName}, ${student.firstName}${student.middleName ? ` ${student.middleName}` : ''}`
+                              : student.name || 'Not specified'
+                            }
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 text-sm">
+                        {student.birthdate ? new Date(student.birthdate).toLocaleDateString() : "Not specified"}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          student.gender?.toLowerCase() === "male"
+                            ? "bg-blue-100 text-blue-800"
+                            : student.gender?.toLowerCase() === "female"
+                            ? "bg-pink-100 text-pink-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}>
+                          {student.gender || "Not specified"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleViewUser(student.id, 'Student')}
+                          className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center justify-center p-2 rounded-lg hover:bg-blue-50 transition-colors mx-auto"
+                          title="View Details"
+                        >
+                          <FaEye className="text-sm" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                       </tbody>
                     </table>
                   </div>
                 </div>
-              </>
             )}
             </>
           )}

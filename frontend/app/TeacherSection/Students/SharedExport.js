@@ -173,11 +173,13 @@ const SharedExport = ({
 
   // Add shapeColorMap for consistent coloring
   const shapeColorMap = {
-    '❤️': '#ef4444', // red
-    '⭐': '#fbbf24', // yellow
-    '🔷': '#2563eb', // blue
-    '▲': '#f59e42', // orange
-    '🟡': '#facc15'  // gold/yellow
+    '♥': '#ef4444',      // Heart - red
+    '★': '#f59e0b',      // Star - orange  
+    '◆': '#1e40af',     // Diamond - dark blue
+    '▲': '#10b981',      // Triangle - green
+    '⬤': '#fef08a',      // Circle - light yellow
+    '■': '#06b6d4',      // Square - light blue
+    '⬢': '#def244'       // Hexagon - light green
   };
 
   // Helper to render status chart for print

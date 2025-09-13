@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import ReactCountryFlag from "react-country-flag";
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useUser } from "../../Context/UserContext";
+import { useModal } from "../../Context/ModalContext";
 import fullAddress from '../../../data/full_misamis_oriental_psgc.json';
 
 // --- VALIDATION LOGIC (copied and adapted from AddUser) ---
@@ -209,6 +210,7 @@ function unformatPhoneInput(formattedInput) {
 
 export default function ViewOwnUserPage() {
   const { updateUserName, updateUserPhoto, updateAnyUserPhoto } = useUser();
+  const { openModal, closeModal } = useModal();
   const [formData, setFormData] = useState({
     user_firstname: "",
     user_middlename: "",
@@ -696,6 +698,9 @@ export default function ViewOwnUserPage() {
   const openCropModal = (imageFile) => {
     if (!imageFile) return;
     
+    // Open modal context immediately
+    openModal();
+    
     // If it's a new file, read it directly
     if (imageFile instanceof File && imageFile.size > 0) {
       const reader = new FileReader();
@@ -732,12 +737,14 @@ export default function ViewOwnUserPage() {
           } catch (error) {
             console.error('Failed to convert image to data URL:', error);
             toast.error('Failed to load existing photo for cropping. Please try uploading a new photo instead.');
+            closeModal();
           }
         };
         
         img.onerror = () => {
           console.error('Failed to load image for conversion');
           toast.error('Failed to load existing photo. Please try uploading a new photo instead.');
+          closeModal();
         };
         
         img.src = currentPhotoUrl;
@@ -762,18 +769,33 @@ export default function ViewOwnUserPage() {
       canvas.width = diameter;
       canvas.height = diameter;
       
-      // Get the actual image dimensions from the displayed image
-      const displayWidth = 350; // Width of the image in the cropping interface
-      const displayHeight = 350; // Height of the image in the cropping interface
+      // Get responsive display dimensions based on screen size
+      let displayWidth, displayHeight, containerSize;
+      if (window.innerWidth < 640) {
+        // Mobile: 240px image in 280px container
+        displayWidth = 240;
+        displayHeight = 240;
+        containerSize = 280;
+      } else if (window.innerWidth < 1024) {
+        // Small screens: 300px image in 350px container
+        displayWidth = 300;
+        displayHeight = 300;
+        containerSize = 350;
+      } else {
+        // Large screens: 350px image in 400px container
+        displayWidth = 350;
+        displayHeight = 350;
+        containerSize = 400;
+      }
       
       // Calculate the scale factor between display and actual image
       const scaleX = img.naturalWidth / displayWidth;
       const scaleY = img.naturalHeight / displayHeight;
       
       // Calculate the actual source coordinates in the original image
-      // The cropData coordinates are relative to the 400x400 container, but the image is 350x350 centered
-      // So we need to adjust for the offset: (400 - 350) / 2 = 25px offset
-      const containerOffset = 25; // (400 - 350) / 2
+      // The cropData coordinates are relative to the container, but the image is centered
+      // So we need to adjust for the offset: (container - image) / 2
+      const containerOffset = (containerSize - displayWidth) / 2;
       const adjustedCenterX = cropData.centerX - containerOffset;
       const adjustedCenterY = cropData.centerY - containerOffset;
       
@@ -785,7 +807,9 @@ export default function ViewOwnUserPage() {
       
       // Debug logging for coordinate verification
       console.log('=== CROPPING DEBUG ===');
+      console.log('Screen width:', window.innerWidth);
       console.log('Display dimensions:', displayWidth, 'x', displayHeight);
+      console.log('Container size:', containerSize);
       console.log('Actual image dimensions:', img.naturalWidth, 'x', img.naturalHeight);
       console.log('Scale factors:', scaleX, scaleY);
       console.log('Container offset:', containerOffset);
@@ -879,6 +903,7 @@ export default function ViewOwnUserPage() {
       setShowCropModal(false);
       setCropImage(null);
       setOriginalImage(null);
+      closeModal();
       toast.success('Photo cropped successfully! Preview updated.');
     } catch (error) {
       console.error('Failed to create preview URL:', error);
@@ -888,6 +913,7 @@ export default function ViewOwnUserPage() {
       setShowCropModal(false);
       setCropImage(null);
       setOriginalImage(null);
+      closeModal();
     }
   };
 
@@ -910,6 +936,7 @@ export default function ViewOwnUserPage() {
     });
     setIsDragging(false);
     setDragType(null);
+    closeModal();
   };
 
   // Mouse interaction handlers for circular cropping
@@ -947,11 +974,21 @@ export default function ViewOwnUserPage() {
     const deltaY = y - dragStart.y;
 
     if (dragType === 'move') {
-      // Constrain movement to keep crop circle within the 400x400 container
+      // Get responsive container size
+      let containerSize;
+      if (window.innerWidth < 640) {
+        containerSize = 280; // Mobile
+      } else if (window.innerWidth < 1024) {
+        containerSize = 350; // Small screens
+      } else {
+        containerSize = 400; // Large screens
+      }
+      
+      // Constrain movement to keep crop circle within the responsive container
       setCropData(prev => ({
         ...prev,
-        centerX: Math.max(prev.radius, Math.min(400 - prev.radius, prev.centerX + deltaX)),
-        centerY: Math.max(prev.radius, Math.min(400 - prev.radius, prev.centerY + deltaY))
+        centerX: Math.max(prev.radius, Math.min(containerSize - prev.radius, prev.centerX + deltaX)),
+        centerY: Math.max(prev.radius, Math.min(containerSize - prev.radius, prev.centerY + deltaY))
       }));
     } else if (dragType === 'resize') {
       const newRadius = Math.max(30, Math.min(160, cropData.radius + (deltaX + deltaY) / 2));
@@ -965,6 +1002,81 @@ export default function ViewOwnUserPage() {
   };
 
   const handleMouseUp = () => {
+    setIsDragging(false);
+    setDragType(null);
+  };
+
+  // Touch event handlers for mobile devices
+  const handleTouchStart = (e) => {
+    e.preventDefault(); // Prevent scrolling and other default behaviors
+    
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    // Check if touching on resize handle (outer ring)
+    const distanceFromCenter = Math.sqrt(
+      Math.pow(x - cropData.centerX, 2) + Math.pow(y - cropData.centerY, 2)
+    );
+
+    if (Math.abs(distanceFromCenter - cropData.radius) < 30) { // Larger touch target for mobile
+      setDragType('resize');
+    } else if (distanceFromCenter < cropData.radius) {
+      setDragType('move');
+    } else {
+      // Outside the circle - no rotation, just ignore
+      return;
+    }
+
+    setIsDragging(true);
+    setDragStart({ x, y });
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    
+    e.preventDefault(); // Prevent scrolling and other default behaviors
+    
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    const deltaX = x - dragStart.x;
+    const deltaY = y - dragStart.y;
+
+    if (dragType === 'move') {
+      // Get responsive container size
+      let containerSize;
+      if (window.innerWidth < 640) {
+        containerSize = 280; // Mobile
+      } else if (window.innerWidth < 1024) {
+        containerSize = 350; // Small screens
+      } else {
+        containerSize = 400; // Large screens
+      }
+      
+      // Constrain movement to keep crop circle within the responsive container
+      setCropData(prev => ({
+        ...prev,
+        centerX: Math.max(prev.radius, Math.min(containerSize - prev.radius, prev.centerX + deltaX)),
+        centerY: Math.max(prev.radius, Math.min(containerSize - prev.radius, prev.centerY + deltaY))
+      }));
+    } else if (dragType === 'resize') {
+      const newRadius = Math.max(30, Math.min(160, cropData.radius + (deltaX + deltaY) / 2));
+      setCropData(prev => ({
+        ...prev,
+        radius: newRadius
+      }));
+    }
+
+    setDragStart({ x, y });
+  };
+
+  const handleTouchEnd = (e) => {
+    e.preventDefault(); // Prevent default behaviors
+    
     setIsDragging(false);
     setDragType(null);
   };
@@ -1582,27 +1694,43 @@ export default function ViewOwnUserPage() {
 
         {/* Photo Cropping Modal */}
         {showCropModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4 bg-[#232c67] text-white p-4 rounded-lg">
-                <h3 className="text-lg font-semibold">Crop & Resize Photo</h3>
+          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[9999] p-2 sm:p-4">
+            <div className="bg-white rounded-lg p-3 sm:p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-3 sm:mb-4 bg-[#232c67] text-white p-3 sm:p-4 rounded-lg">
+                <h3 className="text-base sm:text-lg font-semibold">Crop & Resize Photo</h3>
               </div>
 
-              {/* Cropping Area and Controls Side by Side */}
-              <div className="mb-6 flex gap-6">
-                {/* Cropping Area */}
-                <div className="flex-shrink-0">
+              {/* Cropping Area and Controls - Responsive Layout */}
+              <div className="mb-4 sm:mb-6 flex flex-col lg:flex-row gap-4 lg:gap-6">
+                {/* Cropping Area - Responsive */}
+                <div className="flex-shrink-0 mx-auto lg:mx-0">
                   <div
-                    className="relative border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-100 h-[400px] w-[400px] flex items-center justify-center cursor-crosshair"
+                    className="crop-container relative border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-100 h-[280px] w-[280px] sm:h-[350px] sm:w-[350px] lg:h-[400px] lg:w-[400px] flex items-center justify-center cursor-crosshair select-none"
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
+                    style={{ touchAction: 'none' }} // Prevent default touch behaviors
+                    ref={(el) => {
+                      if (el) {
+                        // Add touch event listeners with passive: false to allow preventDefault
+                        el.addEventListener('touchstart', handleTouchStart, { passive: false });
+                        el.addEventListener('touchmove', handleTouchMove, { passive: false });
+                        el.addEventListener('touchend', handleTouchEnd, { passive: false });
+                        
+                        // Cleanup function
+                        return () => {
+                          el.removeEventListener('touchstart', handleTouchStart);
+                          el.removeEventListener('touchmove', handleTouchMove);
+                          el.removeEventListener('touchend', handleTouchEnd);
+                        };
+                      }
+                    }}
                   >
                     <img
                       src={cropImage}
                       alt="Crop preview"
-                      className="w-[350px] h-[350px] object-contain"
+                      className="w-[240px] h-[240px] sm:w-[300px] sm:h-[300px] lg:w-[350px] lg:h-[350px] object-contain"
                       style={{
                         transform: `scale(${cropData.scale}) rotate(${cropData.rotate}deg)`,
                         transformOrigin: 'center'
@@ -1622,19 +1750,19 @@ export default function ViewOwnUserPage() {
 
                     {/* Center Point */}
                     <div
-                      className="absolute w-3 h-3 bg-white border-2 border-black rounded-full pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-white border-2 border-black rounded-full pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - 6}px`,
-                        top: `${cropData.centerY - 6}px`
+                        left: `${cropData.centerX - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
 
-                    {/* Resize Handle (Outer Ring) */}
+                    {/* Resize Handle (Outer Ring) - Larger on mobile for better touch */}
                     <div
-                      className="absolute w-6 h-6 bg-cyan-500 border-2 border-white rounded-full cursor-nw-resize"
+                      className="absolute w-6 h-6 sm:w-8 sm:h-8 bg-cyan-500 border-2 border-white rounded-full cursor-nw-resize"
                       style={{
-                        left: `${cropData.centerX + cropData.radius - 12}px`,
-                        top: `${cropData.centerY - 12}px`
+                        left: `${cropData.centerX + cropData.radius - (window.innerWidth < 640 ? 12 : 16)}px`,
+                        top: `${cropData.centerY - (window.innerWidth < 640 ? 12 : 16)}px`
                       }}
                     />
 
@@ -1651,121 +1779,122 @@ export default function ViewOwnUserPage() {
 
                     {/* Corner Control Points - Bright Cyan */}
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - cropData.radius - 6}px`,
-                        top: `${cropData.centerY - cropData.radius - 6}px`
+                        left: `${cropData.centerX - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX + cropData.radius - 6}px`,
-                        top: `${cropData.centerY - cropData.radius - 6}px`
+                        left: `${cropData.centerX + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - cropData.radius - 6}px`,
-                        top: `${cropData.centerY + cropData.radius - 6}px`
+                        left: `${cropData.centerX - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX + cropData.radius - 6}px`,
-                        top: `${cropData.centerY + cropData.radius - 6}px`
+                        left: `${cropData.centerX + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
 
                     {/* Midpoint Control Points - Bright Cyan */}
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - 6}px`,
-                        top: `${cropData.centerY - cropData.radius - 6}px`
+                        left: `${cropData.centerX - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX + cropData.radius - 6}px`,
-                        top: `${cropData.centerY - 6}px`
+                        left: `${cropData.centerX + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - 6}px`,
-                        top: `${cropData.centerY + cropData.radius - 6}px`
+                        left: `${cropData.centerX - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - cropData.radius - 6}px`,
-                        top: `${cropData.centerY - 6}px`
+                        left: `${cropData.centerX - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                   </div>
                 </div>
 
-                {/* Right Side Controls - Organized in Rows */}
-                <div className="flex-1 space-y-6">
-                  {/* Row 1: How to Crop Info */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-blue-800 mb-2">💡 How to crop:</h4>
+                {/* Right Side Controls - Responsive */}
+                <div className="flex-1 space-y-3 sm:space-y-4 lg:space-y-6">
+                  {/* Row 1: How to Crop Info - Mobile and Desktop versions */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                    <h4 className="text-xs sm:text-sm font-semibold text-blue-800 mb-2">💡 How to crop:</h4>
                     <ul className="text-xs text-blue-700 space-y-1">
-                      <li>• <strong>Drag the center</strong> of the black circle to move it anywhere on the image</li>
-                      <li>• <strong>Drag the outer edge</strong> of the black circle to resize it (fits Discord logo face)</li>
-                      <li>• <strong>Scale & rotation</strong> are automatically adjusted as you move the circle</li>
+                      <li className="hidden sm:block">• <strong>Drag the center</strong> of the black circle to move it anywhere on the image</li>
+                      <li className="sm:hidden">• <strong>Touch and drag the center</strong> of the black circle to move it</li>
+                      <li className="hidden sm:block">• <strong>Drag the outer edge</strong> of the black circle to resize it</li>
+                      <li className="sm:hidden">• <strong>Touch and drag the cyan handle</strong> on the edge to resize</li>
                       <li>• <strong>Bright cyan control points</strong> show the bounding box and resize handles</li>
-                      <li>• Photo is sized to fit the yellow highlighted area - crop circle can now properly fit the logo face!</li>
+                      <li className="sm:hidden">• <strong>Use quick presets below</strong> for common sizes</li>
                     </ul>
                   </div>
 
-                  {/* Row 2: Center X, Y, Radius (Same Line) */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                  {/* Row 2: Center X, Y, Radius - Responsive Grid */}
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                    <div className="bg-gray-50 p-2 sm:p-4 rounded-lg text-center">
                       <div className="text-xs text-gray-600 font-medium mb-1">Center X</div>
-                      <div className="text-xl font-semibold text-gray-800">{Math.round(cropData.centerX)}px</div>
+                      <div className="text-sm sm:text-xl font-semibold text-gray-800">{Math.round(cropData.centerX)}px</div>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                    <div className="bg-gray-50 p-2 sm:p-4 rounded-lg text-center">
                       <div className="text-xs text-gray-600 font-medium mb-1">Center Y</div>
-                      <div className="text-xl font-semibold text-gray-800">{Math.round(cropData.centerY)}px</div>
+                      <div className="text-sm sm:text-xl font-semibold text-gray-800">{Math.round(cropData.centerY)}px</div>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                    <div className="bg-gray-50 p-2 sm:p-4 rounded-lg text-center">
                       <div className="text-xs text-gray-600 font-medium mb-1">Radius</div>
-                      <div className="text-xl font-semibold text-gray-800">{Math.round(cropData.radius)}px</div>
+                      <div className="text-sm sm:text-xl font-semibold text-gray-800">{Math.round(cropData.radius)}px</div>
                     </div>
                   </div>
 
-                  {/* Row 3: Quick Presets (Same Line) */}
+                  {/* Row 3: Quick Presets - Responsive */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Quick Presets</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">Quick Presets</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setCropData(prev => ({ ...prev, radius: 105, centerX: 200, centerY: 200 }))}
-                        className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
+                        className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
                       >
                         210×210
                       </button>
                       <button
                         onClick={() => setCropData(prev => ({ ...prev, radius: 125, centerX: 200, centerY: 200 }))}
-                        className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
+                        className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-gray-200 rounded border text-center"
                       >
                         250×250
                       </button>
                       <button
                         onClick={() => setCropData(prev => ({ ...prev, radius: 145, centerX: 200, centerY: 200 }))}
-                        className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
+                        className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
                       >
                         290×290
                       </button>
                       <button
                         onClick={() => setCropData(prev => ({ ...prev, radius: 165, centerX: 200, centerY: 200 }))}
-                        className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
+                        className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
                       >
                         330×330
                       </button>
@@ -1774,18 +1903,18 @@ export default function ViewOwnUserPage() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              {/* Action Buttons - Responsive */}
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">
                 <button
                   onClick={cancelCrop}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center justify-center gap-2 order-2 sm:order-1"
                 >
                   <FaUndo className="text-sm" />
                   Cancel
                 </button>
                 <button
                   onClick={applyCrop}
-                  className="px-4 py-2 bg-[#232c67] text-white rounded-lg font-medium hover:bg-[#1a1f4d] transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-[#2c2f6f] text-white rounded-lg font-medium hover:bg-[#1a1f4d] transition-colors flex items-center justify-center gap-2 order-1 sm:order-2"
                 >
                   <FaCheck className="text-sm" />
                   Apply Crop

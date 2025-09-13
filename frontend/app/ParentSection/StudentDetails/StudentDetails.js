@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import { FaUser, FaPhone, FaEnvelope, FaTimes, FaEdit, FaCrop, FaCheck, FaUndo } from "react-icons/fa";
 import { useUser } from "../../Context/UserContext";
+import { useModal } from "../../Context/ModalContext";
 
 
 // Helper to capitalize first letter of each word
@@ -148,6 +149,7 @@ function getPhotoUrl(filename) {
 
 const StudentDetails = () => {
   const { updateAnyStudentPhoto } = useUser();
+  const { openModal, closeModal } = useModal();
   const [students, setStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [studentData, setStudentData] = useState(null);
@@ -780,6 +782,9 @@ const StudentDetails = () => {
   const openCropModal = (imageFile) => {
     if (!imageFile) return;
     
+    // Open modal context immediately
+    openModal();
+    
     // If it's a new file, read it directly
     if (imageFile instanceof File && imageFile.size > 0) {
       const reader = new FileReader();
@@ -816,12 +821,14 @@ const StudentDetails = () => {
           } catch (error) {
             console.error('Failed to convert image to data URL:', error);
             toast.error('Failed to load existing photo for cropping. Please try uploading a new photo instead.');
+            closeModal();
           }
         };
         
         img.onerror = () => {
           console.error('Failed to load image for conversion');
           toast.error('Failed to load existing photo. Please try uploading a new photo instead.');
+          closeModal();
         };
         
         img.src = currentPhotoUrl;
@@ -847,8 +854,8 @@ const StudentDetails = () => {
       canvas.height = diameter;
       
       // Get the actual image dimensions from the displayed image
-      const displayWidth = 350; // Width of the image in the cropping interface
-      const displayHeight = 350; // Height of the image in the cropping interface
+      const displayWidth = window.innerWidth < 640 ? 240 : (window.innerWidth < 1024 ? 300 : 350);
+      const displayHeight = displayWidth; // Square image
       
       // Calculate the scale factor between display and actual image
       const scaleX = img.naturalWidth / displayWidth;
@@ -965,6 +972,7 @@ const StudentDetails = () => {
       setShowCropModal(false);
       setCropImage(null);
       setOriginalImage(null);
+      closeModal();
       toast.success('Photo cropped successfully! Preview updated.');
     } catch (error) {
       console.error('Failed to create preview URL:', error);
@@ -974,6 +982,7 @@ const StudentDetails = () => {
       setShowCropModal(false);
       setCropImage(null);
       setOriginalImage(null);
+      closeModal();
     }
   };
 
@@ -996,6 +1005,7 @@ const StudentDetails = () => {
     });
     setIsDragging(false);
     setDragType(null);
+    closeModal();
   };
 
   // Mouse interaction handlers for circular cropping
@@ -1054,6 +1064,73 @@ const StudentDetails = () => {
     setIsDragging(false);
     setDragType(null);
   };
+
+  // Touch event handlers for mobile devices
+  const handleTouchStart = (e) => {
+    e.preventDefault(); // Prevent scrolling and other default behaviors
+    
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    // Check if touching on resize handle (outer ring)
+    const distanceFromCenter = Math.sqrt(
+      Math.pow(x - cropData.centerX, 2) + Math.pow(y - cropData.centerY, 2)
+    );
+
+    if (Math.abs(distanceFromCenter - cropData.radius) < 30) { // Larger touch target for mobile
+      setDragType('resize');
+    } else if (distanceFromCenter < cropData.radius) {
+      setDragType('move');
+    } else {
+      // Outside the circle - no rotation, just ignore
+      return;
+    }
+
+    setIsDragging(true);
+    setDragStart({ x, y });
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    
+    e.preventDefault(); // Prevent scrolling and other default behaviors
+    
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    const deltaX = x - dragStart.x;
+    const deltaY = y - dragStart.y;
+
+    if (dragType === 'move') {
+      // Constrain movement to keep crop circle within the 400x400 container
+      setCropData(prev => ({
+        ...prev,
+        centerX: Math.max(prev.radius, Math.min(400 - prev.radius, prev.centerX + deltaX)),
+        centerY: Math.max(prev.radius, Math.min(400 - prev.radius, prev.centerY + deltaY))
+      }));
+    } else if (dragType === 'resize') {
+      const newRadius = Math.max(30, Math.min(160, cropData.radius + (deltaX + deltaY) / 2));
+      setCropData(prev => ({
+        ...prev,
+        radius: newRadius
+      }));
+    }
+
+    setDragStart({ x, y });
+  };
+
+  const handleTouchEnd = (e) => {
+    e.preventDefault(); // Prevent default behaviors
+    
+    setIsDragging(false);
+    setDragType(null);
+  };
+
+  // Touch event listeners are now handled inline in the JSX
 
   if (loading) return <div className="p-8">Loading...</div>;
   
@@ -1266,8 +1343,8 @@ const StudentDetails = () => {
               </div>
             </div>
             
-            {/* Session, Handedness, and Photo on the same line */}
-            <div className="grid grid-cols-3 gap-4 mt-4">
+            {/* Session, Handedness, and Photo - Responsive Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
               {/* Session */}
               <div>
                 <label className="block text-sm font-semibold text-[#2c2f6f] mb-1">Session</label>
@@ -1283,10 +1360,10 @@ const StudentDetails = () => {
                 {!studentData?.schedule && !studentData?.scheduleClass && <span className="text-xs text-gray-400">Not specified</span>}
               </div>
               
-              {/* Handedness */}
-              <div>
+              {/* Handedness - Mobile: Full width, Desktop: Normal */}
+              <div className="md:col-span-1">
                 <label className="block text-sm font-semibold text-[#2c2f6f] mb-1">Handedness</label>
-                <div className="flex gap-6 text-sm text-[#2c2f6f]">
+                <div className="flex gap-4 sm:gap-6 text-sm text-[#2c2f6f] justify-center md:justify-start">
                   {['Right', 'Left'].map(option => (
                     <label key={option} className={`flex items-center gap-2 ${editing ? 'cursor-pointer' : 'cursor-default'}`}>
                       <input
@@ -1297,20 +1374,20 @@ const StudentDetails = () => {
                         onChange={editing ? handleStudentChange : undefined}
                         readOnly={!editing}
                         disabled={!editing && !studentData?.handedness}
-                        className={editing ? 'cursor-pointer' : 'cursor-default'}
+                        className={`${editing ? 'cursor-pointer' : 'cursor-default'} w-4 h-4`}
                       />
-                      {option}
+                      <span className="text-sm font-medium">{option}</span>
                     </label>
                   ))}
-                  {!editing && !studentData?.handedness && <span className="text-xs text-gray-400 ml-2">Not specified</span>}
-                  {validationErrors.handedness && <div className="text-red-500 text-xs mt-1">{validationErrors.handedness}</div>}
                 </div>
+                {!editing && !studentData?.handedness && <span className="text-xs text-gray-400 text-center block mt-1">Not specified</span>}
+                {validationErrors.handedness && <div className="text-red-500 text-xs mt-1 text-center md:text-left">{validationErrors.handedness}</div>}
               </div>
               
-              {/* Photo */}
-              <div>
-                <label className="block text-sm font-semibold text-[#2c2f6f] mb-1">Photo</label>
-                <div className="flex flex-col items-center gap-4">
+              {/* Photo - Mobile: Full width, Desktop: Normal */}
+              <div className="md:col-span-1">
+                <label className="block text-sm font-semibold text-[#2c2f6f] mb-1 text-center md:text-left">Photo</label>
+                <div className="flex flex-col items-center gap-3 md:gap-4">
                   {/* Current Photo Display with Circular Dashed Border */}
                   <div className="flex-shrink-0 relative">
                     {/* Debug logging for photo fields */}
@@ -1328,7 +1405,7 @@ const StudentDetails = () => {
                         <img
                           src={selectedPhotoBlobUrl || getPhotoUrl(studentData?.stud_photo || studentData?.photo || editStudentData?.stud_photo || editStudentData?.photo)}
                           alt="Current Profile"
-                          className={`w-20 h-20 rounded-full object-cover border-2 border-gray-200 ${editing ? 'cursor-pointer hover:border-blue-400 transition-colors' : ''}`}
+                          className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-gray-200 ${editing ? 'cursor-pointer hover:border-blue-400 transition-colors' : ''}`}
                           onClick={editing ? handlePhotoClick : undefined}
                           onError={(e) => {
                             console.log('Current photo failed to load:', selectedPhotoBlobUrl ? 'selectedPhotoBlobUrl (cropped)' : (studentData?.stud_photo || studentData?.photo || editStudentData?.stud_photo || editStudentData?.photo)); // Debug log
@@ -1344,7 +1421,7 @@ const StudentDetails = () => {
                           }}
                         />
                         {/* Fallback icon that shows when photo fails to load */}
-                        <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl shadow-sm border-2 border-blue-200 hidden">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl sm:text-2xl shadow-sm border-2 border-blue-200 hidden">
                           <FaUser />
                         </div>
                          
@@ -1354,7 +1431,7 @@ const StudentDetails = () => {
                     ) : (
                       <div className="relative">
                         <div 
-                          className={`w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-2xl border-2 border-gray-200 ${editing ? 'cursor-pointer hover:bg-gray-200 hover:border-gray-400 transition-colors' : ''}`}
+                          className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-xl sm:text-2xl border-2 border-gray-200 ${editing ? 'cursor-pointer hover:bg-gray-200 hover:border-gray-400 transition-colors' : ''}`}
                           onClick={editing ? handleNoPhotoClick : undefined}
                         >
                           <FaUser />
@@ -1367,7 +1444,7 @@ const StudentDetails = () => {
                     {/* Crop indicator overlay for editing mode */}
                     {editing && (selectedPhoto || studentData?.stud_photo || studentData?.photo || editStudentData?.stud_photo || editStudentData?.photo) && (
                       <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
-                        <FaCrop className="text-white text-sm" />
+                        <FaCrop className="text-white text-xs sm:text-sm" />
                       </div>
                     )}
 
@@ -1386,19 +1463,19 @@ const StudentDetails = () => {
                   <div className="text-center">
                     {selectedPhoto ? (
                       <div className="text-green-600">
-                        <div className="font-medium text-sm">Selected: {selectedPhoto.name}</div>
+                        <div className="font-medium text-xs sm:text-sm">Selected: {selectedPhoto.name}</div>
                         <div className="text-xs">Click photo to change or crop</div>
                       </div>
                     ) : (selectedPhoto || studentData?.stud_photo || studentData?.photo || editStudentData?.stud_photo || editStudentData?.photo) ? (
                       <div className="text-gray-600">
-                        <div className="font-medium text-sm">Current photo uploaded</div>
+                        <div className="font-medium text-xs sm:text-sm">Current photo uploaded</div>
                         <div className={`text-xs ${editing ? 'text-blue-600' : 'text-gray-500'}`}>
                           {editing ? 'Click photo for options' : 'Photo uploaded'}
                         </div>
                       </div>
                     ) : (
                       <div className="text-gray-500">
-                        <div className="font-medium text-sm">No photo uploaded</div>
+                        <div className="font-medium text-xs sm:text-sm">No photo uploaded</div>
                         <div className={`text-xs ${editing ? 'text-blue-600' : 'text-gray-400'}`}>
                           {editing ? 'Click photo to upload your first photo' : 'No photo'}
                         </div>
@@ -1406,9 +1483,9 @@ const StudentDetails = () => {
                     )}
                   </div>
 
-                  {/* Upload Instructions */}
+                  {/* Upload Instructions - Hidden on mobile to save space */}
                   {editing && (
-                    <div className="text-center">
+                    <div className="text-center hidden sm:block">
                       <div className="text-xs text-gray-500 mb-2">
                         Supported formats: JPG, PNG, GIF, WebP. Max size: 5MB.
                       </div>
@@ -1560,27 +1637,43 @@ const StudentDetails = () => {
 
         {/* Photo Cropping Modal */}
         {showCropModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4 bg-[#232c67] text-white p-4 rounded-lg">
-                <h3 className="text-lg font-semibold">Crop & Resize Photo</h3>
+          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[9999] p-2 sm:p-4">
+            <div className="bg-white rounded-lg p-3 sm:p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-3 sm:mb-4 bg-[#232c67] text-white p-3 sm:p-4 rounded-lg">
+                <h3 className="text-base sm:text-lg font-semibold">Crop & Resize Photo</h3>
               </div>
 
-              {/* Cropping Area and Controls Side by Side */}
-              <div className="mb-6 flex gap-6">
-                {/* Cropping Area */}
-                <div className="flex-shrink-0">
+              {/* Cropping Area and Controls - Responsive Layout */}
+              <div className="mb-4 sm:mb-6 flex flex-col lg:flex-row gap-4 lg:gap-6">
+                {/* Cropping Area - Responsive */}
+                <div className="flex-shrink-0 mx-auto lg:mx-0">
                   <div
-                    className="relative border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-100 h-[400px] w-[400px] flex items-center justify-center cursor-crosshair"
+                    className="crop-container relative border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-100 h-[280px] w-[280px] sm:h-[350px] sm:w-[350px] lg:h-[400px] lg:w-[400px] flex items-center justify-center cursor-crosshair select-none"
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
+                    style={{ touchAction: 'none' }} // Prevent default touch behaviors
+                    ref={(el) => {
+                      if (el) {
+                        // Add touch event listeners with passive: false to allow preventDefault
+                        el.addEventListener('touchstart', handleTouchStart, { passive: false });
+                        el.addEventListener('touchmove', handleTouchMove, { passive: false });
+                        el.addEventListener('touchend', handleTouchEnd, { passive: false });
+                        
+                        // Cleanup function
+                        return () => {
+                          el.removeEventListener('touchstart', handleTouchStart);
+                          el.removeEventListener('touchmove', handleTouchMove);
+                          el.removeEventListener('touchend', handleTouchEnd);
+                        };
+                      }
+                    }}
                   >
                     <img
                       src={cropImage}
                       alt="Crop preview"
-                      className="w-[350px] h-[350px] object-contain"
+                      className="w-[240px] h-[240px] sm:w-[300px] sm:h-[300px] lg:w-[350px] lg:h-[350px] object-contain"
                       style={{
                         transform: `scale(${cropData.scale}) rotate(${cropData.rotate}deg)`,
                         transformOrigin: 'center'
@@ -1597,22 +1690,24 @@ const StudentDetails = () => {
                         height: `${cropData.radius * 2}px`
                       }}
                     />
+                    
+                    {/* Debug: Show crop area coordinates */}
 
                     {/* Center Point */}
                     <div
-                      className="absolute w-3 h-3 bg-white border-2 border-black rounded-full pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-white border-2 border-black rounded-full pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - 6}px`,
-                        top: `${cropData.centerY - 6}px`
+                        left: `${cropData.centerX - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
 
-                    {/* Resize Handle (Outer Ring) */}
+                    {/* Resize Handle (Outer Ring) - Larger on mobile for better touch */}
                     <div
-                      className="absolute w-6 h-6 bg-cyan-500 border-2 border-white rounded-full cursor-nw-resize"
+                      className="absolute w-6 h-6 sm:w-8 sm:h-8 bg-cyan-500 border-2 border-white rounded-full cursor-nw-resize"
                       style={{
-                        left: `${cropData.centerX + cropData.radius - 12}px`,
-                        top: `${cropData.centerY - 12}px`
+                        left: `${cropData.centerX + cropData.radius - (window.innerWidth < 640 ? 12 : 16)}px`,
+                        top: `${cropData.centerY - (window.innerWidth < 640 ? 12 : 16)}px`
                       }}
                     />
 
@@ -1629,121 +1724,123 @@ const StudentDetails = () => {
 
                     {/* Corner Control Points - Bright Cyan */}
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - cropData.radius - 6}px`,
-                        top: `${cropData.centerY - cropData.radius - 6}px`
+                        left: `${cropData.centerX - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX + cropData.radius - 6}px`,
-                        top: `${cropData.centerY - cropData.radius - 6}px`
+                        left: `${cropData.centerX + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - cropData.radius - 6}px`,
-                        top: `${cropData.centerY + cropData.radius - 6}px`
+                        left: `${cropData.centerX - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX + cropData.radius - 6}px`,
-                        top: `${cropData.centerY + cropData.radius - 6}px`
+                        left: `${cropData.centerX + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
 
                     {/* Midpoint Control Points - Bright Cyan */}
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - 6}px`,
-                        top: `${cropData.centerY - cropData.radius - 6}px`
+                        left: `${cropData.centerX - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX + cropData.radius - 6}px`,
-                        top: `${cropData.centerY - 6}px`
+                        left: `${cropData.centerX + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - 6}px`,
-                        top: `${cropData.centerY + cropData.radius - 6}px`
+                        left: `${cropData.centerX - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY + cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                     <div
-                      className="absolute w-3 h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
+                      className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-cyan-500 border-2 border-white rounded-sm pointer-events-none"
                       style={{
-                        left: `${cropData.centerX - cropData.radius - 6}px`,
-                        top: `${cropData.centerY - 6}px`
+                        left: `${cropData.centerX - cropData.radius - (window.innerWidth < 640 ? 4 : 6)}px`,
+                        top: `${cropData.centerY - (window.innerWidth < 640 ? 4 : 6)}px`
                       }}
                     />
                   </div>
                 </div>
 
-                {/* Right Side Controls - Organized in Rows */}
-                <div className="flex-1 space-y-6">
-                  {/* Row 1: How to Crop Info */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-blue-800 mb-2">💡 How to crop:</h4>
+                {/* Right Side Controls - Responsive */}
+                <div className="flex-1 space-y-3 sm:space-y-4 lg:space-y-6">
+                  {/* Row 1: How to Crop Info - Mobile and Desktop versions */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                    <h4 className="text-xs sm:text-sm font-semibold text-blue-800 mb-2">💡 How to crop:</h4>
                     <ul className="text-xs text-blue-700 space-y-1">
-                      <li>• <strong>Drag the center</strong> of the black circle to move it anywhere on the image</li>
-                      <li>• <strong>Drag the outer edge</strong> of the black circle to resize it (fits Discord logo face)</li>
-                      <li>• <strong>Scale & rotation</strong> are automatically adjusted as you move the circle</li>
+                      <li className="hidden sm:block">• <strong>Drag the center</strong> of the black circle to move it anywhere on the image</li>
+                      <li className="sm:hidden">• <strong>Touch and drag the center</strong> of the black circle to move it</li>
+                      <li className="hidden sm:block">• <strong>Drag the outer edge</strong> of the black circle to resize it</li>
+                      <li className="sm:hidden">• <strong>Touch and drag the cyan handle</strong> on the edge to resize</li>
                       <li>• <strong>Bright cyan control points</strong> show the bounding box and resize handles</li>
-                      <li>• Photo is sized to fit the yellow highlighted area - crop circle can now properly fit the logo face!</li>
+                      <li className="sm:hidden">• <strong>Use quick presets below</strong> for common sizes</li>
                     </ul>
                   </div>
 
-                  {/* Row 2: Center X, Y, Radius (Same Line) */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                  {/* Row 2: Center X, Y, Radius - Responsive Grid */}
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                    <div className="bg-gray-50 p-2 sm:p-4 rounded-lg text-center">
                       <div className="text-xs text-gray-600 font-medium mb-1">Center X</div>
-                      <div className="text-xl font-semibold text-gray-800">{Math.round(cropData.centerX)}px</div>
+                      <div className="text-sm sm:text-xl font-semibold text-gray-800">{Math.round(cropData.centerX)}px</div>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                    <div className="bg-gray-50 p-2 sm:p-4 rounded-lg text-center">
                       <div className="text-xs text-gray-600 font-medium mb-1">Center Y</div>
-                      <div className="text-xl font-semibold text-gray-800">{Math.round(cropData.centerY)}px</div>
+                      <div className="text-sm sm:text-xl font-semibold text-gray-800">{Math.round(cropData.centerY)}px</div>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                    <div className="bg-gray-50 p-2 sm:p-4 rounded-lg text-center">
                       <div className="text-xs text-gray-600 font-medium mb-1">Radius</div>
-                      <div className="text-xl font-semibold text-gray-800">{Math.round(cropData.radius)}px</div>
+                      <div className="text-sm sm:text-xl font-semibold text-gray-800">{Math.round(cropData.radius)}px</div>
                     </div>
                   </div>
+                  
 
-                  {/* Row 3: Quick Presets (Same Line) */}
+                  {/* Row 3: Quick Presets - Responsive */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Quick Presets</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">Quick Presets</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setCropData(prev => ({ ...prev, radius: 105, centerX: 200, centerY: 200 }))}
-                        className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
+                        className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
                       >
                         210×210
                       </button>
                       <button
                         onClick={() => setCropData(prev => ({ ...prev, radius: 125, centerX: 200, centerY: 200 }))}
-                        className="px-4 py-2 text-sm bg-gray-200 rounded border text-center"
+                        className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-gray-200 rounded border text-center"
                       >
                         250×250
                       </button>
                       <button
                         onClick={() => setCropData(prev => ({ ...prev, radius: 145, centerX: 200, centerY: 200 }))}
-                        className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
+                        className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
                       >
                         290×290
                       </button>
                       <button
                         onClick={() => setCropData(prev => ({ ...prev, radius: 165, centerX: 200, centerY: 200 }))}
-                        className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
+                        className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded border text-center"
                       >
                         330×330
                       </button>
@@ -1752,18 +1849,18 @@ const StudentDetails = () => {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              {/* Action Buttons - Responsive */}
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">
                 <button
                   onClick={cancelCrop}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center justify-center gap-2 order-2 sm:order-1"
                 >
                   <FaUndo className="text-sm" />
                   Cancel
                 </button>
                 <button
                   onClick={applyCrop}
-                  className="px-4 py-2 bg-[#2c2f6f] text-white rounded-lg font-medium hover:bg-[#1a1f4d] transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-[#2c2f6f] text-white rounded-lg font-medium hover:bg-[#1a1f4d] transition-colors flex items-center justify-center gap-2 order-1 sm:order-2"
                 >
                   <FaCheck className="text-sm" />
                   Apply Crop

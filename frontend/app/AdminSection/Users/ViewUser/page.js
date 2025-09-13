@@ -515,7 +515,7 @@ export default function ViewUserPage() {
   }, [formData, isEditing]);
 
   const handleBack = () => {
-            router.push("/AdminSection/Users");
+    router.push("/AdminSection/Users");
   };
 
   const handleEdit = () => {
@@ -684,7 +684,7 @@ export default function ViewUserPage() {
         city_municipality: 'municipality_city',
         country: 'country'
       };
-            } else if (role === "Teacher" || role === "Admin") {
+    } else if (role === "Teacher" || role === "Admin" || role === "Admin") {
       fieldMap = {
         ...fieldMap,
         barangay: 'barangay',
@@ -756,7 +756,7 @@ export default function ViewUserPage() {
       updateData.municipality_city = updateData.city_municipality;
       // DO NOT delete updateData.city_municipality here!
     } else if (
-              (role === "Admin" || role === "Teacher") &&
+      (role === "Admin" || role === "Teacher" || role === "Admin") &&
       updateData.city_municipality
     ) {
       updateData.city = updateData.city_municipality;

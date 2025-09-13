@@ -619,9 +619,9 @@ export default function ViewLinkedStudentPage() {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 sm:ml-auto">
+                          <div className="w-full sm:w-auto sm:ml-auto">
                             <button
-                              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-xs sm:text-sm"
+                              className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-xs sm:text-sm w-full sm:w-auto"
                               onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); setModalParent(parent); setSearch(""); setSelectedStudent(null); }}
                             >
                               <FaUsers className="text-xs sm:text-sm" />
@@ -779,9 +779,9 @@ export default function ViewLinkedStudentPage() {
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 sm:ml-auto">
+                            <div className="w-full sm:w-auto sm:ml-auto">
                               <button
-                                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-xs sm:text-sm"
+                                className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-xs sm:text-sm w-full sm:w-auto"
                                 onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); setModalParent(parent); setSearch(""); setSelectedStudent(null); }}
                               >
                                 <FaUsers className="text-xs sm:text-sm" />
@@ -937,7 +937,7 @@ export default function ViewLinkedStudentPage() {
                             </div>
                           </div>
                           <button
-                            className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-xs sm:text-sm sm:ml-auto"
+                            className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 shadow-sm text-xs sm:text-sm w-full sm:w-auto"
                             onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); setModalParent(parent); setSearch(""); setSelectedStudent(null); }}
                           >
                             <FaUsers className="text-xs sm:text-sm" />

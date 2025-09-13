@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-toastify/dist/ReactToastify.css";
+import { useModal } from "../../Context/ModalContext";
 
 import { createPortal } from "react-dom";
 
@@ -25,6 +26,7 @@ function Modal({ open, onClose, children }) {
 }
 
 export default function SuperAdminSchedulePage() {
+  const { openModal, closeModal } = useModal();
   const [scheduleData, setScheduleData] = useState([]);
   const [selectedLevelId, setSelectedLevelId] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -571,6 +573,7 @@ export default function SuperAdminSchedulePage() {
     setModalActivity1(mainId);
     setModalActivity2(altId);
     setModalOpen(true);
+    openModal();
   };
 
   // Helper to determine session (morning/afternoon) for a given start time and class
@@ -664,7 +667,10 @@ export default function SuperAdminSchedulePage() {
             <div className="flex items-center gap-3">
               {/* Add Activity Button */}
               <button
-                onClick={() => setAddActivityModalOpen(true)}
+                onClick={() => {
+                  setAddActivityModalOpen(true);
+                  openModal();
+                }}
                 className="flex items-center gap-2 bg-[#232c67] hover:bg-[#1a1f4d] text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
               >
                 <FaPlus className="text-sm" />
@@ -997,7 +1003,10 @@ export default function SuperAdminSchedulePage() {
       </div>
 
       {/* Modal for editing schedule cell */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
+      <Modal open={modalOpen} onClose={() => {
+        setModalOpen(false);
+        closeModal();
+      }}>
         <div className="mb-4 bg-[#232c67] text-white p-4 rounded-t-lg -mt-8 -mx-8">
           <h3 className="text-xl font-bold text-white mb-1">Edit Schedule Item</h3>
           <p className="text-[#a8b0e0] text-sm">Update the schedule details for this time slot</p>
@@ -1072,6 +1081,7 @@ export default function SuperAdminSchedulePage() {
                     }
                     setModalOpen(false);
                     setSavingModal(false);
+                    closeModal();
                     setLoading(true);
                     // Refresh schedule
                     fetch('/php/Schedule/get_schedule.php')
@@ -1244,7 +1254,10 @@ export default function SuperAdminSchedulePage() {
               <button 
                 type="button" 
                 className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors" 
-                onClick={() => setModalOpen(false)} 
+                onClick={() => {
+                  setModalOpen(false);
+                  closeModal();
+                }} 
                 disabled={savingModal}
               >
                 <FaTimes className="text-sm" />
@@ -1268,7 +1281,10 @@ export default function SuperAdminSchedulePage() {
       </Modal>
 
       {/* Add Activity Modal */}
-      <Modal open={addActivityModalOpen} onClose={() => setAddActivityModalOpen(false)}>
+      <Modal open={addActivityModalOpen} onClose={() => {
+        setAddActivityModalOpen(false);
+        closeModal();
+      }}>
         <div className="mb-4 bg-[#232c67] text-white p-4 rounded-t-lg -mt-8 -mx-8">
           <h3 className="text-xl font-bold text-white mb-1">Manage Schedule Items</h3>
           <p className="text-[#a8b0e0] text-sm">View existing schedule items and add new ones</p>
@@ -1522,7 +1538,10 @@ export default function SuperAdminSchedulePage() {
             <button 
               type="button" 
               className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors" 
-              onClick={() => setAddActivityModalOpen(false)} 
+                onClick={() => {
+                  setAddActivityModalOpen(false);
+                  closeModal();
+                }}
               disabled={savingActivity}
             >
               <FaTimes className="text-sm" />
@@ -1585,6 +1604,7 @@ export default function SuperAdminSchedulePage() {
                   toast.success(data.message);
                   setEditModalOpen(false);
                   setAddActivityModalOpen(false); // Close the Add Schedule Item modal as well
+                  closeModal();
                   
                   // Refresh the lists
                   if (editingItem.type === 'subject') {
@@ -1742,6 +1762,7 @@ export default function SuperAdminSchedulePage() {
                       toast.success(data.message);
                       setDeleteModalOpen(false);
                       setAddActivityModalOpen(false); // Close the Add Schedule Item modal as well
+                  closeModal();
                       
                       // Refresh the lists and usage data
                       if (deletingItem.type === 'subject') {

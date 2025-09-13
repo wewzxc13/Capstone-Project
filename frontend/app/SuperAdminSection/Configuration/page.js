@@ -700,23 +700,23 @@ export default function SuperAdminConfigurationPage() {
 
 
 
-    // Get shape icon based on shape type - fully dynamic for future shape editing
+    // Get shape icon based on shape type with color coding
   const getShapeIcon = (shapeType, color) => {
-    // Special handling for triangle to ensure it displays in orange
-    // Check for various triangle representations that might be used
-    if (shapeType === '▲' || shapeType === '🔺' || shapeType === 'triangle' || shapeType.toLowerCase().includes('triangle')) {
-      return <span style={{ color: '#f59e42', fontSize: '2rem' }}>{shapeType}</span>;
-    }
+    // Define color mapping for each shape
+    const shapeColors = {
+      '♥': '#ef4444',      // Heart - red
+      '★': '#f59e0b',      // Star - orange  
+      '◆': '#1e40af',     // Diamond - light blue
+      '▲': '#10b981',      // Triangle - green
+      '⬤': '#fef08a',      // Circle - light yellow
+      '■': '#06b6d4',      // Square - dark blue
+      '⬢': '#def244'       // Hexagon - light green
+    };
     
-    // For all other shapes, use the emoji with appropriate styling
-    const iconStyle = { color: color, fontSize: '2rem' };
+    // Get the color for this shape type, fallback to provided color or default
+    const shapeColor = shapeColors[shapeType] || color || '#6b7280';
     
-    // Find the item in visualFeedback to get the correct color
-    const item = visualFeedback.find(item => item.visual_feedback_shape === shapeType);
-    const itemColor = item?.color || color;
-    
-    // This allows for any shape to be used without hardcoding
-    return <span style={{ ...iconStyle, color: itemColor, fontSize: '2rem' }}>{shapeType}</span>;
+    return <span style={{ color: shapeColor, fontSize: '2rem' }}>{shapeType}</span>;
   };
 
                                useEffect(() => {
@@ -897,7 +897,7 @@ export default function SuperAdminConfigurationPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Tab Navigation */}
           <div className="px-5 py-2 border-b border-gray-200">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {[
                 { name: 'Activities', icon: <FaArchive className="text-sm" /> },
                 { name: 'School Year', icon: <FaSchool className="text-sm" /> },
@@ -905,7 +905,7 @@ export default function SuperAdminConfigurationPage() {
               ].map(tab => (
                 <button
                   key={tab.name}
-                  className={`px-4 py-1.5 rounded-lg font-medium border-2 transition-colors duration-150 flex items-center gap-2 ${
+                  className={`px-3 sm:px-4 py-1.5 rounded-lg font-medium border-2 transition-colors duration-150 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none justify-center sm:justify-start ${
                     activeTab === tab.name 
                       ? 'bg-[#232c67] text-white border-[#232c67]' 
                       : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
@@ -913,7 +913,7 @@ export default function SuperAdminConfigurationPage() {
                   onClick={() => setActiveTab(tab.name)}
                 >
                   {tab.icon}
-                  {tab.name}
+                  <span className="whitespace-nowrap">{tab.name}</span>
                 </button>
               ))}
             </div>
@@ -955,7 +955,6 @@ export default function SuperAdminConfigurationPage() {
                     System Configuration
                   </span>
                 </div>
-                
               </div>
             </div>
           </div>
@@ -1127,33 +1126,33 @@ export default function SuperAdminConfigurationPage() {
           {activeTab === 'Activities' && (
             <>
               <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    All Activities 
-                  </h2>
-                                     <div className="flex items-center gap-4">
-                     <div className="flex items-center gap-4">
-                       <div className="flex items-center gap-2">
-                         <FaArchive className="text-blue-600" />
-                         <span className="text-sm font-medium text-blue-900">Total: {statistics.total_activities || 0}</span>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <FaCheck className="text-green-600" />
-                         <span className="text-sm font-medium text-green-700">Active: {statistics.active_activities || 0}</span>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <FaTimes className="text-gray-600" />
-                         <span className="text-sm font-medium text-gray-700">Archived: {statistics.archived_activities || 0}</span>
-                       </div>
-                     </div>
-                     <button
-                       onClick={openBulkArchiveModal}
-                       className="flex items-center gap-2 px-4 py-2 bg-[#232c67] text-white rounded-lg hover:bg-[#1a1f4d] transition-colors text-sm font-medium"
-                     >
-                       <FaArchive className="text-xs" />
-                       Bulk Archive
-                     </button>
-                   </div>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      All Activities 
+                    </h2>
+                    <button
+                      onClick={openBulkArchiveModal}
+                      className="flex items-center gap-2 px-3 py-2 bg-[#232c67] text-white rounded-lg hover:bg-[#1a1f4d] transition-colors text-sm font-medium"
+                    >
+                      <FaArchive className="text-xs" />
+                      Bulk Archive
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <FaArchive className="text-blue-600" />
+                      <span className="text-sm font-medium text-blue-900">Total: {statistics.total_activities || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FaCheck className="text-green-600" />
+                      <span className="text-sm font-medium text-green-700">Active: {statistics.active_activities || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FaTimes className="text-gray-600" />
+                      <span className="text-sm font-medium text-gray-700">Archived: {statistics.archived_activities || 0}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -1250,7 +1249,7 @@ export default function SuperAdminConfigurationPage() {
                         </tr>
                       </thead>
                     </table>
-                      <div className="max-h-[272px] overflow-y-auto">
+                    <div className="max-h-[272px] overflow-y-auto custom-thin-scroll">
                       <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
                         <colgroup>
                           <col style={{ width: '35%' }} />
@@ -1317,23 +1316,23 @@ export default function SuperAdminConfigurationPage() {
           {activeTab === 'School Year' && (
             <>
               <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    School Year Timeline
-                  </h2>
-                                     <div className="flex items-center gap-4">
-                     <button 
-                       onClick={openTimelineModal}
-                       className="flex items-center gap-2 px-4 py-2 bg-[#232c67] text-white rounded-lg hover:bg-[#1a1f4d] transition-colors text-sm font-medium"
-                     >
-                       <FaEdit className="text-xs" />
-                       Edit Timeline
-                     </button>
-                     <div className="flex items-center gap-2">
-                       <FaCalendarAlt className="text-green-600" />
-                       <span className="text-sm font-medium text-green-700">Total: {quarters.length}</span>
-                     </div>
-                   </div>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      School Year Timeline
+                    </h2>
+                    <button 
+                      onClick={openTimelineModal}
+                      className="flex items-center gap-2 px-3 py-2 bg-[#232c67] text-white rounded-lg hover:bg-[#1a1f4d] transition-colors text-sm font-medium"
+                    >
+                      <FaEdit className="text-xs" />
+                      Edit Timeline
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FaCalendarAlt className="text-green-600" />
+                    <span className="text-sm font-medium text-green-700">Total: {quarters.length}</span>
+                  </div>
                 </div>
               </div>
               
@@ -1364,38 +1363,41 @@ export default function SuperAdminConfigurationPage() {
                 <>
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm text-left text-gray-700">
-                                             <thead className="bg-[#232c67] text-white border-b border-gray-200">
-                         <tr>
-                           <th 
-                             className="px-6 py-4 font-semibold text-white cursor-pointer"
-                             onClick={() => handleSort("quarter_name")}
-                           >
-                             <div className="flex items-center gap-2">
-                               Quarter Name
-                               {getSortIcon("quarter_name")}
-                             </div>
-                           </th>
-                           <th 
-                             className="px-6 py-4 font-semibold text-white cursor-pointer"
-                             onClick={() => handleSort("start_date")}
-                           >
-                             <div className="flex items-center gap-2">
-                               Start Date
-                               {getSortIcon("start_date")}
-                             </div>
-                           </th>
-                           <th 
-                             className="px-6 py-4 font-semibold text-white cursor-pointer"
-                             onClick={() => handleSort("end_date")}
-                           >
-                             <div className="flex items-center gap-2">
-                               End Date
-                               {getSortIcon("end_date")}
-                             </div>
-                           </th>
-                         </tr>
-                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <thead className="bg-[#232c67] text-white border-b border-gray-200">
+                        <tr>
+                          <th 
+                            className="px-6 py-4 font-semibold text-white cursor-pointer"
+                            onClick={() => handleSort("quarter_name")}
+                          >
+                            <div className="flex items-center gap-2">
+                              Quarter Name
+                              {getSortIcon("quarter_name")}
+                            </div>
+                          </th>
+                          <th 
+                            className="px-6 py-4 font-semibold text-white cursor-pointer"
+                            onClick={() => handleSort("start_date")}
+                          >
+                            <div className="flex items-center gap-2">
+                              Start Date
+                              {getSortIcon("start_date")}
+                            </div>
+                          </th>
+                          <th 
+                            className="px-6 py-4 font-semibold text-white cursor-pointer"
+                            onClick={() => handleSort("end_date")}
+                          >
+                            <div className="flex items-center gap-2">
+                              End Date
+                              {getSortIcon("end_date")}
+                            </div>
+                          </th>
+                        </tr>
+                      </thead>
+                    </table>
+                    <div className="max-h-[272px] overflow-y-auto custom-thin-scroll">
+                      <table className="min-w-full text-sm text-left text-gray-700">
+                        <tbody className="divide-y divide-gray-200">
                         {filteredQuarters.map((quarter) => (
                           <tr key={quarter.quarter_id} className="hover:bg-gray-50 transition-colors">
                             <td className="px-6 py-4">
@@ -1417,8 +1419,9 @@ export default function SuperAdminConfigurationPage() {
                              </td>
                           </tr>
                         ))}
-                      </tbody>
-                    </table>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </>
               )}
@@ -1431,11 +1434,11 @@ export default function SuperAdminConfigurationPage() {
 
              {/* Edit Modal */}
        {isEditModalOpen && (
-         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-           <div className="bg-white rounded-xl shadow-2xl p-8 min-w-[480px] max-w-[98vw] w-[520px] relative border border-gray-100">
-                           <div className="mb-4 bg-[#232c67] text-white p-4 rounded-t-lg -mt-8 -mx-8">
-                <h3 className="text-xl font-bold text-white mb-1">Edit Scoring Item</h3>
-                <p className="text-[#a8b0e0] text-sm">Update the shape, name and description of this scoring item</p>
+         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+           <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 min-w-[320px] sm:min-w-[480px] max-w-[98vw] w-[95vw] sm:w-[520px] relative border border-gray-100">
+                           <div className="mb-4 bg-[#232c67] text-white p-4 sm:p-4 rounded-t-lg -mt-4 sm:-mt-8 -mx-4 sm:-mx-8">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Edit Scoring Item</h3>
+                <p className="text-[#a8b0e0] text-xs sm:text-sm">Update the shape, name and description of this scoring item</p>
               </div>
              
              <form onSubmit={handleEditSubmit} className="space-y-4">
@@ -1532,18 +1535,18 @@ export default function SuperAdminConfigurationPage() {
                </div>
 
                {/* Action Buttons */}
-               <div className="flex justify-end gap-3 pt-3 border-t border-gray-200">
+               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-3 border-t border-gray-200">
                  <button
                    type="button"
                    onClick={closeEditModal}
-                   className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
+                   className="flex items-center justify-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors"
                  >
                    <FaTimes className="text-sm" />
                    Close
                  </button>
                  <button
                    type="submit"
-                   className="flex items-center gap-2 bg-[#232c67] hover:bg-[#1a1f4d] text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
+                   className="flex items-center justify-center gap-2 bg-[#232c67] hover:bg-[#1a1f4d] text-white px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
                  >
                    <FaSave className="text-sm" />
                    Save Changes
@@ -1562,11 +1565,11 @@ export default function SuperAdminConfigurationPage() {
 
                    {/* Bulk Archive Modal */}
          {bulkArchiveModalOpen && (
-           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-             <div className="bg-white rounded-xl shadow-2xl p-8 min-w-[500px] max-w-[98vw] w-[600px] relative border border-gray-100">
-                              <div className="mb-4 bg-[#232c67] text-white p-4 rounded-t-lg -mt-8 -mx-8">
-                  <h3 className="text-xl font-bold text-white mb-1">Bulk Archive Activities</h3>
-                  <p className="text-[#a8b0e0] text-sm">Archive multiple activities at once</p>
+           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+             <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 min-w-[320px] sm:min-w-[500px] max-w-[98vw] w-[95vw] sm:w-[600px] relative border border-gray-100">
+                              <div className="mb-4 bg-[#232c67] text-white p-4 sm:p-4 rounded-t-lg -mt-4 sm:-mt-8 -mx-4 sm:-mx-8">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Bulk Archive Activities</h3>
+                  <p className="text-[#a8b0e0] text-xs sm:text-sm">Archive multiple activities at once</p>
                 </div>
                
                <form onSubmit={handleBulkArchiveSubmit} className="space-y-4">
@@ -1675,7 +1678,7 @@ export default function SuperAdminConfigurationPage() {
                      type="text"
                      value={bulkArchiveForm.confirmText}
                      onChange={(e) => handleBulkArchiveInputChange('confirmText', e.target.value)}
-                     className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 transition-colors ${
+                     className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 transition-colors caret-[#232c67] ${
                        bulkArchiveForm.confirmText === '' 
                          ? 'border-gray-300 focus:ring-orange-500 focus:border-orange-500'
                          : bulkArchiveForm.confirmText === 'ARCHIVE'
@@ -1709,11 +1712,11 @@ export default function SuperAdminConfigurationPage() {
                  </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-3 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-3 border-t border-gray-200">
                   <button
                     type="button"
                     onClick={closeBulkArchiveModal}
-                    className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
+                    className="flex items-center justify-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors"
                   >
                     <FaTimes className="text-sm" />
                     Cancel
@@ -1721,7 +1724,7 @@ export default function SuperAdminConfigurationPage() {
                                      <button
                      type="submit"
                      disabled={!isArchiveConfirmed}
-                     className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md ${
+                     className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md ${
                        isArchiveConfirmed
                          ? 'bg-orange-600 hover:bg-orange-700 text-white hover:shadow-lg'
                          : 'bg-gray-400 text-gray-200 cursor-not-allowed shadow-none'
@@ -1739,11 +1742,11 @@ export default function SuperAdminConfigurationPage() {
        {/* Timeline Edit Modal */}
         {isTimelineModalOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl min-w-[600px] max-w-[98vw] w-[700px] max-h-[90vh] flex flex-col border border-gray-100">
+            <div className="bg-white rounded-xl shadow-2xl min-w-[320px] sm:min-w-[600px] max-w-[98vw] w-[95vw] sm:w-[700px] max-h-[90vh] flex flex-col border border-gray-100">
               {/* Header - Fixed */}
               <div className="bg-[#232c67] text-white p-4 rounded-t-xl flex-shrink-0">
-                <h3 className="text-xl font-bold text-white mb-1">Edit School Year Timeline</h3>
-                <p className="text-[#a8b0e0] text-sm">Update the quarter names and dates for the school year</p>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Edit School Year Timeline</h3>
+                <p className="text-[#a8b0e0] text-xs sm:text-sm">Update the quarter names and dates for the school year</p>
               </div>
               
                              {/* Scrollable Content */}
@@ -1889,11 +1892,11 @@ export default function SuperAdminConfigurationPage() {
               </div>
 
               {/* Action Buttons - Fixed at Bottom */}
-              <div className="border-t border-gray-200 p-6 flex justify-end gap-3 flex-shrink-0">
+              <div className="border-t border-gray-200 p-4 sm:p-6 flex flex-col sm:flex-row justify-end gap-3 flex-shrink-0">
                 <button
                   type="button"
                   onClick={closeTimelineModal}
-                  className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
+                  className="flex items-center justify-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors"
                 >
                   <FaTimes className="text-sm" />
                   Close
@@ -1901,7 +1904,7 @@ export default function SuperAdminConfigurationPage() {
                 <button
                   type="submit"
                   onClick={handleTimelineSubmit}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md ${
+                  className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md ${
                     !isTimelineValid
                       ? 'bg-gray-400 text-gray-200 cursor-not-allowed shadow-none'
                       : 'bg-[#232c67] hover:bg-[#1a1f4d] text-white hover:shadow-lg'

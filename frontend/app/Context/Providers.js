@@ -3,6 +3,7 @@
 import { AuthProvider } from "./AuthContext";
 import { ThemeProvider } from "./ThemeContext";
 import { UserProvider } from "./UserContext";
+import { ModalProvider } from "./ModalContext";
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import "react-toastify/dist/ReactToastify.css";
@@ -60,21 +61,23 @@ export function Providers({ children }) {
     <AuthProvider>
       <ThemeProvider>
         <UserProvider>
-          {children}
-          <ToastContainer
-            position="top-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-            suppressHydrationWarning={true}
-            style={{ zIndex: 99999 }}
-          />
+          <ModalProvider>
+            {children}
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+              suppressHydrationWarning={true}
+              style={{ zIndex: 99999 }}
+            />
+          </ModalProvider>
         </UserProvider>
       </ThemeProvider>
     </AuthProvider>

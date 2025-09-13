@@ -1,17 +1,19 @@
 /* @import "tw-animate-css"; - Commented out to reduce initial CSS bundle size */
 
-@custom-variant dark (&:is(.dark *));
-
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind base;
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind components;
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind utilities;
 
 /* Custom dropdown animations */
-@keyframes slideInFromTop {
+@keyframes slide-in-from-top {
   from {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -19,12 +21,13 @@
 }
 
 .animate-in {
-  animation: slideInFromTop 0.2s ease-out;
+  animation: slide-in-from-top 0.2s ease-out;
 }
 
 .slide-in-from-top-2 {
-  animation: slideInFromTop 0.2s ease-out;
+  animation: slide-in-from-top 0.2s ease-out;
 }
+
 /* 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -159,12 +162,14 @@
 .rbc-month-row .rbc-row-content {
   text-align: center;
 }
+
 .rbc-month-row .rbc-row-content .rbc-event {
   display: inline-flex !important;
   vertical-align: middle;
   margin: 0 2px;
   float: none !important;
 }
+
 /* Optionally reduce margin between events */
 .rbc-month-row .rbc-row-content .rbc-event + .rbc-event {
   margin-left: 6px;
@@ -179,13 +184,17 @@
 .rbc-month-row {
   position: relative;
 }
+
 .rbc-date-cell > div {
   position: relative;
   z-index: 2;
+  pointer-events: auto !important;
 }
+
 .rbc-day-bg {
   z-index: 1;
 }
+
 /* Add hover effect for clickable day numbers */
 .rbc-date-cell > div > div[style*='pointer-events: auto'][style*='cursor: pointer']:hover {
   background: #e3f0ff !important;
@@ -199,22 +208,30 @@
   pointer-events: auto !important;
   z-index: 20 !important;
 }
-.rbc-date-cell > div {
-  pointer-events: auto !important;
-}
 
 /* Thin custom scrollbar used in Logs page */
 .custom-thin-scroll::-webkit-scrollbar {
 	width: 6px;
 	height: 6px;
 }
+
 .custom-thin-scroll::-webkit-scrollbar-track {
 	background: transparent;
 }
+
 .custom-thin-scroll::-webkit-scrollbar-thumb {
 	background-color: #a5b4fc; /* light indigo */
 	border-radius: 9999px;
 }
+
 .custom-thin-scroll::-webkit-scrollbar-thumb:hover {
 	background-color: #818cf8;
+}
+
+/* Line clamp utility for mobile responsive text truncation */
+.line-clamp-2 {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
 }

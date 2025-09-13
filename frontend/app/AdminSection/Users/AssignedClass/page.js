@@ -448,13 +448,13 @@ export default function AssignedClassPage() {
 
   if (loading) {
     return (
-              <ProtectedRoute role="Admin">
-          <div className="flex flex-col justify-center items-center h-64 text-gray-600">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-lg font-medium">Loading assigned class data...</p>
-            <p className="text-sm text-gray-500">Please wait while we fetch the latest records</p>
-          </div>
-        </ProtectedRoute>
+      <ProtectedRoute role="Admin">
+        <div className="flex flex-col justify-center items-center h-64 text-gray-600">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-lg font-medium">Loading assigned class data...</p>
+          <p className="text-sm text-gray-500">Please wait while we fetch the latest records</p>
+        </div>
+      </ProtectedRoute>
     );
   }
 
@@ -987,7 +987,7 @@ export default function AssignedClassPage() {
                                  : 'text-gray-700 hover:bg-blue-50'
                              }`}
                            >
-                             <div className="font-medium">{session}</div>
+                             <div className="font-medium text-xs sm:text-sm">{session}</div>
                            </button>
                          ))}
                        </div>

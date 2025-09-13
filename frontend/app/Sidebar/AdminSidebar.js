@@ -16,6 +16,7 @@ import {
 } from "react-icons/fa";
 import { usePathname } from "next/navigation";
 import { useUser } from "../Context/UserContext";
+import { useModal } from "../Context/ModalContext";
 
 const navItems = [
   { name: "Dashboard", icon: FaHome, href: "/AdminSection/Dashboard" },
@@ -31,6 +32,7 @@ const navItems = [
 const AdminSidebar = ({ isSidebarOpen: desktopSidebarOpen, mobileOpenSignal, showInternalHamburger = true }) => {
   const pathname = usePathname();
   const { unreadCounts } = useUser();
+  const { isModalOpen } = useModal();
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
 
   // Prevent background scroll when mobile sidebar is open
@@ -129,7 +131,7 @@ const AdminSidebar = ({ isSidebarOpen: desktopSidebarOpen, mobileOpenSignal, sho
   return (
     <>
       {/* Hamburger button for mobile */}
-      {showInternalHamburger && !mobileSidebarOpen && (
+      {showInternalHamburger && !mobileSidebarOpen && !isModalOpen && (
         <button
           className="md:hidden fixed top-4 left-4 z-[120] bg-white rounded-full p-2 shadow-lg border border-blue-100 focus:outline-none"
           onClick={() => setMobileSidebarOpen(true)}

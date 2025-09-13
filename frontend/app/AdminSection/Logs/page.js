@@ -281,8 +281,8 @@ export default function AdminLogsPage() {
   }
 
   return (
-            <ProtectedRoute role="Admin">
-      <div className="flex-1 p-1 sm:p-3 md:p-4">
+    <ProtectedRoute role="Admin">
+      <div className="flex-1 p-4">
         {loading ? (
           <div className="flex flex-col justify-center items-center h-64 text-gray-600">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1e2a79] mb-4"></div>
@@ -299,10 +299,11 @@ export default function AdminLogsPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-3 border-b border-gray-200">
+            {/* Header with Search and Filter */}
+            <div className="p-4 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="relative w-full sm:max-w-md">
-                 
+                {/* Search Bar */}
+                <div className="relative flex-1 max-w-md">
                   <div className="relative">
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
                     <input
@@ -325,6 +326,7 @@ export default function AdminLogsPage() {
                   </div>
                 </div>
 
+                {/* Filter Controls */}
                 <div className="w-full sm:w-64" ref={actionDropdownRef}>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
@@ -334,7 +336,7 @@ export default function AdminLogsPage() {
                     <button
                       type="button"
                       onClick={() => setIsActionOpen(o => !o)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#1e2a79] focus:border-[#1e2a79] bg-white min-w-[120px]"
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#1e2a79] focus:border-[#1e2a79] bg-white min-w-[120px] w-full sm:w-auto"
                       aria-haspopup="listbox"
                       aria-expanded={isActionOpen}
                     >
@@ -368,20 +370,21 @@ export default function AdminLogsPage() {
               </div>
             </div>
 
+            {/* Table Container */}
             <div className="overflow-x-auto">
-              <table className="w-full table-fixed text-sm text-left text-gray-700">
+              <table className="w-full text-sm text-left text-gray-700">
                 <thead className="bg-[#1e2a79] text-white border-b border-gray-200 sticky top-0 z-10">
                   <tr>
-                    <th onClick={() => handleSort('timestamp')} className="px-6 py-3 font-semibold text-white cursor-pointer select-none w-44">
+                    <th onClick={() => handleSort('timestamp')} className="px-6 py-3 font-semibold text-white cursor-pointer select-none">
                       <div className="flex items-center gap-2">Timestamp {getSortIcon('timestamp')}</div>
                     </th>
                     <th onClick={() => handleSort('description')} className="px-6 py-3 font-semibold text-white cursor-pointer select-none">
                       <div className="flex items-center gap-2">Description {getSortIcon('description')}</div>
                     </th>
-                    <th onClick={() => handleSort('user')} className="px-6 py-3 font-semibold text-white cursor-pointer select-none w-64">
+                    <th onClick={() => handleSort('user')} className="px-6 py-3 font-semibold text-white cursor-pointer select-none">
                       <div className="flex items-center gap-2">User {getSortIcon('user')}</div>
                     </th>
-                    <th onClick={() => handleSort('entity')} className="px-6 py-3 font-semibold text-white cursor-pointer select-none w-56">
+                    <th onClick={() => handleSort('entity')} className="px-6 py-3 font-semibold text-white cursor-pointer select-none">
                       <div className="flex items-center gap-2">Entity {getSortIcon('entity')}</div>
                     </th>
                   </tr>
@@ -400,11 +403,19 @@ export default function AdminLogsPage() {
                   ) : (
                     paginated.map((row, idx) => (
                       <tr key={`${row.id}|${row.timestamp}|${idx}`} className="hover:bg-blue-50 transition-colors">
-                        <td className="px-6 py-3 whitespace-nowrap text-gray-900 w-44">{formatTimestamp(row.timestamp)}</td>
-                        <td className="px-6 py-3 whitespace-nowrap truncate">{row.description || '-'}</td>
-                        <td className="px-6 py-3 whitespace-nowrap w-64">
+                        <td className="px-6 py-3 whitespace-nowrap text-gray-900">
+                          <div className="text-sm">
+                            {formatTimestamp(row.timestamp)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-3">
+                          <div className="text-sm text-gray-900 truncate max-w-[300px]" title={row.description || '-'}>
+                            {row.description || '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-3 whitespace-nowrap">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold bg-white text-[#1e2a79] border border-gray-200
+                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold bg-white text-[#1e2a79] border border-gray-200 flex-shrink-0
                               ${(() => {
                                 const role = (row.actorRole || '').toLowerCase();
                                 if (role.includes('super')) return 'ring-2 ring-green-400'; // Super Admin/Owner
@@ -418,37 +429,46 @@ export default function AdminLogsPage() {
                             >
                               {(row.actorRole || '?').charAt(0).toUpperCase()}
                             </span>
-                            <span className="text-gray-900 truncate">{row.user}</span>
+                            <span className="text-sm text-gray-900 truncate max-w-[200px]" title={row.user}>
+                              {row.user}
+                            </span>
                           </div>
                         </td>
-                        <td className="px-6 py-3 whitespace-nowrap w-56">{row.entity}</td>
+                        <td className="px-6 py-3">
+                          <div className="text-sm">
+                            {row.entity}
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}
                 </tbody>
               </table>
-          </div>
+            </div>
 
-            <div className="px-3 py-2 border-t border-gray-200 flex items-center justify-between text-sm text-gray-600">
-              <span>
-                Showing {paginated.length > 0 ? startIdx + 1 : 0}-{startIdx + paginated.length} of {filtered.length}
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={current <= 1}
-                  className={`px-3 py-1 rounded-lg border ${current <= 1 ? 'text-gray-400 border-gray-200' : 'text-[#1e2a79] border-[#1e2a79] hover:bg-[#e6f0ff]'}`}
-                >
-                  Prev
-                </button>
-                <span className="px-2">Page {current} of {totalPages}</span>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={current >= totalPages}
-                  className={`px-3 py-1 rounded-lg border ${current >= totalPages ? 'text-gray-400 border-gray-200' : 'text-[#1e2a79] border-[#1e2a79] hover:bg-[#e6f0ff]'}`}
-                >
-                  Next
-                </button>
+            {/* Pagination */}
+            <div className="px-4 py-2 border-t border-gray-200">
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <span>
+                  Showing {paginated.length > 0 ? startIdx + 1 : 0}-{startIdx + paginated.length} of {filtered.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={current <= 1}
+                    className={`px-3 py-1 rounded-lg border text-sm font-medium ${current <= 1 ? 'text-gray-400 border-gray-200' : 'text-[#1e2a79] border-[#1e2a79] hover:bg-[#e6f0ff]'}`}
+                  >
+                    Prev
+                  </button>
+                  <span className="px-2 text-sm font-medium">Page {current} of {totalPages}</span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={current >= totalPages}
+                    className={`px-3 py-1 rounded-lg border text-sm font-medium ${current >= totalPages ? 'text-gray-400 border-gray-200' : 'text-[#1e2a79] border-[#1e2a79] hover:bg-[#e6f0ff]'}`}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
           </div>

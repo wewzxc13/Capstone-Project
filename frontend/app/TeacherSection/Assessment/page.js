@@ -19,11 +19,13 @@ const scheduleOptions = ["Morning", "Afternoon"];
 
 // Add this color map for shapes
 const shapeColorMap = {
-  '❤️': '#ef4444', // red
-  '⭐': '#fbbf24', // yellow
-  '🔷': '#2563eb', // blue
-  '▲': '#f59e42', // orange
-  '🟡': '#facc15'  // gold/yellow
+  '♥': '#ef4444',      // Heart - red
+  '★': '#f59e0b',      // Star - orange  
+  '◆': '#1e40af',     // Diamond - dark blue
+  '▲': '#10b981',      // Triangle - green
+  '⬤': '#fef08a',      // Circle - light yellow
+  '■': '#06b6d4',      // Square - light blue
+  '⬢': '#def244'       // Hexagon - light green
 };
 
 export default function AssessmentPage() {
@@ -1468,7 +1470,7 @@ export default function AssessmentPage() {
       {modal.show && (() => {
         const modalActivity = activities.find(a => a.activity_id === modal.activityId);
         return (
-          <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-30 p-2 sm:p-0">
+          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[9999] p-2 sm:p-0">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg border border-gray-100 overflow-hidden">
                               <div className="bg-[#232c67] text-white px-6 py-4 font-bold text-xl">
                   Rate the Student
@@ -1535,7 +1537,7 @@ export default function AssessmentPage() {
       })()}
 
       {showAddActivityModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-lg border border-gray-100 overflow-hidden">
             {/* Header */}
             <div className="bg-[#232c67] text-white px-6 py-4 font-bold text-2xl">
@@ -1864,7 +1866,7 @@ export default function AssessmentPage() {
 
       {/* Edit/View Activity Modal */}
       {showEditActivityModal && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-30 p-2 sm:p-0">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[9999] p-2 sm:p-0">
           <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-lg border border-gray-100 overflow-hidden">
             <div className="bg-[#232c67] text-white px-6 py-4 font-bold text-xl">
               {activityModalMode === 'view' ? 'View Activity Details' : 'Edit Activity'}

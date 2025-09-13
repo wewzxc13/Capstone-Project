@@ -4,11 +4,6 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ['react-icons', 'chart.js', 'react-chartjs-2'],
-    // Allow accessing dev server assets from another origin (e.g., your phone over LAN)
-    allowedDevOrigins: (process.env.ALLOWED_DEV_ORIGINS || '')
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean),
   },
   
   // Compiler optimizations

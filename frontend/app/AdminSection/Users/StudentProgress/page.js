@@ -661,7 +661,7 @@ export default function StudentProgress({ formData: initialFormData }) {
     return "";
   };
 
-  // Export/Print: mobile uses iframe (Letter pages + colored backgrounds), desktop unchanged
+  // Export/Print: use a print-only stylesheet; do not mutate screen layout
   const handleExportAssessment = () => {
     try {
       const printableElement = printRef.current || assessmentRef.current;
@@ -670,7 +670,7 @@ export default function StudentProgress({ formData: initialFormData }) {
         return;
       }
 
-      // Mobile-optimized iframe printing for reliable pagination and colors
+      // Mobile-optimized iframe printing
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
       if (isMobile) {
         const iframe = document.createElement('iframe');
@@ -683,26 +683,23 @@ export default function StudentProgress({ formData: initialFormData }) {
         document.body.appendChild(iframe);
 
         const doc = iframe.contentDocument || iframe.contentWindow.document;
-        const cloned = printableElement.cloneNode(true);
         const tempId = 'studentprogress-printable';
+        const cloned = printableElement.cloneNode(true);
         cloned.setAttribute('id', tempId);
 
         const head = doc.createElement('head');
-        // Copy stylesheets
         document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
           const newLink = doc.createElement('link');
           newLink.rel = 'stylesheet';
           newLink.href = link.href;
           head.appendChild(newLink);
         });
-        // Copy inline styles
         document.querySelectorAll('style').forEach((styleEl) => {
           const newStyle = doc.createElement('style');
           newStyle.textContent = styleEl.textContent;
           head.appendChild(newStyle);
         });
 
-        // Print styles for Letter pages and forced colored backgrounds
         const style = doc.createElement('style');
         style.setAttribute('media', 'print');
         style.innerHTML = `
@@ -713,8 +710,8 @@ export default function StudentProgress({ formData: initialFormData }) {
             #${tempId} { position: static !important; width: 8.5in !important; margin: 0 auto !important; }
             #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
             table, tr, td, th { page-break-inside: avoid !important; }
-            .rounded-xl, .rounded-lg { box-shadow: none !important; }
-            .print-page { width: 8.5in !important; min-height: 11in !important; height: 11in !important; box-sizing: border-box !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; position: relative !important; }
+            .print-page { width: 8.5in !important; min-height: 11in !important; height: 11in !important; box-sizing: border-box !important; position: relative !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; }
+            /* Colored backgrounds via pseudo layer */
             .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
             .print-page > * { position: relative; z-index: 1; }
             .pastel-blue::before { background: #eef5ff !important; }
@@ -741,8 +738,8 @@ export default function StudentProgress({ formData: initialFormData }) {
 
         const assignPageNumbers = () => {
           const pages = doc.querySelectorAll('.print-page');
-          const total = pages.length;
-          pages.forEach((p, i) => p.setAttribute('data-page-number', `${i+1}/${total}`));
+          const totalPages = pages.length;
+          pages.forEach((p, i) => p.setAttribute('data-page-number', `${i+1}/${totalPages}`));
         };
 
         setTimeout(() => {
@@ -754,9 +751,8 @@ export default function StudentProgress({ formData: initialFormData }) {
         return;
       }
 
-      // Desktop path (unchanged UX, but align sizing and colors with mobile)
+      // Desktop behavior unchanged
       const originalTitle = document.title;
-
       const tempId = "studentprogress-printable";
       const cloned = printableElement.cloneNode(true);
       cloned.setAttribute("id", tempId);
@@ -768,25 +764,22 @@ export default function StudentProgress({ formData: initialFormData }) {
       const style = document.createElement("style");
       style.setAttribute("media", "print");
       style.innerHTML = `
-        @page { size: Letter portrait; margin: 0; }
+        @page { size: auto; margin: 0; }
         @media print {
-          html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+          html, body { margin: 0 !important; padding: 0 !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           body > *:not(#${tempId}) { display: none !important; }
-          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: 8.5in !important; padding: 0; margin: 0 auto !important; display: block !important; max-width: none !important; }
+          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; padding: 0; margin: 0; display: flex !important; flex-direction: column !important; max-width: none !important; }
           #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
           table, tr, td, th { page-break-inside: avoid !important; }
-          .rounded-xl, .rounded-lg { box-shadow: none !important; }
-          .print-page { width: 8.5in !important; position: relative !important; min-height: 11in !important; height: 11in !important; box-sizing: border-box !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; }
-          .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
-          .print-page > * { position: relative; z-index: 1; }
-          .pastel-blue::before { background: #eef5ff !important; }
-          .pastel-green::before { background: #eaf7f1 !important; }
-          .pastel-yellow::before { background: #fff7e6 !important; }
-          .pastel-pink::before { background: #ffeef2 !important; }
-          .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
-          .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
-          .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+          .print-page { width: 100% !important; position: relative !important; min-height: 100vh !important; box-sizing: border-box !important; }
+          .print-page + .print-page { page-break-before: always; break-before: page; }
+          .no-break { page-break-inside: avoid; break-inside: avoid; }
+          .border-soft { border: 1px solid #e5e7eb; }
+          .pastel-blue { background: #eef5ff; }
+          .pastel-green { background: #eaf7f1; }
+          .pastel-yellow { background: #fff7e6; }
+          .pastel-pink { background: #ffeef2; }
           .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
         }
       `;
@@ -809,12 +802,8 @@ export default function StudentProgress({ formData: initialFormData }) {
         } catch (e) {}
       };
 
-      const afterPrint = () => {
-        window.removeEventListener('afterprint', afterPrint);
-        cleanup();
-      };
+      const afterPrint = () => { window.removeEventListener('afterprint', afterPrint); cleanup(); };
       window.addEventListener('afterprint', afterPrint);
-
       setTimeout(() => { window.print(); }, 300);
       setTimeout(() => { cleanup(); }, 1500);
     } catch (err) {
@@ -835,6 +824,10 @@ export default function StudentProgress({ formData: initialFormData }) {
     // visual_feedback_id = 5 → "Not Met" (score = 1)
     const yMap = { 'Excellent': 5, 'Very Good': 4, 'Good': 3, 'Need Help': 2, 'Not Met': 1 };
     const xLabels = ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
+    
+    // Check if we're on mobile (screen width < 640px)
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const performanceLabel = isMobile ? 'Perform Lvl' : 'Performance Level';
     // Map progress cards to y values
     const dataPoints = [1,2,3,4].map(qid => {
       const card = quarterlyPerformance.find(c => Number(c.quarter_id) === qid);
@@ -875,75 +868,7 @@ export default function StudentProgress({ formData: initialFormData }) {
               },
             ],
           }}
-          options={{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                titleColor: '#ffffff',
-                bodyColor: '#ffffff',
-                borderColor: '#2563eb',
-                borderWidth: 1,
-                cornerRadius: 8,
-                callbacks: {
-                  label: function(context) {
-                    const val = context.parsed.y;
-                    const labels = ["", "Not Met", "Need Help", "Good", "Very Good", "Excellent"];
-                    return `Performance: ${labels[Math.round(val)] || 'N/A'}`;
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                min: 0.5,
-                max: 5.5,
-                ticks: {
-                  stepSize: 1,
-                  callback: function(value) {
-                    const labels = ["", "Not Met", "Need Help", "Good", "Very Good", "Excellent"];
-                    return labels[Math.round(value)] || '';
-                  },
-                  font: { size: 12, weight: '500' },
-                  color: '#6b7280',
-                },
-                grid: { 
-                  color: '#e5e7eb',
-                  drawBorder: false,
-                },
-                title: {
-                  display: true,
-                  text: 'Performance Level',
-                  font: { size: 14, weight: '600' },
-                  color: '#374151',
-                  padding: { top: 10, bottom: 10 }
-                }
-              },
-              x: {
-                ticks: { 
-                  font: { size: 12, weight: '500' },
-                  color: '#6b7280',
-                },
-                grid: { 
-                  color: '#e5e7eb',
-                  drawBorder: false,
-                },
-                title: {
-                  display: true,
-                  text: 'Quarter',
-                  font: { size: 14, weight: '600' },
-                  color: '#374151',
-                  padding: { top: 10, bottom: 10 }
-                }
-              },
-            },
-            interaction: {
-              intersect: false,
-              mode: 'index',
-            },
-          }}
+          options={getChartOptions()}
         />
       </div>
     );
@@ -951,17 +876,23 @@ export default function StudentProgress({ formData: initialFormData }) {
 
   // Add shapeColorMap for consistent coloring
   const shapeColorMap = {
-    '❤️': '#ef4444', // red
-    '⭐': '#fbbf24', // yellow
-    '🔷': '#2563eb', // blue
-    '▲': '#f59e42', // orange
-    '🟡': '#facc15'  // gold/yellow
+    '♥': '#ef4444',      // Heart - red
+    '★': '#f59e0b',      // Star - orange  
+    '◆': '#1e40af',     // Diamond - dark blue
+    '▲': '#10b981',      // Triangle - green
+    '⬤': '#fef08a',      // Circle - light yellow
+    '■': '#06b6d4',      // Square - light blue
+    '⬢': '#def244'       // Hexagon - light green
   };
 
   // Printable SVG line chart (for print layout)
   function renderPrintStatusChartSVG() {
     const yMap = { 'Excellent': 5, 'Very Good': 4, 'Good': 3, 'Need Help': 2, 'Not Met': 1 };
     const xLabels = ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
+    
+    // Check if we're on mobile (screen width < 640px)
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const performanceLabel = isMobile ? 'Perform Lvl' : 'Performance Level';
     const dataPoints = [1,2,3,4].map(qid => {
       const card = quarterlyPerformance.find(c => Number(c.quarter_id) === qid);
       const desc = card && visualFeedbackMap[card.quarter_visual_feedback_id];
@@ -1025,7 +956,7 @@ export default function StudentProgress({ formData: initialFormData }) {
             );
           })}
           <text x={(plotLeft + plotRight)/2} y={height - 6} textAnchor="middle" fontSize="12" fill="#374151">Quarter</text>
-          <text x={16} y={margin.top - 6} textAnchor="start" fontSize="13" fill="#374151">Performance Level</text>
+          <text x={16} y={margin.top - 6} textAnchor="start" fontSize="13" fill="#374151">{performanceLabel}</text>
         </svg>
       </div>
     );
@@ -1179,74 +1110,81 @@ export default function StudentProgress({ formData: initialFormData }) {
     ],
   };
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#2563eb',
-        borderWidth: 1,
-        cornerRadius: 8,
-        callbacks: {
-          label: function(context) {
-            const val = context.parsed.y;
-            const labels = ["", "Not Met", "Need Help", "Good", "Very Good", "Excellent"];
-            return `Performance: ${labels[Math.round(val)] || 'N/A'}`;
+  // Function to get chart options with responsive performance label
+  const getChartOptions = () => {
+    // Check if we're on mobile (screen width < 640px)
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const performanceLabel = isMobile ? 'Perform Lvl' : 'Performance Level';
+    
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#ffffff',
+          bodyColor: '#ffffff',
+          borderColor: '#2563eb',
+          borderWidth: 1,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              const val = context.parsed.y;
+              const labels = ["", "Not Met", "Need Help", "Good", "Very Good", "Excellent"];
+              return `Performance: ${labels[Math.round(val)] || 'N/A'}`;
+            }
           }
         }
-      }
-    },
-    scales: {
-      y: {
-        min: 0.5,
-        max: 5.5,
-        ticks: {
-          stepSize: 1,
-          callback: function(value) {
-            const labels = ["", "Not Met", "Need Help", "Good", "Very Good", "Excellent"];
-            return labels[Math.round(value)] || '';
+      },
+      scales: {
+        y: {
+          min: 0.5,
+          max: 5.5,
+          ticks: {
+            stepSize: 1,
+            callback: function(value) {
+              const labels = ["", "Not Met", "Need Help", "Good", "Very Good", "Excellent"];
+              return labels[Math.round(value)] || '';
+            },
+            font: { size: 12, weight: '500' },
+            color: '#6b7280',
           },
-          font: { size: 12, weight: '500' },
-          color: '#6b7280',
+          grid: { 
+            color: '#e5e7eb',
+            drawBorder: false,
+          },
+          title: {
+            display: true,
+            text: performanceLabel,
+            font: { size: 14, weight: '600' },
+            color: '#374151',
+            padding: { top: 10, bottom: 10 }
+          }
         },
-        grid: { 
-          color: '#e5e7eb',
-          drawBorder: false,
+        x: {
+          ticks: { 
+            font: { size: 12, weight: '500' },
+            color: '#6b7280',
+          },
+          grid: { 
+            color: '#e5e7eb',
+            drawBorder: false,
+          },
+          title: {
+            display: true,
+            text: 'Quarter',
+            font: { size: 14, weight: '600' },
+            color: '#374151',
+            padding: { top: 10, bottom: 10 }
+          }
         },
-        title: {
-          display: true,
-          text: 'Performance Level',
-          font: { size: 14, weight: '600' },
-          color: '#374151',
-          padding: { top: 10, bottom: 10 }
-        }
       },
-      x: {
-        ticks: { 
-          font: { size: 12, weight: '500' },
-          color: '#6b7280',
-        },
-        grid: { 
-          color: '#e5e7eb',
-          drawBorder: false,
-        },
-        title: {
-          display: true,
-          text: 'Quarter',
-          font: { size: 14, weight: '600' },
-          color: '#374151',
-          padding: { top: 10, bottom: 10 }
-        }
+      interaction: {
+        intersect: false,
+        mode: 'index',
       },
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index',
-    },
+    };
   };
 
   const handleEdit = () => {
@@ -1288,64 +1226,69 @@ export default function StudentProgress({ formData: initialFormData }) {
         </div>
 
           {/* Tab Navigation */}
-          <div className="flex items-center gap-8">
-            <button
-              onClick={() => setActiveTabSafely("Class Overview")}
-              className={`text-[#2c2f6f] border-b-2 font-semibold pb-2 transition-colors ${
-                activeTab === "Class Overview"
-                  ? "border-[#2c2f6f]"
-                  : "border-transparent hover:border-gray-300"
-              }`}
-            >
-              Class Overview
-            </button>
-            {selectedStudent && (
-              <>
-                <button
-                  onClick={() => setActiveTabSafely("Assessment")}
-                  className={`text-[#2c2f6f] border-b-2 font-semibold pb-2 transition-colors ${
-                    activeTab === "Assessment"
-                      ? "border-[#2c2f6f]"
-                      : "border-transparent hover:border-gray-300"
-                  }`}
-                >
-                  Assessment
-                </button>
-                <div
-                  onMouseEnter={handleStatusMouseEnter}
-                  onMouseLeave={handleStatusMouseLeave}
-                  className="relative"
-                >
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+            {/* Tab Buttons */}
+            <div className="flex flex-wrap items-center gap-4 sm:gap-8">
+              <button
+                onClick={() => setActiveTabSafely("Class Overview")}
+                className={`text-[#2c2f6f] border-b-2 font-semibold pb-2 transition-colors text-sm sm:text-base ${
+                  activeTab === "Class Overview"
+                    ? "border-[#2c2f6f]"
+                    : "border-transparent hover:border-gray-300"
+                }`}
+              >
+                Class Overview
+              </button>
+              {selectedStudent && (
+                <>
                   <button
-                    onClick={() => setActiveTabSafely("Status")}
-                    disabled={!hasOverallProgress()}
-                    className={`text-[#2c2f6f] border-b-2 font-semibold pb-2 transition-colors flex items-center gap-2 ${
-                      activeTab === "Status"
+                    onClick={() => setActiveTabSafely("Assessment")}
+                    className={`text-[#2c2f6f] border-b-2 font-semibold pb-2 transition-colors text-sm sm:text-base ${
+                      activeTab === "Assessment"
                         ? "border-[#2c2f6f]"
                         : "border-transparent hover:border-gray-300"
-                    } ${
-                      !hasOverallProgress()
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
                     }`}
                   >
-                    Status
-                    {!hasOverallProgress() && (
-                      <FaLock className="text-sm text-gray-500" />
-                    )}
+                    Assessment
                   </button>
-                </div>
-                {(activeTab === "Assessment" || activeTab === "Status") && (
-                  <button
-                    onClick={handleExportAssessment}
-                    className="ml-auto inline-flex items-center gap-2 bg-[#2c2f6f] text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-                    title="Print or Save Assessment as PDF"
+                  <div
+                    onMouseEnter={handleStatusMouseEnter}
+                    onMouseLeave={handleStatusMouseLeave}
+                    className="relative"
                   >
-                    <FaPrint />
-                    <span className="font-semibold">Export PDF</span>
-                  </button>
-                )}
-              </>
+                    <button
+                      onClick={() => setActiveTabSafely("Status")}
+                      disabled={!hasOverallProgress()}
+                      className={`text-[#2c2f6f] border-b-2 font-semibold pb-2 transition-colors flex items-center gap-2 text-sm sm:text-base ${
+                        activeTab === "Status"
+                          ? "border-[#2c2f6f]"
+                          : "border-transparent hover:border-gray-300"
+                      } ${
+                        !hasOverallProgress()
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
+                    >
+                      Status
+                      {!hasOverallProgress() && (
+                        <FaLock className="text-xs sm:text-sm text-gray-500" />
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {/* Export PDF Button - Better mobile positioning */}
+            {selectedStudent && (activeTab === "Assessment" || activeTab === "Status") && (
+              <button
+                onClick={handleExportAssessment}
+                className="w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-2 bg-[#2c2f6f] text-white px-4 py-2.5 sm:px-3 sm:py-1.5 rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm sm:text-base"
+                title="Print or Save Assessment as PDF"
+              >
+                <FaPrint className="text-sm sm:text-base" />
+                <span className="font-semibold">Export PDF</span>
+              </button>
             )}
           </div>
         </div>
@@ -2288,15 +2231,15 @@ export default function StudentProgress({ formData: initialFormData }) {
                       {/* Assessment Table */}
                     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
-                        <table className="w-full text-sm min-w-[600px]">
+                        <table className="w-full text-xs sm:text-sm min-w-[600px]">
                           <thead>
                             <tr>
-                              <th className="border-b border-gray-200 px-4 py-1.5 bg-gray-50 text-left font-semibold text-gray-700">Subjects</th>
+                              <th className="border-b border-gray-200 px-2 sm:px-4 py-1.5 bg-gray-50 text-left font-semibold text-gray-700 text-xs sm:text-sm">Subjects</th>
                               {quarters.map(q => (
-                                <th key={q.id} className="border-b border-gray-200 px-4 py-1.5 bg-gray-50 text-center">
-                                  <div className="flex flex-col items-center gap-2">
-                                    <span className="text-xs font-medium text-gray-600">{q.name}</span>
-                      </div>
+                                <th key={q.id} className="border-b border-gray-200 px-1 sm:px-4 py-1.5 bg-gray-50 text-center">
+                                  <div className="flex flex-col items-center gap-1 sm:gap-2">
+                                    <span className="text-xs font-medium text-gray-600 leading-tight">{q.name}</span>
+                                  </div>
                                 </th>
                               ))}
                             </tr>
@@ -2305,13 +2248,13 @@ export default function StudentProgress({ formData: initialFormData }) {
                             {subjects.length > 0 ? (
                               [...subjects].sort((a, b) => a.localeCompare(b)).map((subject, i) => (
                                 <tr key={i} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                  <td className="px-4 py-3 font-medium text-gray-900">{subject}</td>
+                                  <td className="px-2 sm:px-4 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">{subject}</td>
                                                           {quarters.map(q => {
                           if (q.id === 5) {
                             const subjProgress = finalSubjectProgress.find(row => row.subject_name === subject);
                             const vf = visualFeedback.find(v => v.visual_feedback_id == subjProgress?.finalsubj_visual_feedback_id);
                             return (
-                              <td key={q.id} className="px-4 py-3 text-center">
+                              <td key={q.id} className="px-1 sm:px-4 py-2 sm:py-3 text-center">
                                 {vf ? (
                                   <span 
                                     style={{ color: shapeColorMap[vf.visual_feedback_shape] || 'inherit', fontSize: '1.5em' }}
@@ -2332,7 +2275,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                             // If quarter is finalized, show individual subject feedback
                             const fb = quarterFeedback.find(f => f.subject_name === subject && Number(f.quarter_id) === q.id);
                             return (
-                              <td key={q.id} className="px-4 py-3 text-center">
+                              <td key={q.id} className="px-1 sm:px-4 py-2 sm:py-3 text-center">
                                 {fb ? (
                                   <span 
                                     style={{ color: shapeColorMap[fb.shape] || 'inherit', fontSize: '1.5em' }}
@@ -2348,7 +2291,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                           } else {
                             // If quarter is not finalized, show placeholder
                             return (
-                              <td key={q.id} className="px-4 py-3 text-center">
+                              <td key={q.id} className="px-1 sm:px-4 py-2 sm:py-3 text-center">
                                 <span></span>
                               </td>
                             );
@@ -2370,7 +2313,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                             
                             {/* Quarter Result Row */}
                             <tr className="bg-blue-50 border-t-2 border-blue-200">
-                              <td className="px-4 py-3 font-semibold text-blue-900">Quarter Result</td>
+                              <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold text-blue-900 text-xs sm:text-sm">Quarter Result</td>
                               {quarters.map(q => {
                                 if (q.id === 5) {
                                   // For Final column, check if all quarters are finalized
@@ -2384,7 +2327,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                     else if (overallProgress.risk_id == 2) riskColor = '#fbbf24';
                                     else if (overallProgress.risk_id == 3) riskColor = '#ef4444';
                                     return (
-                                      <td key={q.id} className="px-4 py-3 text-center">
+                                      <td key={q.id} className="px-1 sm:px-4 py-2 sm:py-3 text-center">
                                         <div className="flex items-center justify-center gap-2">
                                           <span
                                             className="w-4 h-4 rounded-full shadow-sm"
@@ -2400,7 +2343,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                       </td>
                                     );
                                   } else {
-                                    return <td key={q.id} className="px-4 py-3 text-center"></td>;
+                                    return <td key={q.id} className="px-1 sm:px-4 py-2 sm:py-3 text-center"></td>;
                                   }
                                 }
                                 
@@ -2415,7 +2358,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                   else if (card.risk_id == 3) riskColor = '#ef4444';
                                   
                                   return (
-                                    <td key={q.id} className="px-4 py-3 text-center">
+                                    <td key={q.id} className="px-1 sm:px-4 py-2 sm:py-3 text-center">
                                       {shape ? (
                                         <div className="flex items-center justify-center gap-2">
                                           <span
@@ -2436,7 +2379,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                   );
                                                                   } else {
                                     // Quarter not finalized
-                                    return <td key={q.id} className="px-4 py-3 text-center"></td>;
+                                    return <td key={q.id} className="px-1 sm:px-4 py-2 sm:py-3 text-center"></td>;
                                   }
                               })}
                             </tr>
@@ -2462,14 +2405,14 @@ export default function StudentProgress({ formData: initialFormData }) {
                     
                     <div className="bg-white rounded-lg border border-gray-200">
                         <div className="overflow-x-auto">
-                        <table className="w-full text-sm min-w-[600px]">
+                        <table className="w-full text-xs sm:text-sm min-w-[600px]">
                           <thead>
                             <tr className="bg-green-50">
-                              <th className="border-b border-gray-200 px-2 py-3 text-left font-semibold text-gray-700 w-[120px]">Category</th>
+                              <th className="border-b border-gray-200 px-2 py-2 sm:py-3 text-left font-semibold text-gray-700 w-[120px] text-xs sm:text-sm">Category</th>
                               {["Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr"].map((month) => (
-                                <th key={month} className="border-b border-gray-200 px-1 py-3 text-center font-semibold text-gray-700">{month}</th>
+                                <th key={month} className="border-b border-gray-200 px-1 py-2 sm:py-3 text-center font-semibold text-gray-700 text-xs sm:text-sm">{month}</th>
                               ))}
-                              <th className="border-b border-gray-200 px-2 py-3 text-center font-semibold text-gray-700 bg-blue-50">Total</th>
+                              <th className="border-b border-gray-200 px-2 py-2 sm:py-3 text-center font-semibold text-gray-700 bg-blue-50 text-xs sm:text-sm">Total</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -2487,19 +2430,19 @@ export default function StudentProgress({ formData: initialFormData }) {
                               );
                               return [
                                 <tr key="schooldays" className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                  <td className="px-2 py-3 font-medium text-gray-900">No. of School Days</td>
-                                  {att.summary.map((m, idx) => <td key={idx} className="px-1 py-3 text-center text-gray-700">{m.total}</td>)}
-                                  <td className="px-2 py-3 text-center font-bold text-blue-600 bg-blue-50">{att.totalSchoolDays}</td>
+                                  <td className="px-2 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">No. of School Days</td>
+                                  {att.summary.map((m, idx) => <td key={idx} className="px-1 py-2 sm:py-3 text-center text-gray-700 text-xs sm:text-sm">{m.total}</td>)}
+                                  <td className="px-2 py-2 sm:py-3 text-center font-bold text-blue-600 bg-blue-50 text-xs sm:text-sm">{att.totalSchoolDays}</td>
                                 </tr>,
                                 <tr key="present" className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                  <td className="px-2 py-3 font-medium text-gray-900">No. of Days Present</td>
-                                  {att.summary.map((m, idx) => <td key={idx} className="px-1 py-3 text-center text-green-600">{m.present}</td>)}
-                                  <td className="px-2 py-3 text-center font-bold text-green-600 bg-blue-50">{att.totalPresent}</td>
+                                  <td className="px-2 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">No. of Days Present</td>
+                                  {att.summary.map((m, idx) => <td key={idx} className="px-1 py-2 sm:py-3 text-center text-green-600 text-xs sm:text-sm">{m.present}</td>)}
+                                  <td className="px-2 py-2 sm:py-3 text-center font-bold text-green-600 bg-blue-50 text-xs sm:text-sm">{att.totalPresent}</td>
                                 </tr>,
                                 <tr key="absent" className="hover:bg-gray-50 transition-colors">
-                                  <td className="px-2 py-3 font-medium text-gray-900">No. of Days Absent</td>
-                                  {att.summary.map((m, idx) => <td key={idx} className="px-1 py-3 text-center text-red-600">{m.absent}</td>)}
-                                  <td className="px-2 py-3 text-center font-bold text-red-600 bg-blue-50">{att.totalAbsent}</td>
+                                  <td className="px-2 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">No. of Days Absent</td>
+                                  {att.summary.map((m, idx) => <td key={idx} className="px-1 py-2 sm:py-3 text-center text-red-600 text-xs sm:text-sm">{m.absent}</td>)}
+                                  <td className="px-2 py-2 sm:py-3 text-center font-bold text-red-600 bg-blue-50 text-xs sm:text-sm">{att.totalAbsent}</td>
                                 </tr>
                               ];
                             })()}
@@ -2526,12 +2469,12 @@ export default function StudentProgress({ formData: initialFormData }) {
                     
                     <div className="overflow-hidden">
                         <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
+                        <table className="w-full text-xs sm:text-sm">
                           <thead>
                             <tr className="bg-gray-50">
-                              <th className="border-b border-gray-200 px-2 py-2 text-left font-semibold text-gray-700 w-16">Shapes</th>
-                              <th className="border-b border-gray-200 px-2 py-2 text-left font-semibold text-gray-700">Descriptions</th>
-                              <th className="border-b border-gray-200 px-2 py-2 text-left font-semibold text-gray-700 w-20">Remarks</th>
+                              <th className="border-b border-gray-200 px-2 py-2 text-left font-semibold text-gray-700 w-16 text-xs sm:text-sm">Shapes</th>
+                              <th className="border-b border-gray-200 px-2 py-2 text-left font-semibold text-gray-700 text-xs sm:text-sm">Descriptions</th>
+                              <th className="border-b border-gray-200 px-2 py-2 text-left font-semibold text-gray-700 w-20 text-xs sm:text-sm">Remarks</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -2546,8 +2489,8 @@ export default function StudentProgress({ formData: initialFormData }) {
                                       {item.visual_feedback_shape}
                                     </span>
                                   </td>
-                                  <td className="px-2 py-2 text-gray-700 text-xs">{item.visual_feedback_description}</td>
-                                  <td className="px-2 py-2 text-gray-700 text-xs">{item.visual_feedback_description === 'Not Met' ? 'Failed' : 'Passed'}</td>
+                                  <td className="px-2 py-2 text-gray-700 text-xs sm:text-sm">{item.visual_feedback_description}</td>
+                                  <td className="px-2 py-2 text-gray-700 text-xs sm:text-sm">{item.visual_feedback_description === 'Not Met' ? 'Failed' : 'Passed'}</td>
                                 </tr>
                               ))
                             ) : (

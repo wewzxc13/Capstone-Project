@@ -6,22 +6,23 @@ import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useRouter } from "next/navigation";
 import { useUser } from "../../Context/UserContext";
 
-// This page only displays Teacher, Parent, and Student users
-// Admin users cannot see other admin information for security reasons
+
+// Admin users can only see Teacher, Parent, and Student users (not other Admin users)
 const roles = ["Teacher", "Parent", "Student"];
 
 export default function AdminUsersPage() {
-  // This page displays only active users (status = 'active' for users, stud_school_status = 'Active' for students)
-  // Admin users cannot see other admin information - only Teacher, Parent, and Student roles are displayed
+ 
   const [selectedCategory, setSelectedCategory] = useState("Teacher");
   const [studentLevelFilter, setStudentLevelFilter] = useState("All");
   const [studentLevelDropdownOpen, setStudentLevelDropdownOpen] = useState(false);
   const [users, setUsers] = useState({
+    Admin: [],
     Teacher: [],
     Parent: [],
     Student: []
   });
   const [filteredUsers, setFilteredUsers] = useState({
+    Admin: [],
     Teacher: [],
     Parent: [],
     Student: []
@@ -54,6 +55,9 @@ export default function AdminUsersPage() {
   const [sortField, setSortField] = useState("name");
   const [sortDirection, setSortDirection] = useState("asc");
 
+  // Mobile detection state
+  const [isMobile, setIsMobile] = useState(false);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -67,6 +71,23 @@ export default function AdminUsersPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [studentLevelDropdownOpen]);
+
+  // Handle mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640); // sm breakpoint
+    };
+    
+    // Check on mount
+    checkMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   // Global error handler for images to prevent 404 errors in Network tab
   useEffect(() => {
@@ -107,12 +128,17 @@ export default function AdminUsersPage() {
         const data = await response.json();
         
         if (data.status === 'success') {
-          // Filter out Admin users - admin users cannot see other admin information
-          const filteredData = { ...data.users };
-          delete filteredData.Admin;
+          // Admin can only see Teacher, Parent, and Student users (not other Admin users)
+          const filteredData = { 
+            Admin: [], // Admin users cannot see other Admin users
+            Teacher: data.users.Teacher || [],
+            Parent: data.users.Parent || [],
+            Student: data.users.Student || []
+          };
           
           // Debug: Log the user data to see photo fields
           console.log('=== USERS API RESPONSE DEBUG ===');
+          console.log('Admin users:', filteredData.Admin?.map(u => ({ id: u.id, name: u.name, photo: u.photo })));
           console.log('Teacher users:', filteredData.Teacher?.map(u => ({ id: u.id, name: u.name, photo: u.photo })));
           console.log('Parent users:', filteredData.Parent?.map(u => ({ id: u.id, name: u.name, photo: u.photo })));
           console.log('Student users:', filteredData.Student?.map(u => ({ id: u.id, name: u.name, photo: u.photo })));
@@ -203,10 +229,12 @@ export default function AdminUsersPage() {
               
               // Initialize UserContext with all active users' photos for real-time updates
               console.log('Initializing all active users photos (with advisory data):', {
+                adminCount: updatedUsers.Admin?.length || 0,
                 teacherCount: updatedUsers.Teacher?.length || 0,
                 parentCount: updatedUsers.Parent?.length || 0,
                 studentCount: updatedUsers.Student?.length || 0,
                 samplePhotos: {
+                  admin: updatedUsers.Admin?.[0]?.photo,
                   teacher: updatedUsers.Teacher?.[0]?.photo,
                   parent: updatedUsers.Parent?.[0]?.photo,
                   student: updatedUsers.Student?.[0]?.photo
@@ -271,6 +299,18 @@ export default function AdminUsersPage() {
               setFilteredUsers(updatedUsers);
               
               // Initialize UserContext with all active users' photos for real-time updates
+              console.log('Initializing all active users photos (without advisory data):', {
+                adminCount: updatedUsers.Admin?.length || 0,
+                teacherCount: updatedUsers.Teacher?.length || 0,
+                parentCount: updatedUsers.Parent?.length || 0,
+                studentCount: updatedUsers.Student?.length || 0,
+                samplePhotos: {
+                  admin: updatedUsers.Admin?.[0]?.photo,
+                  teacher: updatedUsers.Teacher?.[0]?.photo,
+                  parent: updatedUsers.Parent?.[0]?.photo,
+                  student: updatedUsers.Student?.[0]?.photo
+                }
+              });
               initializeAllUsersPhotos(updatedUsers);
             }
           } else {
@@ -391,6 +431,14 @@ export default function AdminUsersPage() {
               case "email":
                 aValue = (a.email || "").toLowerCase();
                 bValue = (b.email || "").toLowerCase();
+                break;
+              case "contactNumber":
+                aValue = (a.contactNo || "").toLowerCase();
+                bValue = (b.contactNo || "").toLowerCase();
+                break;
+              case "role":
+                aValue = (a.role || "").toLowerCase();
+                bValue = (b.role || "").toLowerCase();
                 break;
               case "assignedClass":
                 aValue = (a.assignedClass || "").toLowerCase();
@@ -541,9 +589,13 @@ export default function AdminUsersPage() {
         if (refreshResponse.ok) {
           const refreshData = await refreshResponse.json();
           if (refreshData.status === 'success') {
-            // Filter out Admin users again
-            const filteredRefreshData = { ...refreshData.users };
-            delete filteredRefreshData.Admin;
+            // Admin can only see Teacher, Parent, and Student users (not other Admin users)
+            const filteredRefreshData = { 
+              Admin: [], // Admin users cannot see other Admin users
+              Teacher: refreshData.users.Teacher || [],
+              Parent: refreshData.users.Parent || [],
+              Student: refreshData.users.Student || []
+            };
             setUsers(filteredRefreshData);
             setFilteredUsers(filteredRefreshData);
           }
@@ -582,40 +634,76 @@ export default function AdminUsersPage() {
   const generatePaginationItems = (currentPage, totalPages, maxVisible = 7) => {
     const items = [];
     
-    if (totalPages <= maxVisible) {
+    const mobileMaxVisible = 4;
+    const effectiveMaxVisible = isMobile ? mobileMaxVisible : maxVisible;
+    
+    if (totalPages <= effectiveMaxVisible) {
       // If total pages is less than max visible, show all pages
       for (let i = 1; i <= totalPages; i++) {
         items.push({ type: 'page', page: i });
       }
     } else {
-      // Always show first page
-      items.push({ type: 'page', page: 1 });
-      
-      if (currentPage <= 4) {
-        // Near the beginning: show first 5 pages + ellipsis + last page
-        for (let i = 2; i <= Math.min(5, totalPages - 1); i++) {
-          items.push({ type: 'page', page: i });
-        }
-        if (totalPages > 5) {
+      if (isMobile) {
+        // Mobile pagination: show current page ± 1 and first/last
+        if (currentPage <= 2) {
+          // Near the beginning: show first 3 pages + ellipsis + last
+          for (let i = 1; i <= Math.min(3, totalPages); i++) {
+            items.push({ type: 'page', page: i });
+          }
+          if (totalPages > 3) {
+            items.push({ type: 'ellipsis' });
+            items.push({ type: 'page', page: totalPages });
+          }
+        } else if (currentPage >= totalPages - 1) {
+          // Near the end: show first + ellipsis + last 3 pages
+          items.push({ type: 'page', page: 1 });
+          if (totalPages > 3) {
+            items.push({ type: 'ellipsis' });
+          }
+          for (let i = Math.max(2, totalPages - 2); i <= totalPages; i++) {
+            items.push({ type: 'page', page: i });
+          }
+        } else {
+          // In the middle: show first + ellipsis + current±1 + ellipsis + last
+          items.push({ type: 'page', page: 1 });
           items.push({ type: 'ellipsis' });
-        }
-        if (totalPages > 1) {
+          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+            items.push({ type: 'page', page: i });
+          }
+          items.push({ type: 'ellipsis' });
           items.push({ type: 'page', page: totalPages });
         }
-      } else if (currentPage >= totalPages - 3) {
-        // Near the end: show first page + ellipsis + last 5 pages
-        items.push({ type: 'ellipsis' });
-        for (let i = Math.max(2, totalPages - 4); i <= totalPages; i++) {
-          items.push({ type: 'page', page: i });
-        }
       } else {
-        // In the middle: show first + ellipsis + current±2 + ellipsis + last
-        items.push({ type: 'ellipsis' });
-        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
-          items.push({ type: 'page', page: i });
+        // Desktop pagination: original logic
+        // Always show first page
+        items.push({ type: 'page', page: 1 });
+        
+        if (currentPage <= 4) {
+          // Near the beginning: show first 5 pages + ellipsis + last page
+          for (let i = 2; i <= Math.min(5, totalPages - 1); i++) {
+            items.push({ type: 'page', page: i });
+          }
+          if (totalPages > 5) {
+            items.push({ type: 'ellipsis' });
+          }
+          if (totalPages > 1) {
+            items.push({ type: 'page', page: totalPages });
+          }
+        } else if (currentPage >= totalPages - 3) {
+          // Near the end: show first page + ellipsis + last 5 pages
+          items.push({ type: 'ellipsis' });
+          for (let i = Math.max(2, totalPages - 4); i <= totalPages; i++) {
+            items.push({ type: 'page', page: i });
+          }
+        } else {
+          // In the middle: show first + ellipsis + current±2 + ellipsis + last
+          items.push({ type: 'ellipsis' });
+          for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+            items.push({ type: 'page', page: i });
+          }
+          items.push({ type: 'ellipsis' });
+          items.push({ type: 'page', page: totalPages });
         }
-        items.push({ type: 'ellipsis' });
-        items.push({ type: 'page', page: totalPages });
       }
     }
     
@@ -680,46 +768,49 @@ export default function AdminUsersPage() {
 
         {/* Controls Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center gap-3">
-              {/* Search Bar */}
-              <div className="relative">
-                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
-                <input
-                  type="text"
-                  placeholder="Search by name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 pr-10 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors caret-[#232c67]"
-                  style={{ minWidth: '300px' }}
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <FaTimes className="text-sm" />
-                  </button>
-                )}
+          <div className="flex flex-col gap-4">
+            {/* Top Row: Search and Add User */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+                {/* Search Bar */}
+                <div className="relative w-full sm:w-auto">
+                  <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+                  <input
+                    type="text"
+                    placeholder="Search by name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full sm:w-auto pl-12 pr-10 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors caret-[#232c67]"
+                    style={{ minWidth: '280px' }}
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <FaTimes className="text-sm" />
+                    </button>
+                  )}
+                </div>
+
+                {/* User Count Badge */}
+                <div className="flex items-center gap-2 px-2 py-0.5 bg-[#f0f3fa] rounded-full">
+                  <FaUsers className="text-[#232c67] text-sm" />
+                  <span className="text-sm font-medium text-[#1a1f4d]">
+                    {filteredUsers[selectedCategory]?.length || 0} {selectedCategory}{filteredUsers[selectedCategory]?.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
               </div>
 
-              {/* User Count Badge */}
-              <div className="flex items-center gap-2 px-2 py-0.5 bg-[#f0f3fa] rounded-full">
-                <FaUsers className="text-[#232c67] text-sm" />
-                <span className="text-sm font-medium text-[#1a1f4d]">
-                  {filteredUsers[selectedCategory]?.length || 0} {selectedCategory}{filteredUsers[selectedCategory]?.length !== 1 ? 's' : ''}
-                </span>
-              </div>
+              {/* Add User Button */}
+              <button
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
+                onClick={handleAddUser}
+              >
+                <FaClipboardCheck className="text-sm" />
+                Add User
+              </button>
             </div>
-
-            {/* Add User Button */}
-            <button
-              className="flex items-center gap-2 px-6 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
-              onClick={handleAddUser}
-            >
-              <FaClipboardCheck className="text-sm" />
-              Add User
-            </button>
           </div>
         </div>
 
@@ -735,13 +826,15 @@ export default function AdminUsersPage() {
             return (
               <div>
                 {/* Header with role tabs and action buttons */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border-b border-gray-200 min-h-[60px] border-t border-gray-200">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 p-4 border-b border-gray-200 border-t border-gray-200">
                   {/* Role Selector Tabs */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {roles.map((role) => {
                       // Get the appropriate icon for each role
                       const getIcon = (userRole) => {
                         switch (userRole) {
+                          case "Admin":
+                            return <FaUserShield className="text-sm" />;
                           case "Teacher":
                             return <FaChalkboardTeacher className="text-sm" />;
                           case "Parent":
@@ -757,78 +850,78 @@ export default function AdminUsersPage() {
                         <button
                           key={role}
                           onClick={() => handleTabClick(role)}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
                             selectedCategory === role
                               ? 'bg-[#232c67] text-white shadow-sm'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                         >
                           {getIcon(role)}
-                          {role}
+                          <span className="inline">{role}</span>
                         </button>
                       );
                     })}
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                     {/* View Toggle Buttons */}
-                    <div className="flex items-center gap-2 mr-4">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                       <button
                         onClick={() => setViewMode("table")}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
+                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 flex-1 sm:flex-none ${
                           viewMode === "table"
                             ? 'bg-[#232c67] text-white shadow-sm'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
                         <FaTable className="text-sm" />
-                        Table
+                        <span className="inline">Table</span>
                       </button>
                       <button
                         onClick={() => setViewMode("cards")}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
+                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 flex-1 sm:flex-none ${
                           viewMode === "cards"
                             ? 'bg-[#232c67] text-white shadow-sm'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
                         <FaThLarge className="text-sm" />
-                        Cards
+                        <span className="inline">Cards</span>
                       </button>
                     </div>
                     {selectedCategory === "Teacher" && (
                       <button
                         onClick={() => router.push("/AdminSection/Users/AssignedClass")}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#232c67] text-white rounded-lg text-sm font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-[#232c67] text-white rounded-lg text-sm font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
                       >
                         <FaCalendarAlt className="text-sm" />
-                        View Assigned Class
+                        <span className="inline">View Assigned Class</span>
                       </button>
                     )}
                     {selectedCategory === "Parent" && (
                       <button
                         onClick={() => router.push("/AdminSection/Users/ViewLinkedStudent")}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#232c67] text-white rounded-lg text-sm font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-[#232c67] text-white rounded-lg text-sm font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
                       >
                         <FaUsers className="text-sm" />
-                        View Linked Students
+                        <span className="inline">View Linked Students</span>
                       </button>
                     )}
                     {selectedCategory === "Student" && (
                       <>
-                        <div className="relative student-level-dropdown">
+                        <div className="relative student-level-dropdown w-full sm:w-auto">
                           <button
                             type="button"
                             onClick={() => setStudentLevelDropdownOpen(!studentLevelDropdownOpen)}
-                            className="flex items-center justify-between bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md w-[180px]"
+                            className="w-full sm:w-[180px] flex items-center justify-between bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md"
                           >
                             <span className="truncate">{studentLevelFilter}</span>
                             <FaChevronDown className={`text-sm transition-transform ${studentLevelDropdownOpen ? 'rotate-180' : ''}`} />
                           </button>
                           
                           {studentLevelDropdownOpen && (
-                            <div className="absolute top-full left-0 w-[180px] mt-1 rounded-xl shadow-xl bg-white border border-gray-200 z-20 overflow-hidden">
+                            <div className="absolute top-full left-0 w-full sm:w-[180px] mt-1 rounded-xl shadow-xl bg-white border border-gray-200 z-20 overflow-hidden">
                               <div className="py-1">
                                 {['All', 'Discoverer', 'Explorer', 'Adventurer', 'Not Assigned Yet'].map((level) => (
                                   <button
@@ -852,10 +945,10 @@ export default function AdminUsersPage() {
                         </div>
                         <button
                           onClick={() => { window.location.href = "/AdminSection/Users/StudentProgress"; }}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-[#232c67] text-white rounded-lg text-sm font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
+                          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-[#232c67] text-white rounded-lg text-sm font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
                         >
                           <FaClipboardCheck className="text-sm" />
-                          View Student Progress
+                          <span className="inline">View Student Progress</span>
                         </button>
                       </>
                     )}
@@ -877,124 +970,115 @@ export default function AdminUsersPage() {
                   ) : viewMode === "table" ? (
                     /* Table View */
                     <div>
-                      <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                                                <table className="min-w-full divide-y divide-gray-200 table-fixed">
-                          <colgroup>
-                            <col style={{ width: '80px' }} />
-                            <col style={{ width: '200px' }} />
-                            {selectedCategory === "Teacher" && <col style={{ width: '250px' }} />}
-                            {selectedCategory === "Parent" && <col style={{ width: '250px' }} />}
-                            {selectedCategory === "Student" && <col style={{ width: '120px' }} />}
-                            {selectedCategory === "Teacher" && <col style={{ width: '180px' }} />}
-                            {selectedCategory === "Parent" && <col style={{ width: '200px' }} />}
-                            {selectedCategory === "Student" && <col style={{ width: '120px' }} />}
-                          </colgroup>
-                          <thead className="bg-[#232c67] text-white border-b border-gray-200 sticky top-0 z-10">
-                            <tr>
-                              <th className="px-6 py-4 font-semibold text-white text-left">
-                                Photo
-                              </th>
-                              <th 
-                                className="px-6 py-4 font-semibold text-white cursor-pointer text-left"
-                                onClick={() => handleSort("name")}
-                              >
-                                <div className="flex items-center gap-2">
-                                  Full Name
-                                  {getSortIcon("name")}
-                                </div>
-                              </th>
-                              {selectedCategory === "Teacher" && (
-                                <th 
-                                  className="px-6 py-4 font-semibold text-white cursor-pointer text-left"
-                                  onClick={() => handleSort("email")}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    Email
-                                    {getSortIcon("email")}
-                                  </div>
-                                </th>
-                              )}
-                              {selectedCategory === "Parent" && (
-                                <th 
-                                  className="px-6 py-4 font-semibold text-white cursor-pointer text-left"
-                                  onClick={() => handleSort("email")}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    Email
-                                    {getSortIcon("email")}
-                                  </div>
-                                </th>
-                              )}
-                              {selectedCategory === "Student" && (
-                                <th 
-                                  className="px-6 py-4 font-semibold text-white cursor-pointer text-left"
-                                  onClick={() => handleSort("birthdate")}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    Birthdate
-                                    {getSortIcon("birthdate")}
-                                  </div>
-                                </th>
-                              )}
-                              {selectedCategory === "Teacher" && (
-                                <th 
-                                  className="px-6 py-4 font-semibold text-white cursor-pointer text-left"
-                                  onClick={() => handleSort("assignedClass")}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    Assigned Class
-                                    {getSortIcon("assignedClass")}
-                                  </div>
-                                </th>
-                              )}
-                              {selectedCategory === "Parent" && (
-                                <th 
-                                  className="px-6 py-4 font-semibold text-white cursor-pointer text-left"
-                                  onClick={() => handleSort("childrenName")}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    Children Name
-                                    {getSortIcon("childrenName")}
-                                  </div>
-                                </th>
-                              )}
-                              {selectedCategory === "Student" && (
-                                <th 
-                                  className="px-6 py-4 font-semibold text-white cursor-pointer text-left"
-                                  onClick={() => handleSort("gender")}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    Gender
-                                    {getSortIcon("gender")}
-                                  </div>
-                                </th>
-                              )}
-                            </tr>
-                          </thead>
-                                                
-                        </table>
-                        <div className="max-h-[280px] overflow-y-auto">
-                          <table className="min-w-full divide-y divide-gray-200 table-fixed">
-                            <colgroup>
-                              <col style={{ width: '80px' }} />
-                              <col style={{ width: '200px' }} />
-                              {selectedCategory === "Teacher" && <col style={{ width: '250px' }} />}
-                              {selectedCategory === "Parent" && <col style={{ width: '250px' }} />}
-                              {selectedCategory === "Student" && <col style={{ width: '120px' }} />}
-                              {selectedCategory === "Teacher" && <col style={{ width: '180px' }} />}
-                              {selectedCategory === "Parent" && <col style={{ width: '200px' }} />}
-                              {selectedCategory === "Student" && <col style={{ width: '120px' }} />}
-                            </colgroup>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                              {roleUsers.map((user, idx) => (
-                                <tr 
-                                  key={user.id || idx} 
-                                  className="hover:bg-gray-50 cursor-pointer"
-                                  onClick={() => handleViewUser(user)}
-                                >
-                                    <td className="px-6 py-2 whitespace-nowrap">
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <div className="max-h-[280px] overflow-y-auto">
+                            <table className="min-w-full divide-y divide-gray-200 table-fixed">
+                              <colgroup>
+                                <col style={{ width: '80px' }} />
+                                <col style={{ width: '200px' }} />
+                                {selectedCategory === "Teacher" && <col style={{ width: '250px' }} />}
+                                {selectedCategory === "Parent" && <col style={{ width: '250px' }} />}
+                                {selectedCategory === "Student" && <col style={{ width: '120px' }} />}
+                                {selectedCategory === "Teacher" && <col style={{ width: '180px' }} />}
+                                {selectedCategory === "Parent" && <col style={{ width: '200px' }} />}
+                                {selectedCategory === "Student" && <col style={{ width: '120px' }} />}
+                              </colgroup>
+                              <thead className="bg-[#232c67] text-white border-b border-gray-200 sticky top-0 z-10">
+                                <tr>
+                                  <th className="px-3 sm:px-6 py-4 font-semibold text-white text-left">
+                                    <span className="hidden sm:inline">Photo</span>
+                                    <span className="sm:hidden">👤</span>
+                                  </th>
+                                  <th 
+                                    className="px-3 sm:px-6 py-4 font-semibold text-white cursor-pointer text-left"
+                                    onClick={() => handleSort("name")}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className="hidden sm:inline">Full Name</span>
+                                      <span className="sm:hidden">Name</span>
+                                      {getSortIcon("name")}
+                                    </div>
+                                  </th>
+                                  {selectedCategory === "Teacher" && (
+                                    <th 
+                                      className="px-3 sm:px-6 py-4 font-semibold text-white cursor-pointer text-left"
+                                      onClick={() => handleSort("email")}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        Email
+                                        {getSortIcon("email")}
+                                      </div>
+                                    </th>
+                                  )}
+                                  {selectedCategory === "Parent" && (
+                                    <th 
+                                      className="px-3 sm:px-6 py-4 font-semibold text-white cursor-pointer text-left"
+                                      onClick={() => handleSort("email")}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        Email
+                                        {getSortIcon("email")}
+                                      </div>
+                                    </th>
+                                  )}
+                                  {selectedCategory === "Student" && (
+                                    <th 
+                                      className="px-3 sm:px-6 py-4 font-semibold text-white cursor-pointer text-left"
+                                      onClick={() => handleSort("birthdate")}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        Birthdate
+                                        {getSortIcon("birthdate")}
+                                      </div>
+                                    </th>
+                                  )}
+
+                                  {selectedCategory === "Teacher" && (
+                                    <th 
+                                      className="px-3 sm:px-6 py-4 font-semibold text-white cursor-pointer text-left"
+                                      onClick={() => handleSort("assignedClass")}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        Assigned Class
+                                        {getSortIcon("assignedClass")}
+                                      </div>
+                                    </th>
+                                  )}
+                                  {selectedCategory === "Parent" && (
+                                    <th 
+                                      className="px-3 sm:px-6 py-4 font-semibold text-white cursor-pointer text-left"
+                                      onClick={() => handleSort("childrenName")}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        Children Name
+                                        {getSortIcon("childrenName")}
+                                      </div>
+                                    </th>
+                                  )}
+                                  {selectedCategory === "Student" && (
+                                    <th 
+                                      className="px-3 sm:px-6 py-4 font-semibold text-white cursor-pointer text-left"
+                                      onClick={() => handleSort("gender")}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        Gender
+                                        {getSortIcon("gender")}
+                                      </div>
+                                    </th>
+                                  )}
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {roleUsers.map((user, idx) => (
+                                  <tr 
+                                    key={user.id || idx} 
+                                    className="hover:bg-gray-50 cursor-pointer"
+                                    onClick={() => handleViewUser(user)}
+                                  >
+                                    <td className="px-3 sm:px-6 py-2 whitespace-nowrap">
                                       <div className="flex items-center">
-                                        <div className="flex-shrink-0 h-8 w-8">
+                                        <div className="flex-shrink-0 h-6 w-6 sm:h-8 sm:w-8">
                                           {(() => {
                                             const realTimePhoto = user.role === 'Student' 
                                               ? getStudentPhoto(user.id) || user.photo
@@ -1005,7 +1089,7 @@ export default function AdminUsersPage() {
                                                 <img
                                                   src={realTimePhoto}
                                                   alt="Profile"
-                                                  className="h-8 w-8 rounded-full object-cover"
+                                                  className="h-6 w-6 sm:h-8 sm:w-8 rounded-full object-cover"
                                                   onError={(e) => {
                                                     e.target.style.display = 'none';
                                                     if (e.target.nextSibling) {
@@ -1016,8 +1100,8 @@ export default function AdminUsersPage() {
                                               );
                                             } else {
                                               return (
-                                                <div className="h-8 w-8 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67]">
-                                                  <FaUser className="text-sm" />
+                                                <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-[#e8ecf7] flex items-center justify-center text-[#232c67]">
+                                                  <FaUser className="text-xs sm:text-sm" />
                                                 </div>
                                               );
                                             }
@@ -1029,8 +1113,8 @@ export default function AdminUsersPage() {
                                         </div>
                                       </div>
                                     </td>
-                                    <td className="px-6 py-2 whitespace-nowrap">
-                                      <div className="text-sm font-medium text-gray-900">
+                                    <td className="px-3 sm:px-6 py-2 whitespace-nowrap">
+                                      <div className="text-xs sm:text-sm font-medium text-gray-900">
                                         {user.lastName && user.firstName 
                                           ? `${user.lastName}, ${user.firstName}${user.middleName ? ` ${user.middleName}` : ''}`
                                           : user.name || 'Not specified'
@@ -1038,23 +1122,24 @@ export default function AdminUsersPage() {
                                       </div>
                                     </td>
                                     {selectedCategory === "Teacher" && (
-                                      <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
+                                      <td className="px-3 sm:px-6 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                                         {user.email || "Not specified"}
                                       </td>
                                     )}
                                     {selectedCategory === "Parent" && (
-                                      <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
+                                      <td className="px-3 sm:px-6 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                                         {user.email || "Not specified"}
                                       </td>
                                     )}
                                     {selectedCategory === "Student" && (
-                                      <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
+                                      <td className="px-3 sm:px-6 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                                         {user.birthdate ? new Date(user.birthdate).toLocaleDateString() : "Not specified"}
                                       </td>
                                     )}
-                                                                      {selectedCategory === "Teacher" && (
-                                    <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
-                                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    
+                                    {selectedCategory === "Teacher" && (
+                                    <td className="px-3 sm:px-6 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                                      <span className={`px-1 sm:px-2 py-1 text-xs font-medium rounded-full ${
                                         user.assignedClass === "Discoverer"
                                           ? "bg-blue-100 text-blue-800"
                                           : user.assignedClass === "Explorer"
@@ -1068,13 +1153,13 @@ export default function AdminUsersPage() {
                                     </td>
                                   )}
                                     {selectedCategory === "Parent" && (
-                                      <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
+                                      <td className="px-3 sm:px-6 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                                         {user.childrenName || "Not specified"}
                                       </td>
                                     )}
                                     {selectedCategory === "Student" && (
-                                      <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      <td className="px-3 sm:px-6 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                                        <span className={`px-1 sm:px-2 py-1 text-xs font-medium rounded-full ${
                                           user.gender?.toLowerCase() === "male"
                                             ? "bg-blue-100 text-blue-800"
                                             : user.gender?.toLowerCase() === "female"
@@ -1092,6 +1177,7 @@ export default function AdminUsersPage() {
                           </div>
                         </div>
                       </div>
+                    </div>
                    
                                       ) : (
                       /* Cards View */
@@ -1103,7 +1189,7 @@ export default function AdminUsersPage() {
                             </h3>
                           </div>
                         </div>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                           {paginatedUsers.map((user, idx) => (
                         <div 
                           key={user.id || idx} 
@@ -1188,9 +1274,9 @@ export default function AdminUsersPage() {
                     
                     {/* Pagination controls - only for cards view */}
                     {roleUsers.length > 0 && (
-                      <div className="flex items-center p-4 border-t border-gray-200 mt-4 relative">
-                        {/* Pagination buttons - absolutely centered */}
-                        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between p-4 border-t border-gray-200 mt-4 gap-4">
+                        {/* Pagination buttons - centered on mobile, centered on desktop */}
+                        <div className="flex items-center gap-2 order-1 sm:order-none sm:flex-1 sm:justify-center">
                           <button
                             className="w-10 h-10 rounded-lg bg-white border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
                             onClick={() => handlePageChange(selectedCategory, Math.max(1, currentPage - 1))}
@@ -1240,8 +1326,8 @@ export default function AdminUsersPage() {
                           </button>
                         </div>
                         
-                        {/* User count info - right side */}
-                        <span className="text-sm text-gray-500 ml-auto">
+                        {/* User count info - right side on desktop */}
+                        <span className="text-xs sm:text-sm text-gray-500 text-center sm:text-right order-2 sm:order-none sm:flex-shrink-0">
                           Showing {paginatedUsers.length} of {roleUsers.length} users
                         </span>
                       </div>
@@ -1258,8 +1344,8 @@ export default function AdminUsersPage() {
 
         {/* Assign Modal for Teacher */}
         {showAssignModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-xl shadow-lg p-6 min-w-[400px] max-w-xl relative">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+            <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl relative">
               {/* Header */}
               <div className="bg-[#232c67] text-white px-4 py-2 rounded-t-md font-bold text-xl mb-4 -mx-6 -mt-6 rounded-b-none">
                 Assign to Class
@@ -1307,15 +1393,15 @@ export default function AdminUsersPage() {
                 </div>
               </div>
               {/* Footer */}
-              <div className="flex justify-end gap-2 mt-6">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
                 <button
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
                   onClick={() => setShowAssignModal(false)}
                 >
                   Cancel
                 </button>
                 <button
-                  className="px-4 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] shadow transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] shadow transition-colors"
                   onClick={() => setShowAssignModal(false)}
                 >
                   Confirm
