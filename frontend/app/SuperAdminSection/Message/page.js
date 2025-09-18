@@ -258,7 +258,18 @@ export default function SuperAdminMessagesPage() {
         );
         
         if (isMounted) {
-          setChats(uniqueUsers);
+          setChats((prev) => {
+            const prevMap = new Map(prev.map(u => [u.id, u]));
+            const merged = uniqueUsers.map(u => {
+              const existing = prevMap.get(u.id);
+              if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
+                return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
+              }
+              return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
+            });
+            prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
+            return merged;
+          });
           dataLoadedRef.current.users = true; // Mark as loaded
           isRunningRef.current.users = false; // Mark as not running
         }
@@ -331,7 +342,18 @@ export default function SuperAdminMessagesPage() {
       );
       
 
-      setChats(uniqueAllUsers);
+      setChats((prev) => {
+        const prevMap = new Map(prev.map(u => [u.id, u]));
+        const merged = uniqueAllUsers.map(u => {
+          const existing = prevMap.get(u.id);
+          if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
+            return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
+          }
+          return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
+        });
+        prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
+        return merged;
+      });
       
       // Update photos for new users
       const newPhotos = {};
@@ -991,9 +1013,20 @@ export default function SuperAdminMessagesPage() {
             };
           });
           
-          // Set the users first
-          setChats(users);
-          setRecent(users);
+          // Set the users first, preserving any loaded messages
+          setChats((prev) => {
+            const prevMap = new Map(prev.map(u => [u.id, u]));
+            const merged = users.map(u => {
+              const existing = prevMap.get(u.id);
+              if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
+                return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
+              }
+              return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
+            });
+            prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
+            return merged;
+          });
+          setRecent((prev) => (prev && prev.length ? prev : users));
           dataLoadedRef.current.users = true;
           
           // Don't automatically load messages here - let the user selection trigger it

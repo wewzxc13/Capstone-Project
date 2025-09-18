@@ -319,81 +319,140 @@ export default function Schedule() {
                    No schedule data has been configured for this class level yet.
                  </p>
                </div>
-             ) : (
-               <div className="overflow-x-auto">
-                <table className="min-w-full text-xs sm:text-sm text-left text-gray-800">
-                   <thead className="bg-[#232c67] text-white">
-                     <tr>
-                      <th className="px-3 sm:px-5 py-3 text-sm sm:text-base font-semibold border-r border-[#1a1f4d]">
-                         <div className="flex items-center gap-2">
-                           <FaCalendarAlt className="text-sm" />
-                           Time
-                         </div>
-                       </th>
-                       {classInfo.days.map((day) => (
-                        <th key={day} className="px-3 sm:px-5 py-3 text-sm sm:text-base font-semibold border-r border-[#1a1f4d] last:border-r-0">
-                           <div className="text-center">
-                             <div className="font-bold">{day}</div>
-                             <div className="text-xs font-normal text-[#a8b0e0] mt-1">
-                               {(() => {
-                                 if (!classInfo.time) return '-';
-                                 const [morning, afternoon] = classInfo.time.split("/").map(s => s.trim());
-                                 const session = selectedStudent?.scheduleClass;
-                                 if (session === 'Afternoon') {
-                                   return afternoon || '-';
-                                 } else if (session === 'Morning') {
-                                   return morning || '-';
-                                 }
-                                 return classInfo.time;
-                               })()}
-                             </div>
-                           </div>
-                         </th>
-                       ))}
-                     </tr>
-                   </thead>
-                   <tbody>
-                     {groupByTime(schedule.schedule, classInfo.days).length === 0 ? (
-                       <tr>
-                         <td colSpan={classInfo.days.length + 1} className="px-6 py-8 text-center">
-                           <div className="flex flex-col items-center justify-center text-gray-500">
-                             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                               <FaCalendarAlt className="text-2xl text-gray-400" />
-                             </div>
-                             <h4 className="text-lg font-medium text-gray-700 mb-2">Empty Schedule</h4>
-                             <p className="text-gray-500 text-center max-w-sm">
-                               This class schedule is empty.
-                             </p>
-                           </div>
-                         </td>
-                       </tr>
-                     ) : (
-                       groupByTime(schedule.schedule, classInfo.days).map((row, idx) => (
-                         <tr key={idx} className={`${idx % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50 transition-colors`}>
-                          <td className="px-3 sm:px-5 py-3 font-semibold text-xs sm:text-sm border-r border-gray-200 bg-gray-100">
-                             <div className="flex items-center gap-2">
-                               <div className="w-2 h-2 bg-[#232c67] rounded-full"></div>
-                               {row.time}
-                             </div>
-                           </td>
-                           {classInfo.days.map((day) => (
-                            <td key={day} className="px-3 sm:px-5 py-3 text-xs sm:text-sm border-r border-gray-200 last:border-r-0">
-                               <div className="text-center">
-                                 <span className="font-medium">
-                                   {(Array.isArray(row[day]) && row[day].length > 0)
-                                     ? [...new Set(row[day].map(x => x && x.name ? x.name : '').filter(Boolean))].join(' / ')
-                                     : "-"}
-                                 </span>
-                               </div>
-                             </td>
-                           ))}
-                         </tr>
-                       ))
-                     )}
-                   </tbody>
-                 </table>
-               </div>
-             )}
+            ) : (
+              <>
+                {/* Desktop/tablet table view */}
+                <div className="overflow-hidden hidden lg:block">
+                  <table className="min-w-full text-sm text-left text-gray-800">
+                    <thead className="bg-[#232c67] text-white">
+                      <tr>
+                        <th className="px-5 py-2 text-base font-semibold border-r border-[#1a1f4d]">
+                          <div className="flex items-center gap-2">
+                            <FaCalendarAlt className="text-sm" />
+                            Time
+                          </div>
+                        </th>
+                        {classInfo.days.map((day) => (
+                          <th key={day} className="px-5 py-2 text-base font-semibold border-r border-[#1a1f4d] last:border-r-0">
+                            <div className="text-center">
+                              <div className="font-bold">{day}</div>
+                              <div className="text-xs font-normal text-[#a8b0e0] mt-1">
+                                {(() => {
+                                  if (!classInfo.time) return '-';
+                                  const [morning, afternoon] = classInfo.time.split("/").map(s => s.trim());
+                                  const session = selectedStudent?.scheduleClass;
+                                  if (session === 'Afternoon') return afternoon || '-';
+                                  if (session === 'Morning') return morning || '-';
+                                  return classInfo.time;
+                                })()}
+                              </div>
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {groupByTime(schedule.schedule, classInfo.days).length === 0 ? (
+                        <tr>
+                          <td colSpan={classInfo.days.length + 1} className="px-6 py-8 text-center">
+                            <div className="flex flex-col items-center justify-center text-gray-500">
+                              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <FaCalendarAlt className="text-2xl text-gray-400" />
+                              </div>
+                              <h4 className="text-lg font-medium text-gray-700 mb-2">Empty Schedule</h4>
+                              <p className="text-gray-500 text-center max-w-sm">This class schedule is empty.</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        groupByTime(schedule.schedule, classInfo.days).map((row, idx) => (
+                          <tr key={idx} className={`${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-blue-50 transition-colors`}>
+                            <td className="px-5 py-2 font-semibold text-sm border-r border-gray-200 bg-gray-100">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-[#232c67] rounded-full"></div>
+                                {row.time}
+                              </div>
+                            </td>
+                            {classInfo.days.map((day) => (
+                              <td key={day} className="px-5 py-2 text-sm border-r border-gray-200 last:border-r-0">
+                                <div className="text-center">
+                                  <span className="font-medium">
+                                    {(Array.isArray(row[day]) && row[day].length > 0)
+                                      ? [...new Set(row[day].map(x => x && x.name ? x.name : '').filter(Boolean))].join(' / ')
+                                      : '-'}
+                                  </span>
+                                </div>
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile view: compact 4-column grid mimicking table without horizontal scroll */}
+                <div className="block lg:hidden">
+                  {/* Header row */}
+                  <div className="grid grid-cols-4 rounded-t-xl overflow-hidden">
+                    <div className="bg-[#232c67] text-white px-2 py-2.5 text-[12px] font-semibold flex items-center gap-2 border-r border-[#1a1f4d]">
+                      <FaCalendarAlt className="text-xs" />
+                      <span>Time</span>
+                    </div>
+                    {classInfo.days.map((day) => (
+                      <div key={day} className="bg-[#232c67] text-white px-1.5 py-2 text-center text-[11px] border-r last:border-r-0 border-[#1a1f4d]">
+                        <div className="font-bold">{day}</div>
+                        <div className="text-[9px] text-[#a8b0e0] leading-4 mt-1 whitespace-pre-line">
+                          {(() => {
+                            if (!classInfo.time) return '-';
+                            const [morning, afternoon] = classInfo.time.split('/').map(s => s.trim());
+                            const session = selectedStudent?.scheduleClass;
+                            if (session === 'Afternoon') return afternoon || '-';
+                            if (session === 'Morning') return morning || '-';
+                            return classInfo.time;
+                          })()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Body rows */}
+                  <div>
+                    {groupByTime(schedule.schedule, classInfo.days).length === 0 ? (
+                      <div className="px-6 py-8 text-center text-gray-500">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                          <FaCalendarAlt className="text-2xl text-gray-400" />
+                        </div>
+                        <h4 className="text-base font-medium text-gray-700 mb-1">Empty Schedule</h4>
+                        <p className="text-xs text-gray-500">This class schedule is empty.</p>
+                      </div>
+                    ) : (
+                      groupByTime(schedule.schedule, classInfo.days).map((row, idx) => (
+                        <div key={idx} className={`grid grid-cols-4 text-[11px] border-t border-gray-200 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                          {/* Time cell */}
+                          <div className="px-2.5 py-2.5 font-semibold border-r border-gray-200 min-h-[56px] flex items-center">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 bg-[#232c67] rounded-full"></span>
+                              {row.time}
+                            </div>
+                          </div>
+                          {/* Day cells */}
+                          {classInfo.days.map((day) => (
+                            <div key={day} className="px-2 py-2.5 border-r last:border-r-0 border-gray-200 min-h-[56px] flex items-center">
+                              <div className="font-medium leading-snug break-words">
+                                {(Array.isArray(row[day]) && row[day].length > 0)
+                                  ? [...new Set(row[day].map(x => x && x.name ? x.name : '').filter(Boolean))].join(' / ')
+                                  : '-'}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
            </div>
          </div>
        )}

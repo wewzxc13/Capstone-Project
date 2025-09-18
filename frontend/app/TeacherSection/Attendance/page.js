@@ -12,7 +12,7 @@ function Modal({ open, onClose, children }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-[500px] max-h-[90vh] overflow-y-auto relative border border-gray-100">
+      <div className="bg-white rounded-xl shadow-2xl p-4 md:p-6 w-full max-w-[500px] max-h-[85vh] md:max-h-[95vh] overflow-y-auto relative border border-gray-100">
         {children}
       </div>
     </div>
@@ -651,6 +651,18 @@ export default function AttendancePage() {
   const startIndex = (datePage - 1) * datesPerPage;
   const endIndex = startIndex + datesPerPage;
   const paginatedDates = sortedDates.slice(startIndex, endIndex); // keep descending order within page
+  
+  // For mobile: show all dates, for desktop: show paginated dates
+  const displayDates = sortedDates; // Mobile shows all dates
+  const desktopDates = paginatedDates; // Desktop shows paginated dates
+
+  // Mobile-only dynamic width for the Student Name column to avoid trailing blank space
+  const mobileNameWidthClass = useMemo(() => {
+    const count = Math.min(3, displayDates.length || 0);
+    if (count <= 1) return 'w-[85vw]';
+    if (count === 2) return 'w-[70vw]';
+    return 'w-[55vw]';
+  }, [displayDates.length]);
 
   const handleEditDate = (date) => {
     setModalDate(date);
@@ -842,12 +854,12 @@ export default function AttendancePage() {
           // setShowDateValidation(false); // This line is removed
           closeAllDropdowns();
         }}>
-                      <div className="flex flex-col gap-3">
+                   <div className="flex flex-col gap-3">
                           <div className="mb-4 bg-[#232c67] text-white p-3 rounded-t-lg -mt-6 -mx-6 relative">
                 <h2 className="text-xl font-bold text-white mb-1">{editMode ? 'Edit Attendance' : 'Mark Attendance'}</h2>
               </div>
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <div className="mb-2 md:mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-1 md:mb-2">
                 Date <span className="text-red-500">*</span>
               </label>
               {editMode ? (
@@ -868,8 +880,8 @@ export default function AttendancePage() {
               )}
               
             </div>
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <div className="mb-2 md:mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-1 md:mb-2">
                 Session <span className="text-red-500">*</span>
               </label>
               {editMode ? (
@@ -926,9 +938,9 @@ export default function AttendancePage() {
               {/* Removed inline error display - now using toast messages */}
 
             </div>
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-lg font-semibold text-gray-700">
+            <div className="mb-2 md:mb-4">
+              <div className="flex items-center justify-between mb-1 md:mb-2">
+                <h4 className="text-base md:text-lg font-semibold text-gray-700">
                   Student Selection
                 </h4>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-600">
@@ -961,7 +973,7 @@ export default function AttendancePage() {
                   />
                 </label>
               </div>
-                <div className={`overflow-y-auto border border-gray-200 rounded-lg ${getMaxStudentsCount() >= 3 ? 'h-48' : 'h-auto'}`}>
+                <div className={`overflow-y-auto border border-gray-200 rounded-lg ${getMaxStudentsCount() >= 3 ? 'h-32 md:h-48' : 'h-auto'}`}>
                   <StudentCheckboxList
                     students={students}
                     checkedStudents={editMode ? editCheckedStudents : checkedStudents}
@@ -972,7 +984,7 @@ export default function AttendancePage() {
                 </div>
             </div>
             {/* Bottom right buttons */}
-            <div className="flex justify-end gap-3 pt-3 border-t border-gray-200">
+            <div className="flex justify-end gap-2 md:gap-3 pt-2 md:pt-3 border-t border-gray-200">
               <button
                 className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
                 onClick={() => {
@@ -1044,18 +1056,42 @@ export default function AttendancePage() {
             </div>
           ) : (
             <div className="w-full">
-              <div className={filteredStudents.length > 6 ? "overflow-y-auto" : ""} style={students.length > 6 ? { maxHeight: 'calc(100vh - 400px)' } : {}}>
+              <div className={`overflow-x-auto md:overflow-x-visible ${filteredStudents.length > 6 ? 'overflow-y-auto' : ''}`} style={students.length > 6 ? { maxHeight: 'calc(100vh - 400px)' } : {}}>
                 <table className="min-w-full text-sm text-gray-900" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead className="sticky top-0 z-20 bg-[#232c67] text-white border-b border-[#1a1f4d]">
                     <tr>
-                      <th className="sticky top-0 left-0 text-left px-6 py-3 font-semibold text-white bg-[#232c67] z-30" style={{ width: '50%' }}>
+                      <th className={`sticky top-0 left-0 text-left px-6 py-3 font-semibold text-white bg-[#232c67] z-30 md:w-1/2 ${mobileNameWidthClass}`}>
                         Student Name
                       </th>
-                      {paginatedDates.map((date, idx) => (
+                      {/* Mobile: show all dates */}
+                      {displayDates.map((date, idx) => (
                         <th
-                          key={idx}
-                          className="sticky top-0 px-4 py-3 whitespace-nowrap font-medium text-white bg-[#232c67] border-l border-[#1a1f4d] text-center cursor-pointer relative group hover:bg-[#2b3572] transition-colors z-20"
-                          style={{ width: '20%' }}
+                          key={`mobile-${idx}`}
+                          className="md:hidden sticky top-0 px-2 py-3 whitespace-nowrap font-medium text-white bg-[#232c67] border-l border-[#1a1f4d] text-center cursor-pointer relative group hover:bg-[#2b3572] transition-colors z-20 w-[15vw]"
+                          onClick={() => handleEditDate(date)}
+                        >
+                          <div className="flex items-center justify-center">
+                            <span className="text-xs font-semibold text-white">
+                              {(() => {
+                                const d = new Date(date);
+                                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                const dd = String(d.getDate()).padStart(2, '0');
+                                const yy = String(d.getFullYear()).slice(-2);
+                                return `${mm}/${dd}/${yy}`;
+                              })()}
+                            </span>
+                          </div>
+                          <div className="absolute left-1/2 -bottom-8 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                            Edit attendance
+                          </div>
+                        </th>
+                      ))}
+                      {/* Desktop: show paginated dates */}
+                      {desktopDates.map((date, idx) => (
+                        <th
+                          key={`desktop-${idx}`}
+                          className="hidden md:table-cell sticky top-0 px-4 py-3 whitespace-nowrap font-medium text-white bg-[#232c67] border-l border-[#1a1f4d] text-center cursor-pointer relative group hover:bg-[#2b3572] transition-colors z-20"
+                          style={{ width: `${50 / desktopDates.length}%` }}
                           onClick={() => handleEditDate(date)}
                         >
                           <div className="flex flex-col items-center">
@@ -1075,7 +1111,7 @@ export default function AttendancePage() {
                       const name = student.stud_lastname + ', ' + student.stud_firstname + (student.stud_middlename ? ' ' + student.stud_middlename : '');
                       return (
                         <tr key={key} className="hover:bg-gray-50 transition-colors">
-                          <td className={`sticky left-0 bg-white px-6 font-medium whitespace-nowrap z-10 border-r border-gray-200 ${filteredStudents.length > 6 ? 'py-2' : 'py-3'}`} style={{ width: '50%' }}>
+                          <td className={`sticky left-0 bg-white px-6 font-medium whitespace-nowrap z-10 border-r border-gray-200 ${filteredStudents.length > 6 ? 'py-2' : 'py-3'} md:w-1/2 ${mobileNameWidthClass}`}>
                           <div className="flex items-center gap-3">
                             {(() => {
                               // Get real-time photo from UserContext, fallback to student.photo if not available
@@ -1109,13 +1145,48 @@ export default function AttendancePage() {
                                 );
                               }
                             })()}
-                            <div className="font-medium text-gray-900 flex-1 min-w-0 truncate">{name}</div>
+                            <div className="font-medium text-gray-900 flex-1 min-w-0">
+                              <span className="hidden md:inline truncate">
+                                {name}
+                              </span>
+                              <span className="md:hidden block w-full truncate">
+                                {name}
+                              </span>
+                            </div>
                             </div>
                           </td>
-                          {paginatedDates.map((date, dIdx) => {
+                          {/* Mobile: show all dates */}
+                          {displayDates.map((date, dIdx) => {
                             const status = getAttendanceStatus(key, date);
                             return (
-                              <td key={dIdx} className={`px-4 text-center border-l border-gray-200 ${filteredStudents.length > 6 ? 'py-2' : 'py-3'}`} style={{ width: paginatedDates.length === 1 ? '20%' : `${Math.max(20, 100 / paginatedDates.length)}%` }}>
+                              <td key={`mobile-${dIdx}`} className={`md:hidden px-2 text-center border-l border-gray-200 ${filteredStudents.length > 6 ? 'py-2' : 'py-3'} w-[15vw]`}>
+                                <div className="flex items-center justify-center">
+                                  {status === 'Present' ? (
+                                    <>
+                                      {/* Mobile: icon box only */}
+                                      <div className="w-6 h-6 rounded-md bg-green-100 border border-green-300 flex items-center justify-center">
+                                        <FaCheck className="text-green-600 text-sm" />
+                                      </div>
+                                    </>
+                                  ) : status === 'Absent' ? (
+                                    <>
+                                      {/* Mobile: icon box only */}
+                                      <div className="w-6 h-6 rounded-md bg-red-100 border border-red-300 flex items-center justify-center">
+                                        <FaTimes className="text-red-600 text-sm" />
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <input type="checkbox" checked={false} readOnly className="w-4 h-4 rounded border-gray-300 bg-white disabled:opacity-70 focus:ring-2 focus:ring-blue-500" style={{ pointerEvents: 'none', accentColor: '#2563eb' }} />
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          })}
+                          {/* Desktop: show paginated dates */}
+                          {desktopDates.map((date, dIdx) => {
+                            const status = getAttendanceStatus(key, date);
+                            return (
+                          <td key={`desktop-${dIdx}`} className={`hidden md:table-cell px-4 text-center border-l border-gray-200 ${filteredStudents.length > 6 ? 'py-2' : 'py-3'}`} style={{ width: `${50 / desktopDates.length}%` }}>
                                 <div className="flex items-center justify-center">
                                   {status === 'Present' ? (
                                     <>
@@ -1146,7 +1217,7 @@ export default function AttendancePage() {
 
         {/* Pagination for date columns */}
         {filteredStudents.length > 0 && totalDatePages > 0 && (
-          <div className="flex justify-center items-center mt-6 gap-2">
+          <div className="hidden md:flex justify-center items-center mt-6 gap-2">
             {/* Left Arrow */}
             <button
               className="w-10 h-10 rounded-lg bg-white border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67]"

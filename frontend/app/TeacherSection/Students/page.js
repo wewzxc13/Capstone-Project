@@ -761,13 +761,13 @@ export default function StudentsPage() {
       <div className="h-full flex flex-col">
         {/* Navigation Tabs with Export PDF */}
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10 flex-shrink-0">
-          <div className="flex items-center justify-between px-6 py-3">
-            <div className="flex">
-              {["Assessment", "Status"].map((tab) => (
+          <div className="flex flex-row items-center justify-between gap-2 px-2 sm:px-6 py-2 sm:py-3">
+            <div className="-mb-px flex gap-1 overflow-x-auto no-scrollbar sm:overflow-visible flex-1">
+              {(["Assessment", "Status"]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  className={`px-3 sm:px-6 py-2 sm:py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === tab
                       ? "border-blue-500 text-blue-600"
                       : "border-transparent text-gray-500 hover:text-gray-700"
@@ -777,22 +777,24 @@ export default function StudentsPage() {
                 </button>
               ))}
             </div>
-            <button
-              onClick={() => setTriggerExport(true)}
-              className="inline-flex items-center gap-2 bg-[#2c2f6f] text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-              title="Print or Save Assessment as PDF"
-            >
-              <FaPrint />
-              <span className="font-semibold">Export PDF</span>
-            </button>
+            <div className="flex sm:justify-end shrink-0">
+              <button
+                onClick={() => setTriggerExport(true)}
+                className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#2c2f6f] text-white px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg hover:opacity-90 transition-opacity text-sm sm:text-base whitespace-nowrap"
+                title="Print or Save Assessment as PDF"
+              >
+                <FaPrint className="text-sm sm:text-base" />
+                <span className="font-semibold">Export PDF</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Sticky Student Info Header - show for both Assessment and Status tabs */}
         {(activeTab === "Assessment" || activeTab === "Status") && (
-          <div className="bg-[#232c67] px-6 py-3 text-white flex flex-row items-center gap-8 sticky top-0 z-10 flex-shrink-0">
+          <div className="bg-[#232c67] px-2 sm:px-6 py-3 text-white flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 sticky top-0 z-10 flex-shrink-0">
             {/* Back Icon + Icon + Name (horizontal, large) */}
-            <div className="flex flex-row items-center justify-center mr-8" style={{ minWidth: '260px' }}>
+            <div className="flex flex-row items-center justify-center md:mr-8 w-full md:w-auto" style={{ minWidth: '260px' }}>
               <button
                 onClick={() => setSelected(null)}
                 className="text-white hover:text-blue-200 transition-colors mr-3"
@@ -837,9 +839,9 @@ export default function StudentsPage() {
               <span className="font-bold text-2xl text-left break-words leading-tight">{getName(s) || <span className="italic">No Name</span>}</span>
             </div>
             {/* Info fields (two stacked rows) */}
-            <div className="flex flex-col flex-1">
+            <div className="flex flex-col flex-1 w-full">
               {/* First row: Schedule, Gender, Handedness */}
-              <div className="flex flex-row items-center gap-6 mb-0.5">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-6 mb-0.5">
                 {/* Schedule */}
                 <div className="flex flex-row items-center mx-2">
                   <span className="font-bold text-base text-blue-200 mr-1">Schedule:</span>
@@ -857,7 +859,7 @@ export default function StudentsPage() {
                 </div>
               </div>
               {/* Second row: Date of Birth, Parent */}
-              <div className="flex flex-row items-center gap-6 mt-0.5">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-6 mt-0.5">
                 {/* Date of Birth */}
                 <div className="flex flex-row items-center mx-2">
                   <span className="font-bold text-base text-blue-200 mr-1">Date of Birth:</span>
@@ -872,7 +874,7 @@ export default function StudentsPage() {
                 </div>
               </div>
               {/* Third row: Level, Lead Teacher, Assistant Teacher */}
-              <div className="flex flex-row items-center gap-6 mt-0.5">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-6 mt-0.5">
                 {/* Level */}
                 <div className="flex flex-row items-center mx-2">
                   <span className="font-bold text-base text-blue-200 mr-1">Level:</span>
@@ -900,8 +902,8 @@ export default function StudentsPage() {
         )}
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-          <div className="p-6 flex flex-col bg-white rounded-xl shadow">
+        <div className="flex-1 overflow-y-visible md:overflow-y-auto" style={{ maxHeight: undefined }}>
+          <div className="p-2 sm:p-6 flex flex-col bg-white rounded-xl shadow">
             {activeTab === "Status" && (
               <StudentStatus 
                 student={s} 
@@ -969,9 +971,9 @@ export default function StudentsPage() {
               <div className="flex flex-col gap-2">
                 {/* Top Row - Controls */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
                     {/* Search Bar */}
-                    <div className="relative">
+                    <div className="relative w-full">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Search Students</label>
                       <div className="relative">
                         <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
@@ -980,7 +982,7 @@ export default function StudentsPage() {
                           placeholder="Search by student name..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 pr-8 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors caret-[#1E2A79]"
+                          className="pl-10 pr-8 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors caret-[#1E2A79] w-full"
                           style={{ minHeight: '2rem' }}
                         />
                         {searchTerm && (
@@ -998,10 +1000,10 @@ export default function StudentsPage() {
                     </div>
 
                     {/* Session Filter Dropdown */}
-                    <div className="relative dropdown-container">
+                    <div className="relative dropdown-container w-full sm:w-auto">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Session</label>
                       <button
-                        className="flex items-center gap-2 px-4 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        className="flex items-center justify-between gap-2 px-4 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full sm:w-auto"
                         onClick={() => {
                           setIsScheduleDropdownOpen((open) => !open);
                         }}
@@ -1012,7 +1014,7 @@ export default function StudentsPage() {
                         <FaChevronDown className={`text-sm transition-transform ${isScheduleDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
                       {isScheduleDropdownOpen && (
-                        <div className="absolute left-0 mt-1 w-40 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                        <div className="absolute left-0 right-0 mt-1 w-full sm:w-40 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
                           <div className="py-1">
                             {scheduleOptions.map((option) => (
                               <button
@@ -1080,7 +1082,7 @@ export default function StudentsPage() {
             </div>
           )}
 
-          {/* Students Table */}
+          {/* Students List/Table */}
           <div className="bg-white rounded-xl shadow">
             {filteredStudents.length === 0 ? (
               <div className="flex flex-col justify-center items-center h-80 text-center px-6">
@@ -1107,7 +1109,8 @@ export default function StudentsPage() {
               </div>
             ) : (
               <div className="w-full">
-                <div className={displayStudents.length > 6 ? "overflow-y-auto" : ""} style={displayStudents.length > 6 ? { maxHeight: 'calc(100vh - 400px)' } : {}}>
+                {/* Desktop table (md and up) */}
+                <div className={`hidden md:block ${displayStudents.length > 6 ? "overflow-y-auto" : ""}`} style={displayStudents.length > 6 ? { maxHeight: 'calc(100vh - 400px)' } : {}}>
                   <table className="min-w-full text-sm text-gray-900" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead className={`bg-[#232c67] text-white border-b border-[#1a1f4d] ${displayStudents.length > 6 ? "sticky top-0 z-10" : ""}`}>
                       <tr>
@@ -1233,12 +1236,83 @@ export default function StudentsPage() {
                     </tbody>
                   </table>
                 </div>
+                {/* Mobile list (below md) */}
+                <div className="block md:hidden divide-y divide-gray-200">
+                  {displayStudents.map((s, idx) => (
+                    <button
+                      key={`${s.student_id}-m-${idx}`}
+                      onClick={() => handleSelectStudent(s)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 focus:bg-gray-50 flex items-center gap-3"
+                    >
+                      {(() => {
+                        const realTimePhoto = getStudentPhoto(s.student_id) || s.photo;
+                        if (realTimePhoto) {
+                          return (
+                            <>
+                              <img
+                                src={realTimePhoto}
+                                alt="Profile"
+                                className="w-10 h-10 rounded-full object-cover shadow-sm shrink-0"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  if (e.target.nextSibling) {
+                                    e.target.nextSibling.style.display = 'flex';
+                                  }
+                                }}
+                              />
+                              <div className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center hidden">
+                                <FaUser className="text-base text-blue-600" />
+                              </div>
+                            </>
+                          );
+                        }
+                        return (
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
+                            <FaUser className="text-base text-blue-600" />
+                          </div>
+                        );
+                      })()}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-900 truncate">{getName(s)}</div>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                            getGender(s)?.toLowerCase() === "male"
+                              ? "bg-blue-100 text-blue-800"
+                              : getGender(s)?.toLowerCase() === "female"
+                              ? "bg-pink-100 text-pink-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}>
+                            {getGender(s) || 'No Data'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                            getSchedule(s) === "Morning" || getSchedule(s) === "AM"
+                              ? "bg-blue-100 text-blue-800"
+                              : getSchedule(s) === "Afternoon" || getSchedule(s) === "PM"
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}>
+                            {getSchedule(s) || 'No Data'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-3.5 h-3.5 rounded-full"
+                          style={{ backgroundColor: riskColorMap[studentRisks[s.student_id] || "nodata"] }}
+                        ></span>
+                        <span className="text-xs font-medium text-gray-700">
+                          {riskNameMap[studentRisks[s.student_id] || "nodata"]}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
         </>
       ) : (
-        <div className="h-[calc(100vh-200px)] overflow-hidden">
+        <div className="h-auto overflow-auto md:h-[calc(100vh-200px)] md:overflow-hidden">
           {selectedLoading ? (
             <div className="flex justify-center items-center h-40 text-blue-900 font-semibold">Loading student details...</div>
           ) : renderDetailView()}

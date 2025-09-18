@@ -258,7 +258,18 @@ export default function ParentMessagesPage() {
         );
         
         if (isMounted) {
-          setChats(uniqueUsers);
+          setChats((prev) => {
+            const prevMap = new Map(prev.map(u => [u.id, u]));
+            const merged = uniqueUsers.map(u => {
+              const existing = prevMap.get(u.id);
+              if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
+                return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
+              }
+              return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
+            });
+            prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
+            return merged;
+          });
           dataLoadedRef.current.users = true; // Mark as loaded
           isRunningRef.current.users = false; // Mark as not running
         }
@@ -331,7 +342,18 @@ export default function ParentMessagesPage() {
       );
       
 
-      setChats(uniqueAllUsers);
+      setChats((prev) => {
+        const prevMap = new Map(prev.map(u => [u.id, u]));
+        const merged = uniqueAllUsers.map(u => {
+          const existing = prevMap.get(u.id);
+          if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
+            return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
+          }
+          return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
+        });
+        prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
+        return merged;
+      });
       
       // Update photos for new users
       const newPhotos = {};
@@ -547,7 +569,7 @@ export default function ParentMessagesPage() {
         // Update the chats array with messages for this user
         setChats((prev) => {
           const updated = prev.map((c) => 
-            c.id === userId ? { ...c, messages: msgs, unread: 0 } : c
+            c.id === userId ? { ...c, messages: msgs, unread: 0, messagesLoaded: true } : c
           );
 
           return updated;
@@ -569,8 +591,11 @@ export default function ParentMessagesPage() {
         // Add a small delay to ensure state updates are processed
         // This helps ensure the conversation is displayed in the right panel
 
-      } else {
-
+      } else if (data?.success && Array.isArray(data.data)) {
+        // Mark conversation as loaded even if empty to avoid perpetual loader
+        setChats((prev) => prev.map((c) => (
+          c.id === userId ? { ...c, messages: [], messagesLoaded: true } : c
+        )));
       }
       
       // Mark as not running
@@ -991,9 +1016,20 @@ export default function ParentMessagesPage() {
             };
           });
           
-          // Set the users first
-          setChats(users);
-          setRecent(users);
+          // Set the users first, preserving any loaded messages
+          setChats((prev) => {
+            const prevMap = new Map(prev.map(u => [u.id, u]));
+            const merged = users.map(u => {
+              const existing = prevMap.get(u.id);
+              if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
+                return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
+              }
+              return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
+            });
+            prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
+            return merged;
+          });
+          setRecent((prev) => (prev && prev.length ? prev : users));
           dataLoadedRef.current.users = true;
           
           // Don't automatically load messages here - let the user selection trigger it
@@ -1092,7 +1128,7 @@ export default function ParentMessagesPage() {
         // Update ONLY the messages for this specific user, preserve all other users
         setChats((prev) => {
           const updated = prev.map((c) => 
-            c.id === selectedChatId ? { ...c, messages: msgs, unread: 0 } : c
+            c.id === selectedChatId ? { ...c, messages: msgs, unread: 0, messagesLoaded: true } : c
           );
           return updated;
         });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "react-toastify";
 import { FaClipboardCheck, FaUsers, FaCalendarAlt, FaChevronDown, FaPlus, FaTimes, FaEdit, FaSave, FaEye, FaUser, FaClipboardList, FaPlusSquare } from "react-icons/fa";
 import { useUser } from "../../Context/UserContext";
@@ -1052,6 +1052,18 @@ export default function AssessmentPage() {
   const start = (activityPage - 1) * activitiesPerPage;
   const end = start + activitiesPerPage;
   const paginatedActivities = activitiesByDateDesc.slice(start, end);
+  
+  // For mobile: show all activities, for desktop: show paginated activities
+  const displayActivities = activitiesByDateDesc; // Mobile shows all activities
+  const desktopActivities = paginatedActivities; // Desktop shows paginated activities
+  
+  // Mobile-only dynamic width for the Student Name column to avoid trailing blank space
+  const mobileNameWidthClass = useMemo(() => {
+    const count = Math.min(3, displayActivities.length || 0);
+    if (count <= 1) return 'w-[85vw]';
+    if (count === 2) return 'w-[70vw]';
+    return 'w-[55vw]';
+  }, [displayActivities.length]);
 
   return (
     <main className="flex-1">
@@ -1059,12 +1071,12 @@ export default function AssessmentPage() {
       {advisoryId && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 mb-3">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
               {/* Subjects Dropdown */}
-              <div className="relative dropdown-container">
+              <div className="relative dropdown-container w-full sm:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
                 <button
-                  className="flex items-center gap-2 px-4 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 hover:border-[#232c67] focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-all duration-200"
+                  className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 px-4 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 hover:border-[#232c67] focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-all duration-200"
                   onClick={() => {
                     setIsSubjectDropdownOpen((open) => !open);
                     setIsScheduleDropdownOpen(false);
@@ -1100,10 +1112,10 @@ export default function AssessmentPage() {
               </div>
 
               {/* Schedule Dropdown */}
-              <div className="relative dropdown-container">
+              <div className="relative dropdown-container w-full sm:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Session</label>
                 <button
-                  className="flex items-center gap-2 px-4 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 hover:border-[#232c67] focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-all duration-200"
+                  className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 px-4 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 hover:border-[#232c67] focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-all duration-200"
                   onClick={() => {
                     setIsScheduleDropdownOpen((open) => !open);
                     setIsSubjectDropdownOpen(false);
@@ -1138,10 +1150,10 @@ export default function AssessmentPage() {
               </div>
 
               {/* Quarter Dropdown */}
-              <div className="relative dropdown-container">
+              <div className="relative dropdown-container w-full sm:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Quarter</label>
                 <button
-                  className="flex items-center gap-2 px-4 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 hover:border-[#232c67] focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-all duration-200"
+                  className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 px-4 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 hover:border-[#232c67] focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-all duration-200"
                   onClick={() => {
                     setIsQuarterDropdownOpen((open) => !open);
                     setIsSubjectDropdownOpen(false);
@@ -1189,9 +1201,9 @@ export default function AssessmentPage() {
               </div>
 
               {/* Student Count Badge */}
-              <div className="flex items-center gap-2 px-2 py-0.5 bg-[#232c67]/10 rounded-full">
+              <div className="flex items-center gap-2 px-2 py-0.5 bg-[#232c67]/10 rounded-full mt-2 sm:mt-0">
                 <FaUsers className="text-blue-600 text-sm" />
-                <span className="text-sm font-medium text-[#232c67]">
+                <span className="text-xs sm:text-sm font-medium text-[#232c67]">
                   {students.length} {students.length === 1 ? 'Student' : 'Students'}
                 </span>
               </div>
@@ -1199,7 +1211,7 @@ export default function AssessmentPage() {
 
             {/* Add Activity Button */}
             <button
-              className="flex items-center gap-2 px-6 py-1.5 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-1.5 bg-[#232c67] text-white rounded-lg font-semibold hover:bg-[#1a1f4d] shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2"
               onClick={() => {
                 setShowAddActivityModal(true);
                 closeAllDropdowns();
@@ -1257,22 +1269,45 @@ export default function AssessmentPage() {
           </div>
         ) : (
           <div className="w-full">
-            <div className={students.length > 6 ? "overflow-y-auto" : ""} style={students.length > 6 ? { maxHeight: 'calc(100vh - 400px)' } : {}}>
+            <div className={`overflow-x-auto md:overflow-x-visible ${students.length > 6 ? "overflow-y-auto" : ""}`} style={students.length > 6 ? { maxHeight: 'calc(100vh - 400px)' } : {}}>
               <table className="min-w-full text-sm text-gray-900" style={{ width: '100%', tableLayout: 'fixed' }}>
                                   <thead className={`bg-[#232c67] text-white border-b border-[#1a1f4d] ${students.length > 6 ? "sticky top-0 z-10" : ""}`}>
                   <tr>
                     <th
-                      className="sticky top-0 left-0 text-left px-6 py-3 font-semibold text-white z-20 bg-[#232c67]"
-                      style={{ width: '50%' }}
+                      className={`sticky top-0 left-0 text-left px-6 py-3 font-semibold text-white z-20 bg-[#232c67] md:w-[30%] ${mobileNameWidthClass}`}
                     >
                       Student Name
                     </th>
-                    {paginatedActivities.map((act, idx) => (
+                    {/* Mobile: show all activities */}
+                    {displayActivities.map((act, idx) => (
                       <th
-                        key={act.activity_id}
-                        className="sticky top-0 px-4 py-3 whitespace-nowrap font-medium text-white bg-[#232c67] border-l border-[#1a1f4d] text-center cursor-pointer relative group hover:bg-[#2b3572] transition-colors z-10"
-    
-                        style={{ width: '20%' }}
+                        key={`mobile-${act.activity_id}`}
+                        className="md:hidden sticky top-0 px-2 py-3 whitespace-nowrap font-medium text-white bg-[#232c67] border-l border-[#1a1f4d] text-center cursor-pointer relative group hover:bg-[#2b3572] transition-colors z-10 w-[15vw]"
+                        onClick={() => openActivityModal(activities.indexOf(act))}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs font-semibold text-white">Act {act.activity_num}</span>
+                          <span className="text-xs text-white">
+                            {(() => {
+                              const d = new Date(act.activity_date);
+                              const mm = String(d.getMonth() + 1).padStart(2, '0');
+                              const dd = String(d.getDate()).padStart(2, '0');
+                              const yy = String(d.getFullYear()).slice(-2);
+                              return `${mm}/${dd}/${yy}`;
+                            })()}
+                          </span>
+                        </div>
+                        <div className="absolute left-1/2 -bottom-8 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                          View details
+                        </div>
+                      </th>
+                    ))}
+                    {/* Desktop: show paginated activities */}
+                    {desktopActivities.map((act, idx) => (
+                      <th
+                        key={`desktop-${act.activity_id}`}
+                        className="hidden md:table-cell sticky top-0 px-4 py-3 whitespace-nowrap font-medium text-white bg-[#232c67] border-l border-[#1a1f4d] text-center cursor-pointer relative group hover:bg-[#2b3572] transition-colors z-10"
+                        style={{ width: `${70 / desktopActivities.length}%` }}
                         onClick={() => openActivityModal(activities.indexOf(act))}
                       >
                         <div className="flex flex-col items-center">
@@ -1304,8 +1339,7 @@ export default function AssessmentPage() {
                     return (
                       <tr key={sIdx} className="hover:bg-gray-50 transition-colors">
                         <td
-                          className={`sticky left-0 bg-white px-6 font-medium whitespace-nowrap z-0 border-r border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'}`}
-                          style={{ width: '50%' }}
+                          className={`sticky left-0 bg-white px-6 font-medium whitespace-nowrap z-0 border-r border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'} md:w-[30%] ${mobileNameWidthClass}`}
                         >
                           <div className="flex items-center gap-3">
                             {(() => {
@@ -1340,11 +1374,36 @@ export default function AssessmentPage() {
                                 );
                               }
                             })()}
-                            <div className="font-medium text-gray-900 flex-1 min-w-0 truncate">{name}</div>
+                            <div className="font-medium text-gray-900 flex-1 min-w-0">
+                              <span className="hidden md:inline truncate">
+                                {name}
+                              </span>
+                              <span className="md:hidden block w-full truncate">
+                                {name}
+                              </span>
+                            </div>
                           </div>
                         </td>
-                        {paginatedActivities.map((act) => (
-                          <td key={act.activity_id} className={`px-4 text-center border-l border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'}`} style={{ width: '20%' }}>
+                        {/* Mobile: show all activities */}
+                        {displayActivities.map((act) => (
+                          <td key={`mobile-${act.activity_id}`} className={`md:hidden px-2 text-center border-l border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'} w-[15vw]`}>
+                            <div
+                              className={`w-6 h-6 rounded-lg border border-gray-300 flex justify-center items-center mx-auto text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
+                                getTrackingShape(student.student_id, act.activity_id) ? "bg-white" : "bg-gray-100"
+                              }`}
+                              onClick={() => openModal(student, act.activity_id)}
+                            >
+                              {getTrackingShape(student.student_id, act.activity_id) && (
+                                <span style={{ color: shapeColorMap[getTrackingShape(student.student_id, act.activity_id)] || 'inherit' }}>
+                                  {getTrackingShape(student.student_id, act.activity_id)}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        ))}
+                        {/* Desktop: show paginated activities */}
+                        {desktopActivities.map((act) => (
+                          <td key={`desktop-${act.activity_id}`} className={`hidden md:table-cell px-4 text-center border-l border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'}`} style={{ width: `${70 / desktopActivities.length}%` }}>
                             <div
                               className={`w-8 h-8 rounded-lg border border-gray-300 flex justify-center items-center mx-auto text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
                                 getTrackingShape(student.student_id, act.activity_id) ? "bg-white" : "bg-gray-100"
@@ -1371,7 +1430,7 @@ export default function AssessmentPage() {
 
       {/* Pagination */}
       {students.length > 0 && totalPages > 0 && (
-        <div className="flex justify-center items-center mt-4 gap-2">
+        <div className="hidden md:flex justify-center items-center mt-4 gap-2">
           {/* Left Arrow */}
           <button
             className="w-10 h-10 rounded-lg bg-white border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67]"
@@ -1470,19 +1529,19 @@ export default function AssessmentPage() {
       {modal.show && (() => {
         const modalActivity = activities.find(a => a.activity_id === modal.activityId);
         return (
-          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[9999] p-2 sm:p-0">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg border border-gray-100 overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[9999] p-2 sm:p-0">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg border border-gray-100 overflow-hidden max-h-[85vh] md:max-h-[95vh] overflow-y-auto">
                               <div className="bg-[#232c67] text-white px-6 py-4 font-bold text-xl">
                   Rate the Student
                 </div>
-              <div className="p-6">
-                <div className="mb-3 flex items-center">
+              <div className="p-4 md:p-6">
+                <div className="mb-2 md:mb-3 flex items-center">
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide mr-2">Student Name:</span>
                   <span className="text-sm font-medium text-[#232c67]">
                     {modal.student.stud_lastname}, {modal.student.stud_firstname}{modal.student.stud_middlename ? ' ' + modal.student.stud_middlename : ''}
                   </span>
                 </div>
-                <div className="mb-4 flex items-center justify-between">
+                <div className="mb-3 md:mb-4 flex items-center justify-between">
                   <div className="flex items-center">
                     <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide mr-2">Activity:</span>
                     <span className="text-sm font-medium text-[#232c67]">
@@ -1497,7 +1556,7 @@ export default function AssessmentPage() {
                   </div>
                 </div>
               </div>
-              <div className="px-4 mb-4">
+              <div className="px-3 md:px-4 mb-3 md:mb-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                   {visualFeedback.map((fb) => (
                     <div
@@ -1516,7 +1575,7 @@ export default function AssessmentPage() {
                   ))}
                 </div>
               </div>
-              <div className="px-4 pb-4">
+              <div className="px-3 md:px-4 pb-3 md:pb-4">
                 <div className="flex justify-end gap-2">
                   <button
                     className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold hover:bg-gray-300 transition-colors"
@@ -1538,13 +1597,13 @@ export default function AssessmentPage() {
 
       {showAddActivityModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-lg border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-lg border border-gray-100 overflow-hidden max-h-[85vh] md:max-h-[95vh] overflow-y-auto">
             {/* Header */}
-            <div className="bg-[#232c67] text-white px-6 py-4 font-bold text-2xl">
+            <div className="bg-[#232c67] text-white px-4 md:px-6 py-3 md:py-4 font-bold text-lg md:text-2xl">
               Add Activity
             </div>
             {/* Body */}
-            <div className="p-6 space-y-6">
+            <div className="p-4 md:p-6 space-y-4 md:space-y-6">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">Subject</label>
                 <div className="relative">
@@ -1804,7 +1863,7 @@ export default function AssessmentPage() {
               </div>
             </div>
             {/* Footer */}
-            <div className="flex justify-end gap-4 pt-8 pb-6 px-6">
+            <div className="flex justify-end gap-3 md:gap-4 pt-4 md:pt-8 pb-4 md:pb-6 px-4 md:px-6">
               <button
                 className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold hover:bg-gray-300 transition-colors"
                 onClick={() => {
@@ -1867,11 +1926,11 @@ export default function AssessmentPage() {
       {/* Edit/View Activity Modal */}
       {showEditActivityModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[9999] p-2 sm:p-0">
-          <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-lg border border-gray-100 overflow-hidden">
-            <div className="bg-[#232c67] text-white px-6 py-4 font-bold text-xl">
+          <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-lg border border-gray-100 overflow-hidden max-h-[85vh] md:max-h-[95vh] overflow-y-auto">
+            <div className="bg-[#232c67] text-white px-4 md:px-6 py-3 md:py-4 font-bold text-lg md:text-xl">
               {activityModalMode === 'view' ? 'View Activity Details' : 'Edit Activity'}
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-4 md:p-6 space-y-4 md:space-y-6">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">Subject</label>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
@@ -1989,7 +2048,7 @@ export default function AssessmentPage() {
                 </div>
               )}
             </div>
-            <div className="px-6 pb-6 flex justify-end gap-3">
+            <div className="px-4 md:px-6 pb-4 md:pb-6 flex justify-end gap-2 md:gap-3">
               <button
                 className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold hover:bg-gray-300 transition-colors"
                 onClick={() => {

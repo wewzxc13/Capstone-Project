@@ -258,7 +258,22 @@ export default function TeacherMessagesPage() {
         );
         
         if (isMounted) {
-          setChats(uniqueUsers);
+          // Merge to preserve existing loaded messages
+          setChats((prev) => {
+            const prevMap = new Map(prev.map(u => [u.id, u]));
+            const merged = uniqueUsers.map(u => {
+              const existing = prevMap.get(u.id);
+              if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
+                return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
+              }
+              return { ...u, messages: existing?.messages || [] , messagesLoaded: existing?.messagesLoaded };
+            });
+            // Include any users that were only in prev (e.g., selected from search) but not in uniqueUsers
+            prev.forEach((p) => {
+              if (!merged.find(m => m.id === p.id)) merged.push(p);
+            });
+            return removeDuplicateUsers(merged);
+          });
           dataLoadedRef.current.users = true; // Mark as loaded
           isRunningRef.current.users = false; // Mark as not running
         }
@@ -392,7 +407,19 @@ export default function TeacherMessagesPage() {
       );
       
 
-      setChats(uniqueUsers);
+      // Merge to preserve existing loaded messages
+      setChats((prev) => {
+        const prevMap = new Map(prev.map(u => [u.id, u]));
+        const merged = uniqueUsers.map(u => {
+          const existing = prevMap.get(u.id);
+          if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
+            return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
+          }
+          return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
+        });
+        prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
+        return removeDuplicateUsers(merged);
+      });
       
     } catch (err) {
       console.error("Error restoring conversation history:", err);
@@ -547,7 +574,7 @@ export default function TeacherMessagesPage() {
         // Update the chats array with messages for this user
         setChats((prev) => {
           const updated = prev.map((c) => 
-            c.id === userId ? { ...c, messages: msgs, unread: 0 } : c
+            c.id === userId ? { ...c, messages: msgs, unread: 0, messagesLoaded: true } : c
           );
 
           return updated;
@@ -568,9 +595,12 @@ export default function TeacherMessagesPage() {
         
         // Add a small delay to ensure state updates are processed
         // This helps ensure the conversation is displayed in the right panel
-
+        
       } else {
-
+        // Mark conversation as loaded even if empty to avoid perpetual loader
+        setChats((prev) => prev.map((c) => (
+          c.id === userId ? { ...c, messages: [], messagesLoaded: true } : c
+        )));
       }
       
       // Mark as not running
@@ -991,9 +1021,24 @@ export default function TeacherMessagesPage() {
             };
           });
           
-          // Set the users first
-          setChats(users);
-          setRecent(users);
+          // Set the users first, merging to preserve any loaded messages
+          setChats((prev) => {
+            const prevMap = new Map(prev.map(u => [u.id, u]));
+            const merged = users.map(u => {
+              const existing = prevMap.get(u.id);
+              if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
+                return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
+              }
+              return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
+            });
+            prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
+            return removeDuplicateUsers(merged);
+          });
+          setRecent((prev) => {
+            // Keep existing recent ordering if present; otherwise, seed from users
+            if (prev && prev.length) return prev;
+            return users;
+          });
           dataLoadedRef.current.users = true;
           
           // Don't automatically load messages here - let the user selection trigger it
@@ -1076,6 +1121,10 @@ export default function TeacherMessagesPage() {
       .then((json) => {
         if (!json?.success) {
           console.error('Failed to load conversation for user:', selectedChatId);
+          // Still mark as loaded to stop spinner
+          setChats((prev) => prev.map((c) => (
+            c.id === selectedChatId ? { ...c, messages: c.messages || [], messagesLoaded: true } : c
+          )));
           return;
         }
         
@@ -1092,7 +1141,7 @@ export default function TeacherMessagesPage() {
         // Update ONLY the messages for this specific user, preserve all other users
         setChats((prev) => {
           const updated = prev.map((c) => 
-            c.id === selectedChatId ? { ...c, messages: msgs, unread: 0 } : c
+            c.id === selectedChatId ? { ...c, messages: msgs, unread: 0, messagesLoaded: true } : c
           );
           return updated;
         });
@@ -1171,6 +1220,8 @@ export default function TeacherMessagesPage() {
       .catch((err) => { if (!(err && err.name === 'AbortError')) { /* ignore */ } });
     return () => { if (!controller.signal.aborted) controller.abort(); };
   }, [selectedChat?.id, selectedType]);
+
+  // Note: No periodic polling here to mirror Super Admin behavior.
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -2310,6 +2361,8 @@ export default function TeacherMessagesPage() {
                                     
                                     // Ensure the selected user stays selected by preventing any interference
                                     // The user list will be properly managed by the existing state
+                                    // Force-load conversation to avoid stuck state across environments
+                                    setTimeout(() => { manuallyLoadConversation(chat.id); }, 50);
 
                                   }}
                                   className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm ${isSelected ? 'bg-[#eef2ff] border-blue-500' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
@@ -2682,12 +2735,14 @@ export default function TeacherMessagesPage() {
                             const isConversationLoading = isRunningRef.current.conversation === selectedChat?.id || isLoadingSpecificConversation;
                             // Check if this user was found in the conversation history API
                             const hasConversationHistoryAPI = chats.some(c => c.id === selectedChat?.id && c.lastMessage && c.lastMessage.trim() !== '');
+                            // Has this conversation been attempted/loaded (even if empty)
+                            const isLoadedEmpty = chats.some(c => c.id === selectedChat?.id && c.messagesLoaded && (!c.messages || c.messages.length === 0));
                             // Check if this user was just selected from search results and has messages
                             const wasJustSelectedFromSearch = selectedChat?.messages && selectedChat.messages.length > 0;
                             
 
                             
-                            if (isConversationLoading) {
+                            if (isConversationLoading && !isLoadedEmpty) {
                               // Show loading state
                               return (
                                 <div className="mt-1">
@@ -2697,8 +2752,8 @@ export default function TeacherMessagesPage() {
                                   </div>
                                 </div>
                               );
-                            } else if (hasConversationHistory || hasRecentHistory || hasLastMessage || hasConversationHistoryAPI) {
-                              // User has conversation history but messages aren't loaded yet - show loading state
+                            } else if (!isLoadedEmpty && (hasConversationHistory || hasRecentHistory || hasLastMessage || hasConversationHistoryAPI)) {
+                              // Match Super Admin: show spinner while fetching existing conversation
                               return (
                                 <div className="mt-1">
                                   <div className="inline-flex items-center gap-2 text-xs text-blue-600">

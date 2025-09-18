@@ -627,12 +627,12 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-5 gap-8 bg-white">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 sm:gap-6 bg-white px-1.5 sm:px-4 pt-2 pb-2">
         {/* Left: Quarterly Assessment and Attendance (3 columns) */}
-        <div className="col-span-3 space-y-8">
+        <div className="col-span-1 lg:col-span-3 space-y-4 sm:space-y-6">
           {/* Quarterly Assessment Section */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-2 sm:p-4 border border-blue-100">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <FaTable className="text-blue-600 text-lg" />
               </div>
@@ -644,7 +644,8 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
             
             {/* Assessment Table */}
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto lg:overflow-visible">
+                <table className="w-full text-sm min-w-[640px] lg:min-w-0 lg:table-fixed">
                 <thead>
                   <tr>
                     <th className="border-b border-gray-200 px-4 py-3 bg-gray-50 text-left font-semibold text-gray-700">Subjects</th>
@@ -1083,13 +1084,14 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                     })}
                   </tr>
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
           </div>
 
           {/* Attendance Section */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-2 sm:p-4 border border-green-100">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <FaChartBar className="text-green-600 text-lg" />
               </div>
@@ -1100,7 +1102,8 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
             </div>
             
             <div className="bg-white rounded-lg border border-gray-200">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto lg:overflow-visible">
+                <table className="w-full text-sm min-w-[640px] lg:min-w-0 lg:table-fixed">
                 <thead>
                   <tr className="bg-green-50">
                     <th className="border-b border-gray-200 px-2 py-3 text-left font-semibold text-gray-700 w-[120px]">Category</th>
@@ -1142,16 +1145,17 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                     ];
                   })()}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
           </div>
         </div>
         
         {/* Right: Legend and Comments (2 columns) */}
-        <div className="col-span-2 space-y-8">
+        <div className="col-span-1 lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Legend Section */}
-          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-100">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-2 sm:p-4 border border-purple-100">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                 <FaTable className="text-purple-600 text-lg" />
               </div>
@@ -1162,7 +1166,8 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
             </div>
             
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto lg:overflow-visible">
+                <table className="w-full text-sm min-w-[520px] lg:min-w-0 lg:table-fixed">
                 <thead>
                   <tr className="bg-purple-50">
                     <th className="border-b border-gray-200 px-4 py-3 text-left font-semibold text-gray-700">Shapes</th>
@@ -1186,13 +1191,14 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
           </div>
 
           {/* Risk Level Legend */}
-          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border border-red-100">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-2 sm:p-4 border border-red-100">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                 <FaExclamationTriangle className="text-red-600 text-lg" />
               </div>
@@ -1221,8 +1227,8 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
           </div>
 
           {/* Comments Section */}
-          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-2 sm:p-4 border border-blue-100">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <FaComments className="text-blue-600 text-lg" />
               </div>
@@ -1234,7 +1240,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
             
             <div className="bg-white rounded-lg p-4 border border-gray-200">
               {/* Comment Input */}
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div className="flex items-center gap-2">
                   <textarea
                     maxLength={100}

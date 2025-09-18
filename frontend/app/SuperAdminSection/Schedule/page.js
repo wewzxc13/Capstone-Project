@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, Fragment, useRef } from "react";
 import { FaBell, FaCog, FaChevronDown, FaCalendarAlt, FaEdit, FaSave, FaTimes, FaPlus, FaInfoCircle, FaPlusSquare } from "react-icons/fa";
 import { FaPencilAlt } from "react-icons/fa";
 import ProtectedRoute from "../../Context/ProtectedRoute";
@@ -17,7 +17,7 @@ function Modal({ open, onClose, children }) {
   if (!open) return null;
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl p-8 min-w-[480px] max-w-[98vw] w-[520px] relative border border-gray-100" style={{ overflow: 'visible' }}>
+      <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 w-[95vw] max-w-[520px] sm:w-[520px] sm:min-w-[480px] relative border border-gray-100" style={{ overflow: 'visible' }}>
         {children}
       </div>
     </div>,
@@ -40,6 +40,9 @@ export default function SuperAdminSchedulePage() {
   const [saving, setSaving] = useState(false);
   const [dirtyCells, setDirtyCells] = new Set();
   const router = useRouter();
+  const buttonRef = useRef(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState({ top: 0, left: 0, width: 0 });
 
   // Add state for modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -112,6 +115,36 @@ export default function SuperAdminSchedulePage() {
         setLoading(false);
       });
   }, []);
+
+  // Track viewport for mobile dropdown behavior
+  useEffect(() => {
+    const handleResize = () => setIsMobileViewport(window.innerWidth < 640);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Compute mobile dropdown position
+  useEffect(() => {
+    const computePosition = () => {
+      if (!isMobileViewport || !dropdownOpen || !buttonRef.current) return;
+      const rect = buttonRef.current.getBoundingClientRect();
+      const margin = 16;
+      const maxWidth = 320;
+      const width = Math.min(window.innerWidth - margin * 2, maxWidth);
+      const desiredLeft = rect.left + rect.width / 2 - width / 2;
+      const left = Math.max(margin, Math.min(window.innerWidth - width - margin, desiredLeft));
+      const top = rect.bottom + 8;
+      setDropdownStyle({ top, left, width });
+    };
+    computePosition();
+    window.addEventListener('scroll', computePosition, true);
+    window.addEventListener('resize', computePosition);
+    return () => {
+      window.removeEventListener('scroll', computePosition, true);
+      window.removeEventListener('resize', computePosition);
+    };
+  }, [dropdownOpen, isMobileViewport]);
 
   // Fetch routines and subjects when entering edit mode
   useEffect(() => {
@@ -664,23 +697,23 @@ export default function SuperAdminSchedulePage() {
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
               {/* Add Activity Button */}
               <button
                 onClick={() => {
                   setAddActivityModalOpen(true);
                   openModal();
                 }}
-                className="flex items-center gap-2 bg-[#232c67] hover:bg-[#1a1f4d] text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
+                className="flex items-center justify-center gap-2 bg-[#232c67] hover:bg-[#1a1f4d] text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md w-full sm:w-auto"
               >
                 <FaPlus className="text-sm" />
                 Add Schedule Item
               </button>
               
-              <div className="relative">
+              <div className="relative w-full sm:w-auto" ref={buttonRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
+                  className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
                 >
                   <FaCalendarAlt className="text-sm" />
                   Select Class
@@ -688,11 +721,14 @@ export default function SuperAdminSchedulePage() {
                 </button>
                 
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 rounded-xl shadow-xl bg-white border border-gray-200 z-20 overflow-hidden">
+                  <div
+                    className={`${isMobileViewport ? 'fixed z-50' : 'absolute z-50'} mt-2 rounded-xl shadow-xl bg-white border border-gray-200 overflow-hidden w-[calc(100vw-2rem)] sm:w-64 sm:right-0`}
+                    style={isMobileViewport ? { top: dropdownStyle.top, left: dropdownStyle.left, width: dropdownStyle.width } : {}}
+                  >
                     <div className="p-3 border-b border-gray-100 bg-gray-50">
                       <p className="text-sm font-semibold text-gray-700">Available Classes</p>
                     </div>
-                    <div className="py-2 max-h-60 overflow-y-auto">
+                    <div className="py-2 max-h-72 overflow-y-auto">
                       {dropdownOptions.length === 0 ? (
                         <div className="px-4 py-8 text-center text-gray-500">
                           <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -709,7 +745,7 @@ export default function SuperAdminSchedulePage() {
                             setSelectedLevelId(opt.value);
                             setDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-4 py-3 transition-colors ${
+                          className={`w-full text-left px-4 py-3 text-[13px] transition-colors ${
                             selectedLevelId === opt.value 
                               ? 'bg-[#232c67] text-white hover:bg-gray-100 hover:text-black' 
                               : 'text-gray-700 hover:bg-gray-100 hover:text-black'
@@ -743,7 +779,8 @@ export default function SuperAdminSchedulePage() {
             </div>
           ) : selectedSchedule ? (
             <>
-              <div className="overflow-auto">
+              {/* Desktop/tablet table view */}
+              <div className="overflow-hidden hidden lg:block">
                 <table className="min-w-full text-sm text-left text-gray-800">
                   <thead className="bg-[#232c67] text-white sticky top-0 z-10">
                     <tr>
@@ -961,6 +998,58 @@ export default function SuperAdminSchedulePage() {
                     )}
                                      </tbody>
                 </table>
+              </div>
+
+              {/* Mobile view: compact 4-column grid mimicking table without horizontal scroll */}
+              <div className="block lg:hidden">
+                {/* Header row */}
+                <div className="grid grid-cols-4 rounded-t-xl overflow-hidden">
+                  <div className="bg-[#232c67] text-white px-3 py-3 text-[13px] font-semibold flex items-center gap-2 border-r border-[#1a1f4d]">
+                    <FaCalendarAlt className="text-xs" />
+                    <span>Time</span>
+                  </div>
+                  {selectedClassInfo.days.map((day) => (
+                    <div key={day} className="bg-[#232c67] text-white px-2 py-2 text-center text-[12px] border-r last:border-r-0 border-[#1a1f4d]">
+                      <div className="font-bold">{day}</div>
+                      <div className="text-[10px] text-[#a8b0e0] leading-4 mt-1 whitespace-pre-line">{selectedClassInfo.time}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Body rows */}
+                <div>
+                  {groupByTime(selectedSchedule.schedule, selectedClassInfo.days).length === 0 ? (
+                    <div className="px-6 py-8 text-center text-gray-500">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                        <FaCalendarAlt className="text-2xl text-gray-400" />
+                      </div>
+                      <h4 className="text-base font-medium text-gray-700 mb-1">Empty Schedule</h4>
+                      <p className="text-xs text-gray-500">This class schedule is empty.</p>
+                    </div>
+                  ) : (
+                    groupByTime(selectedSchedule.schedule, selectedClassInfo.days).map((row, idx) => (
+                      <div key={idx} className={`grid grid-cols-4 text-[13px] border-t border-gray-200 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                        {/* Time cell */}
+                        <div className="px-3 py-3 font-semibold border-r border-gray-200 min-h-[60px] flex items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-[#232c67] rounded-full"></span>
+                            {row.time}
+                          </div>
+                        </div>
+                        {/* Day cells */}
+                        {selectedClassInfo.days.map((day) => (
+                          <div key={day} className="px-2 py-3 border-r last:border-r-0 border-gray-200 min-h-[60px] flex items-center">
+                            <div className="font-medium">
+                              {(Array.isArray(row[day]) && row[day].length > 0)
+                                ? [...new Set(row[day].map(x => x && x.name ? x.name : '').filter(Boolean))].join(' / ')
+                                : '-'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
               
               {editMode && (

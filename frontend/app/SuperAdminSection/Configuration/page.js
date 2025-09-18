@@ -1249,7 +1249,7 @@ export default function SuperAdminConfigurationPage() {
                         </tr>
                       </thead>
                     </table>
-                    <div className="max-h-[272px] overflow-y-auto custom-thin-scroll">
+                    <div className="max-h-[255px] overflow-y-auto custom-thin-scroll">
                       <table className="min-w-full text-sm text-left text-gray-700 table-fixed">
                         <colgroup>
                           <col style={{ width: '35%' }} />

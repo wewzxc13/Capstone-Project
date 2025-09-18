@@ -633,12 +633,12 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-5 gap-8 bg-white px-8 pt-8 pb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 sm:gap-6 bg-white px-1.5 sm:px-6 pt-3 pb-4">
         {/* Left: Progress Circles (2 columns) */}
-        <div className="col-span-2 space-y-8">
+        <div className="col-span-1 lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Final Subject Averages Section */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3 sm:p-6 border border-blue-100">
+            <div className="flex items-center gap-3 mb-3 sm:mb-6">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <FaChartLine className="text-blue-600 text-lg" />
               </div>
@@ -791,8 +791,8 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
           </div>
 
           {/* Risk Status Section */}
-          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-6 border border-red-100">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-3 sm:p-6 border border-red-100">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                 <FaExclamationTriangle className="text-red-600 text-lg" />
               </div>
@@ -823,10 +823,10 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
         </div>
         
         {/* Right: Chart and Summary (3 columns) */}
-        <div className="col-span-3 flex flex-col h-full space-y-6">
+        <div className="col-span-1 lg:col-span-3 flex flex-col h-full space-y-4 sm:space-y-6">
           {/* Chart Section */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3 sm:p-6 border border-blue-100">
+            <div className="flex items-center gap-3 mb-3 sm:mb-6">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <FaChartLine className="text-blue-600 text-lg" />
               </div>
@@ -840,8 +840,8 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
           </div>
 
           {/* Summary Section */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 sm:p-6 border border-green-100">
+            <div className="flex items-center justify-between mb-3 sm:mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                   <FaCheckCircle className="text-green-600 text-lg" />
