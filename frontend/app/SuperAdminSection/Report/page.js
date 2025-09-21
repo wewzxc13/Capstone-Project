@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bar, Line } from "react-chartjs-2";
 import '../../../lib/chart-config.js';
-import { FaBell, FaCog, FaChevronDown, FaEdit, FaMale, FaFemale, FaUsers, FaMars, FaVenus } from "react-icons/fa";
+import { FaBell, FaCog, FaChevronDown, FaEdit, FaMale, FaFemale, FaUsers, FaMars, FaVenus, FaPrint } from "react-icons/fa";
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useRouter } from "next/navigation";
+import SuperAdminReportExport from './SuperAdminReportExport';
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function SuperAdminReportsPage() {
   const [selectedReport, setSelectedReport] = useState("Attendance Report");
@@ -16,6 +19,7 @@ export default function SuperAdminReportsPage() {
   const [subjectData, setSubjectData] = useState(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const printRef = useRef(null);
 
   // Function to close all dropdowns
   const closeAllDropdowns = () => {
@@ -355,18 +359,395 @@ export default function SuperAdminReportsPage() {
   };
 
   useEffect(() => {
-    if (selectedReport === "Attendance Report") {
-      fetchAttendanceData();
-    } else if (selectedReport === "Progress Report") {
-      fetchProgressData();
-    } else if (selectedReport === "Subject Report") {
-      fetchSubjectData();
-    }
+    // Always fetch all data regardless of selected report
+    fetchAttendanceData();
+    fetchProgressData();
+    fetchSubjectData();
+  }, []); // Remove selectedReport dependency to fetch all data once
+
+  // Update the current report display when selectedReport changes
+  useEffect(() => {
+    // This effect can be used for any UI updates based on selectedReport
+    // but we don't need to refetch data since we have it all
   }, [selectedReport]);
 
   const handleLogout = () => {
     localStorage.clear();
     router.push("/LoginSection");
+  };
+
+  // Export/Print function
+  const handleExportReport = () => {
+    try {
+      const printableElement = printRef.current;
+      if (!printableElement) {
+        toast.error("Nothing to export yet.");
+        return;
+      }
+
+      // Prefer iframe-based printing on mobile for reliable pagination
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+      if (isMobile) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+        // Clone printable content
+        const cloned = printableElement.cloneNode(true);
+        cloned.style.display = 'block';
+
+        // Build head with existing stylesheets
+        const head = doc.createElement('head');
+        // Copy link stylesheets
+        document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+          const newLink = doc.createElement('link');
+          newLink.rel = 'stylesheet';
+          newLink.href = link.href;
+          head.appendChild(newLink);
+        });
+        // Copy inline styles
+        document.querySelectorAll('style').forEach((styleEl) => {
+          const newStyle = doc.createElement('style');
+          newStyle.textContent = styleEl.textContent;
+          head.appendChild(newStyle);
+        });
+
+        // Add our print styles (same rules as desktop path)
+        const style = doc.createElement('style');
+        style.setAttribute('media', 'print');
+        const tempId = 'report-printable';
+        cloned.setAttribute('id', tempId);
+        style.innerHTML = `
+          @page { size: Letter portrait; margin: 0; }
+          @media print {
+            html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            #${tempId} { position: static !important; width: 8.5in !important; margin: 0 auto !important; }
+            #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
+            table, tr, td, th { page-break-inside: avoid !important; }
+            .rounded-xl, .rounded-lg { box-shadow: none !important; }
+            .print-page { width: 8.5in !important; min-height: 8.5in !important; height: 8.5in !important; box-sizing: border-box !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; position: relative !important; }
+            /* Force colored backgrounds via pseudo element so mobile prints them */
+            .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
+            .print-page > * { position: relative; z-index: 1; }
+            .pastel-blue::before { background: #eef5ff !important; }
+            .pastel-green::before { background: #eaf7f1 !important; }
+            .pastel-yellow::before { background: #fff7e6 !important; }
+            .pastel-pink::before { background: #ffeef2 !important; }
+            .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
+            .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
+            .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; z-index: 10; }
+          }
+        `;
+        head.appendChild(style);
+
+        // Write document
+        const html = doc.createElement('html');
+        html.appendChild(head);
+        const body = doc.createElement('body');
+        body.style.margin = '0';
+        body.appendChild(cloned);
+        html.appendChild(body);
+        doc.open();
+        doc.write('<!doctype html>' + html.outerHTML);
+        doc.close();
+
+        // Assign page numbers
+        const assignPageNumbers = () => {
+          const pages = doc.querySelectorAll('.print-page');
+          const totalPages = pages.length;
+          pages.forEach((pageEl, index) => {
+            pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
+          });
+        };
+
+        // Wait a moment for stylesheets to load, then print
+        const printNow = () => {
+          try {
+            assignPageNumbers();
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } finally {
+            setTimeout(() => { if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1500);
+          }
+        };
+
+        // Give external styles time to load (mobile needs longer)
+        setTimeout(printNow, 800);
+        return; // stop; mobile path handled
+      }
+
+      const originalTitle = document.title;
+
+      // Clone printable element to body to avoid clipping by scroll containers
+      const tempId = "report-printable";
+      const cloned = printableElement.cloneNode(true);
+      cloned.setAttribute("id", tempId);
+      cloned.style.display = 'block';
+      cloned.style.margin = '0';
+      cloned.style.padding = '0';
+      document.body.appendChild(cloned);
+
+      const style = document.createElement("style");
+      style.setAttribute("media", "print");
+      style.innerHTML = `
+        /* Use explicit Letter portrait sizing so mobile print engines paginate consistently */
+        @page { size: Letter portrait; margin: 0; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+          /* Ensure colors are kept */
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          /* Hide everything except the cloned print container */
+          body > *:not(#${tempId}) { display: none !important; }
+          /* Normalize the printable container */
+          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: 8.5in !important; padding: 0; margin: 0 auto !important; font-family: Calibri, 'Arial Rounded MT Bold', 'Comic Sans MS', Arial, sans-serif; display: block !important; max-width: none !important; }
+          /* Remove clipping/overflow from ancestors inside the container */
+          #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
+          /* Avoid page breaks inside table rows/cards */
+          table, tr, td, th { page-break-inside: avoid !important; }
+          .rounded-xl, .rounded-lg { box-shadow: none !important; }
+          /* Page breaks: force every .print-page onto its own page (mobile-safe) */
+          .print-page { 
+            width: 8.5in !important; 
+            position: relative !important; 
+            box-sizing: border-box !important; 
+            /* Make each section independent and avoid it being merged */
+            break-inside: avoid !important; 
+            page-break-inside: avoid !important; 
+            /* Use exact page height to enforce one section per physical page */
+            min-height: 8.5in !important; 
+            height: 8.5in !important;
+            page-break-after: always !important; 
+            break-after: page !important;
+          }
+          /* Force background colors to print by drawing them as real elements */
+          .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
+          .print-page > * { position: relative; z-index: 1; }
+          .pastel-blue::before { background: #eef5ff !important; }
+          .pastel-green::before { background: #eaf7f1 !important; }
+          .pastel-yellow::before { background: #fff7e6 !important; }
+          .pastel-pink::before { background: #ffeef2 !important; }
+          /* Do not add an extra blank page after the last section */
+          .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
+          /* Also ensure a hard break before subsequent sections for engines that only honor before */
+          .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
+          .no-break { page-break-inside: avoid; break-inside: avoid; }
+          .section-title { font-weight: 700; color: #1f2937; }
+          .pastel-blue { background: #eef5ff; }
+          .pastel-green { background: #eaf7f1; }
+          .pastel-yellow { background: #fff7e6; }
+          .pastel-pink { background: #ffeef2; }
+          .border-soft { border: 1px solid #e5e7eb; }
+          /* Custom page number footer (bottom-right) */
+          .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; z-index: 10; }
+        }
+      `;
+
+      document.head.appendChild(style);
+
+      // Assign page numbers to each print page (enables footer while allowing browser header/footer to be turned off)
+      const pages = cloned.querySelectorAll('.print-page');
+      const totalPages = pages.length;
+      pages.forEach((pageEl, index) => {
+        pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
+      });
+
+      // Set a descriptive title for the print/PDF
+      document.title = `Export Reports - Learners' Ville`;
+
+      const cleanup = () => {
+        try {
+          if (style && style.parentNode) document.head.removeChild(style);
+          if (cloned && cloned.parentNode) cloned.parentNode.removeChild(cloned);
+          document.title = originalTitle;
+        } catch (e) {
+          // no-op
+        }
+      };
+
+      const afterPrint = () => {
+        window.removeEventListener('afterprint', afterPrint);
+        cleanup();
+      };
+      window.addEventListener('afterprint', afterPrint);
+
+      // Give React a beat to render the print layout
+      setTimeout(() => {
+        window.print();
+      }, 300);
+
+      // Fallback cleanup for browsers that don't fire afterprint reliably
+      setTimeout(() => { cleanup(); }, 1500);
+    } catch (err) {
+      console.error('Error exporting report:', err);
+      toast.error("Failed to export. Please try again.");
+    }
+  };
+
+  // Helper function to get insights for a specific report type
+  const getInsightsForReport = (reportType) => {
+    const originalReport = selectedReport;
+    // Temporarily set the report type to get insights
+    if (reportType === "Attendance Report") {
+      return renderAttendanceInsights();
+    } else if (reportType === "Progress Report") {
+      return renderProgressInsights();
+    } else if (reportType === "Subject Report") {
+      return renderSubjectInsights();
+    }
+    return [];
+  };
+
+  // Helper function to render attendance insights
+  const renderAttendanceInsights = () => {
+    if (!attendanceData || !attendanceData.hasData) {
+      return [
+        "No attendance data available for the current year. Attendance insights will appear once teachers start recording daily attendance for students linked to parents.",
+        "The system is ready to track attendance patterns across all student levels (Discoverer, Explorer, Adventurer) once data becomes available."
+      ];
+    }
+
+    const insights = [];
+    if (attendanceData.levelNames && attendanceData.quarterData) {
+      attendanceData.levelNames.forEach(levelName => {
+        const quarterData = attendanceData.quarterData[levelName] || [];
+        const availableQuarters = quarterData.filter(value => value > 0);
+        
+        if (availableQuarters.length === 0) {
+          insights.push(`${levelName} - No attendance data recorded yet for any quarter. Attendance tracking will begin once teachers start recording daily attendance.`);
+        } else {
+          const quartersWithData = [];
+          quarterData.forEach((value, index) => {
+            if (value > 0) {
+              const quarterName = attendanceData.quarterNames ? attendanceData.quarterNames[index] : `${index + 1}st Quarter`;
+              quartersWithData.push({ quarter: quarterName, percentage: value });
+            }
+          });
+
+          if (quartersWithData.length === 1) {
+            const quarter = quartersWithData[0];
+            insights.push(`${levelName} - In ${quarter.quarter} has ${quarter.percentage}% attendance rate. This represents the current attendance performance for this level.`);
+          } else if (quartersWithData.length === 2) {
+            const [first, second] = quartersWithData;
+            const trend = second.percentage > first.percentage ? "improved" : 
+                         second.percentage < first.percentage ? "decreased" : "remained stable";
+            insights.push(`${levelName} - ${first.quarter} shows ${first.percentage}% attendance, ${second.quarter} shows ${second.percentage}% attendance. Attendance has ${trend} between these quarters.`);
+          } else if (quartersWithData.length === 3) {
+            const [first, second, third] = quartersWithData;
+            const avgPercentage = ((first.percentage + second.percentage + third.percentage) / 3).toFixed(1);
+            insights.push(`${levelName} - ${first.quarter} (${first.percentage}%), ${second.quarter} (${second.percentage}%), and ${third.quarter} (${third.percentage}%) show an average attendance rate of ${avgPercentage}% across these three quarters.`);
+          } else if (quartersWithData.length === 4) {
+            const [first, second, third, fourth] = quartersWithData;
+            const avgPercentage = ((first.percentage + second.percentage + third.percentage + fourth.percentage) / 4).toFixed(1);
+            const highestQuarter = quartersWithData.reduce((max, current) => 
+              current.percentage > max.percentage ? current : max
+            );
+            insights.push(`${levelName} - Complete year data available: ${first.quarter} (${first.percentage}%), ${second.quarter} (${second.percentage}%), ${third.quarter} (${third.percentage}%), and ${fourth.quarter} (${fourth.percentage}%). Average attendance is ${avgPercentage}% with ${highestQuarter.quarter} showing the highest rate at ${highestQuarter.percentage}%.`);
+          }
+        }
+      });
+    }
+    return insights;
+  };
+
+  // Helper function to render progress insights
+  const renderProgressInsights = () => {
+    if (!progressData || !progressData.hasData) {
+      return [
+        "No progress data available. Data will appear once progress assessments are recorded for students linked to parents."
+      ];
+    }
+
+    const insights = [];
+    if (progressData.levelNames && progressData.quarterData) {
+      progressData.levelNames.forEach(levelName => {
+        const quarterData = progressData.quarterData[levelName] || [];
+        const availableQuarters = quarterData.filter(value => value !== null && value !== undefined && value > 0);
+        
+        if (availableQuarters.length === 0) {
+          insights.push(`${levelName} - No progress assessment data recorded yet. Progress tracking will begin once teachers start recording assessments for students linked to parents.`);
+        } else {
+          const quartersWithData = [];
+          quarterData.forEach((value, index) => {
+            if (value !== null && value !== undefined && value > 0) {
+              const quarterName = progressData.quarterNames ? progressData.quarterNames[index] : `${index + 1}st Quarter`;
+              quartersWithData.push({ quarter: quarterName, percentage: value });
+            }
+          });
+
+          if (quartersWithData.length === 1) {
+            const quarter = quartersWithData[0];
+            insights.push(`${levelName} - In ${quarter.quarter} has achieved ${quarter.percentage}% progress. This represents the current progress performance for this class.`);
+          } else if (quartersWithData.length === 2) {
+            const [first, second] = quartersWithData;
+            const trend = second.percentage > first.percentage ? "improved" : 
+                         second.percentage < first.percentage ? "decreased" : "remained stable";
+            insights.push(`${levelName} - ${first.quarter} shows ${first.percentage}% progress, ${second.quarter} shows ${second.percentage}% progress. Progress has ${trend} between these quarters.`);
+          } else if (quartersWithData.length === 3) {
+            const [first, second, third] = quartersWithData;
+            const avgPercentage = ((first.percentage + second.percentage + third.percentage) / 3).toFixed(1);
+            insights.push(`${levelName} - ${first.quarter} (${first.percentage}%), ${second.quarter} (${second.percentage}%), and ${third.quarter} (${third.percentage}%) show an average progress of ${avgPercentage}% across these three quarters.`);
+          } else if (quartersWithData.length === 4) {
+            const [first, second, third, fourth] = quartersWithData;
+            const avgPercentage = ((first.percentage + second.percentage + third.percentage + fourth.percentage) / 4).toFixed(1);
+            const highestQuarter = quartersWithData.reduce((max, current) => 
+              current.percentage > max.percentage ? current : max
+            );
+            insights.push(`${levelName} - Complete year data available: ${first.quarter} (${first.percentage}%), ${second.quarter} (${second.percentage}%), ${third.quarter} (${third.percentage}%), and ${fourth.quarter} (${fourth.percentage}%). Average progress is ${avgPercentage}% with ${highestQuarter.quarter} showing the highest progress at ${highestQuarter.percentage}%.`);
+          }
+        }
+      });
+    }
+    return insights;
+  };
+
+  // Helper function to render subject insights
+  const renderSubjectInsights = () => {
+    if (!subjectData || !subjectData.hasSubjectData) {
+      return [
+        "No subject performance data available. Data will appear once subject assessments are recorded for students linked to parents."
+      ];
+    }
+
+    const insights = [];
+    if (subjectData.levelNames && subjectData.subjectData && subjectData.subjectNames) {
+      subjectData.levelNames.forEach(levelName => {
+        const classSubjectData = subjectData.subjectData[levelName] || {};
+        const availableSubjects = subjectData.subjectNames.filter(subjectName => 
+          classSubjectData[subjectName] && classSubjectData[subjectName] > 0
+        );
+        
+        if (availableSubjects.length === 0) {
+          insights.push(`${levelName} - No subject performance data recorded yet. Subject tracking will begin once teachers start recording assessments for students linked to parents.`);
+        } else {
+          const totalScore = availableSubjects.reduce((sum, subjectName) => 
+            sum + classSubjectData[subjectName], 0
+          );
+          const averageScore = totalScore / availableSubjects.length;
+          
+          if (availableSubjects.length === 1) {
+            const subject = availableSubjects[0];
+            const score = classSubjectData[subject];
+            insights.push(`${levelName} - ${subject} shows ${score}% performance. This represents the current subject performance for this class.`);
+          } else {
+            const performanceLevel = averageScore >= 90 ? "Excellent" : 
+                                   averageScore >= 80 ? "Very Good" : 
+                                   averageScore >= 70 ? "Good" : 
+                                   averageScore >= 60 ? "Needs Improvement" : "Not Met";
+            insights.push(`${levelName} - Average performance across ${availableSubjects.length} subjects is ${averageScore.toFixed(1)}% (${performanceLevel}). Shows comprehensive subject tracking.`);
+          }
+        }
+      });
+    }
+    return insights;
   };
 
   const renderInsightSummary = () => {
@@ -1012,38 +1393,53 @@ export default function SuperAdminReportsPage() {
             {selectedReport}
           </h2>
           
-          {/* Dropdown Selector */}
-          <div className="relative dropdown-container">
+          {/* Export Button and Dropdown Container */}
+          <div className="flex items-center gap-3">
+            {/* Export Button */}
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={handleExportReport}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+              title="Export Report to PDF"
             >
-              View Report
-              <FaChevronDown className={`text-xs transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              <FaPrint className="text-sm" />
+              <span className="hidden sm:inline">Export Reports</span>
+              <span className="sm:hidden">Export</span>
             </button>
             
-            {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
-                <div className="py-1">
-                  {reports.map((report) => (
-                    <button
-                      key={report}
-                      onClick={() => {
-                        setSelectedReport(report);
-                        setIsDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors ${
-                        selectedReport === report 
-                          ? "bg-[#232c67] text-white hover:bg-gray-100 hover:text-black" 
-                          : "text-gray-900 hover:bg-gray-100 hover:text-black"
-                      }`}
-                    >
-                      {report}
-                    </button>
-                  ))}
+            {/* Dropdown Selector */}
+            <div className="relative dropdown-container">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <span className="hidden sm:inline">View Report</span>
+                <span className="sm:hidden">View</span>
+                <FaChevronDown className={`text-xs transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                  <div className="py-1">
+                    {reports.map((report) => (
+                      <button
+                        key={report}
+                        onClick={() => {
+                          setSelectedReport(report);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors ${
+                          selectedReport === report 
+                            ? "bg-[#232c67] text-white hover:bg-gray-100 hover:text-black" 
+                            : "text-gray-900 hover:bg-gray-100 hover:text-black"
+                        }`}
+                      >
+                        {report}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -1065,7 +1461,7 @@ export default function SuperAdminReportsPage() {
         </div>
 
         <div className="bg-white p-2 rounded-xl shadow-md relative">
-            <div style={{ height: '250px' }}>
+            <div style={{ height: '230px' }}>
               <Bar data={chartData} options={chartOptions} />
               {selectedReport === "Attendance Report" && attendanceData && !attendanceData.hasData && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90">
@@ -1095,6 +1491,62 @@ export default function SuperAdminReportsPage() {
                  </div>
                )}
             </div>
+        </div>
+
+        {/* Super Admin Report Export Component */}
+        <div ref={printRef} className="hidden print:block" style={{margin: 0, padding: 0}}>
+          <SuperAdminReportExport
+            attendanceData={attendanceData}
+            progressData={progressData}
+            subjectData={subjectData}
+            attendanceChartData={(() => {
+              // Create attendance chart data - always return data structure
+              const labels = attendanceData?.quarterNames || ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
+              const levelNames = attendanceData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
+              
+              return {
+                labels: labels,
+                datasets: levelNames.map((levelName, index) => ({
+                  label: levelName,
+                  data: attendanceData?.quarterData?.[levelName] || [0, 0, 0, 0],
+                  backgroundColor: ["#60a5fa", "#facc15", "#f87171"][index] || "#60a5fa",
+                }))
+              };
+            })()}
+            progressChartData={(() => {
+              // Create progress chart data - always return data structure
+              const labels = progressData?.quarterNames || ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
+              const levelNames = progressData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
+              
+              return {
+                labels: labels,
+                datasets: levelNames.map((levelName, index) => ({
+                  label: levelName,
+                  data: progressData?.quarterData?.[levelName] || [0, 0, 0, 0],
+                  backgroundColor: ["#5C9EFF", "#FDCB44", "#FF7B7B"][index] || "#5C9EFF",
+                }))
+              };
+            })()}
+            subjectChartData={(() => {
+              // Create subject chart data - always return data structure
+              const labels = subjectData?.subjectNames || [];
+              const levelNames = subjectData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
+              
+              return {
+                labels: labels,
+                datasets: levelNames.map((levelName, index) => ({
+                  label: levelName,
+                  data: labels.map(subjectName => 
+                    subjectData?.subjectData?.[levelName]?.[subjectName] || 0
+                  ),
+                  backgroundColor: ["#5C9EFF", "#FDCB44", "#FF7B7B"][index] || "#5C9EFF",
+                }))
+              };
+            })()}
+            attendanceInsights={renderAttendanceInsights()}
+            progressInsights={renderProgressInsights()}
+            subjectInsights={renderSubjectInsights()}
+          />
         </div>
       </div>
     </ProtectedRoute>
