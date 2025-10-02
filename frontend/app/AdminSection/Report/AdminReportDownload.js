@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-const SuperAdminReportExport = ({ 
+const AdminReportDownload = ({ 
   attendanceData = null,
   progressData = null,
   subjectData = null,
@@ -49,10 +49,8 @@ const SuperAdminReportExport = ({
     
     return (
       <div className="bg-white rounded-lg p-6 border border-gray-200">
-        <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">{title}</h3>
-        
-        {/* Legend - positioned above chart */}
-        <div className="flex justify-center gap-6 mb-4">
+        {/* Legend - positioned above chart, centered */}
+        <div className="flex justify-center gap-4 mb-6">
           {datasets.map((dataset, index) => (
             <div key={index} className="flex items-center">
               <div 
@@ -65,7 +63,7 @@ const SuperAdminReportExport = ({
         </div>
 
         {/* Chart container with proper dimensions */}
-        <div className="relative" style={{ height: '300px' }}>
+        <div className="relative" style={{ height: '240px' }}>
           {/* Chart area */}
           <div className="absolute inset-0 flex flex-col justify-end">
             {/* Y-axis labels */}
@@ -88,6 +86,7 @@ const SuperAdminReportExport = ({
                       const value = dataset.data[labelIndex] || 0;
                       const height = (value / 100) * 100; // Percentage of max height
                       const barWidth = 100 / datasets.length; // Equal width for each dataset
+                      const barSpacing = 3; // Space between bars
                       
                       // Don't render bar if value is 0%
                       if (value === 0) {
@@ -184,12 +183,12 @@ const SuperAdminReportExport = ({
       <div className="print-page p-6 pastel-blue border-soft rounded-xl text-[15px]" style={{margin: 0}}>
         {/* Simple Header */}
         <div className="flex items-center justify-center mb-6">
-          <div className="w-[60px] h-[60px] rounded-full bg-white/80 border border-white/70 p-2 flex items-center justify-center">
-            <img src="/assets/image/villelogo.png" alt="School Logo" className="w-12 h-12 object-contain" />
+          <div className="w-[45px] h-[45px] rounded-full bg-white/80 border border-white/70 p-1 flex items-center justify-center">
+            <img src="/assets/image/villelogo.png" alt="School Logo" className="w-8 h-8 object-contain" />
           </div>
           <div className="ml-4">
-            <div className="text-3xl font-extrabold tracking-tight text-[#232c67] leading-tight">LEARNERS' VILLE</div>
-            <div className="text-lg text-gray-700">6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines</div>
+            <div className="text-2xl font-extrabold tracking-tight text-[#232c67] leading-tight">LEARNERS' VILLE</div>
+            <div className="text-base text-gray-700">6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines</div>
           </div>
         </div>
         
@@ -199,10 +198,10 @@ const SuperAdminReportExport = ({
         {renderReportChart(attendanceChartData, "Attendance Report", "attendance")}
 
         {/* Attendance Insights */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200 mt-4">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">Insight Summary</h3>
+        <div className="bg-white rounded-lg p-6 border border-gray-200 mt-4">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Insight Summary</h3>
           <div 
-            className="text-base text-gray-800 leading-relaxed whitespace-pre-line"
+            className="text-sm text-gray-800 leading-relaxed whitespace-pre-line"
             dangerouslySetInnerHTML={{ __html: renderInsightsAsText(attendanceInsights) }}
           />
         </div>
@@ -219,12 +218,12 @@ const SuperAdminReportExport = ({
       <div className="print-page p-6 pastel-green border-soft rounded-xl text-[15px]" style={{margin: 0}}>
         {/* Simple Header */}
         <div className="flex items-center justify-center mb-6">
-          <div className="w-[60px] h-[60px] rounded-full bg-white/80 border border-white/70 p-2 flex items-center justify-center">
-            <img src="/assets/image/villelogo.png" alt="School Logo" className="w-12 h-12 object-contain" />
+          <div className="w-[45px] h-[45px] rounded-full bg-white/80 border border-white/70 p-1 flex items-center justify-center">
+            <img src="/assets/image/villelogo.png" alt="School Logo" className="w-8 h-8 object-contain" />
           </div>
           <div className="ml-4">
-            <div className="text-3xl font-extrabold tracking-tight text-[#232c67] leading-tight">LEARNERS' VILLE</div>
-            <div className="text-lg text-gray-700">6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines</div>
+            <div className="text-2xl font-extrabold tracking-tight text-[#232c67] leading-tight">LEARNERS' VILLE</div>
+            <div className="text-base text-gray-700">6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines</div>
           </div>
         </div>
         
@@ -234,10 +233,10 @@ const SuperAdminReportExport = ({
         {renderReportChart(progressChartData, "Progress Report", "progress")}
 
         {/* Progress Insights */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200 mt-4">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">Insight Summary</h3>
+        <div className="bg-white rounded-lg p-6 border border-gray-200 mt-4">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Insight Summary</h3>
           <div 
-            className="text-base text-gray-800 leading-relaxed whitespace-pre-line"
+            className="text-sm text-gray-800 leading-relaxed whitespace-pre-line"
             dangerouslySetInnerHTML={{ __html: renderInsightsAsText(progressInsights) }}
           />
         </div>
@@ -254,12 +253,12 @@ const SuperAdminReportExport = ({
       <div className="print-page p-6 pastel-yellow border-soft rounded-xl text-[15px]" style={{margin: 0}}>
         {/* Simple Header */}
         <div className="flex items-center justify-center mb-6">
-          <div className="w-[60px] h-[60px] rounded-full bg-white/80 border border-white/70 p-2 flex items-center justify-center">
-            <img src="/assets/image/villelogo.png" alt="School Logo" className="w-12 h-12 object-contain" />
+          <div className="w-[45px] h-[45px] rounded-full bg-white/80 border border-white/70 p-1 flex items-center justify-center">
+            <img src="/assets/image/villelogo.png" alt="School Logo" className="w-8 h-8 object-contain" />
           </div>
           <div className="ml-4">
-            <div className="text-3xl font-extrabold tracking-tight text-[#232c67] leading-tight">LEARNERS' VILLE</div>
-            <div className="text-lg text-gray-700">6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines</div>
+            <div className="text-2xl font-extrabold tracking-tight text-[#232c67] leading-tight">LEARNERS' VILLE</div>
+            <div className="text-base text-gray-700">6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines</div>
           </div>
         </div>
         
@@ -269,10 +268,10 @@ const SuperAdminReportExport = ({
         {renderReportChart(subjectChartData, "Subject Report", "subject")}
 
         {/* Subject Insights */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200 mt-4">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">Insight Summary</h3>
+        <div className="bg-white rounded-lg p-6 border border-gray-200 mt-4">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Insight Summary</h3>
           <div 
-            className="text-base text-gray-800 leading-relaxed whitespace-pre-line"
+            className="text-sm text-gray-800 leading-relaxed whitespace-pre-line"
             dangerouslySetInnerHTML={{ __html: renderInsightsAsText(subjectInsights) }}
           />
         </div>
@@ -288,4 +287,4 @@ const SuperAdminReportExport = ({
   );
 };
 
-export default SuperAdminReportExport;
+export default AdminReportDownload;

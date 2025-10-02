@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bar, Line } from "react-chartjs-2";
 import '../../../lib/chart-config.js';
-import { FaBell, FaCog, FaChevronDown, FaEdit, FaMale, FaFemale, FaUsers, FaMars, FaVenus } from "react-icons/fa";
+import { FaBell, FaCog, FaChevronDown, FaEdit, FaMale, FaFemale, FaUsers, FaMars, FaVenus, FaPrint } from "react-icons/fa";
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useRouter } from "next/navigation";
+import AdminReportDownload from './AdminReportDownload';
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function AdminReportsPage() {
   const [selectedReport, setSelectedReport] = useState("Attendance Report");
@@ -16,6 +21,7 @@ export default function AdminReportsPage() {
   const [subjectData, setSubjectData] = useState(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const printRef = useRef(null);
 
   // Function to close all dropdowns
   const closeAllDropdowns = () => {
@@ -355,18 +361,609 @@ export default function AdminReportsPage() {
   };
 
   useEffect(() => {
-    if (selectedReport === "Attendance Report") {
-      fetchAttendanceData();
-    } else if (selectedReport === "Progress Report") {
-      fetchProgressData();
-    } else if (selectedReport === "Subject Report") {
-      fetchSubjectData();
-    }
+    // Always fetch all data regardless of selected report
+    fetchAttendanceData();
+    fetchProgressData();
+    fetchSubjectData();
+  }, []); // Remove selectedReport dependency to fetch all data once
+
+  // Update the current report display when selectedReport changes
+  useEffect(() => {
+    // This effect can be used for any UI updates based on selectedReport
+    // but we don't need to refetch data since we have it all
   }, [selectedReport]);
 
   const handleLogout = () => {
     localStorage.clear();
     router.push("/LoginSection");
+  };
+
+  // Download PDF function
+  const handleDownloadReport = async () => {
+    try {
+      // Show loading toast
+      toast.info("Generating PDF...", { autoClose: 5000 });
+
+      // Create PDF directly using jsPDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      let currentY = 20;
+
+      // Helper function to add text with word wrap
+      const addText = (text, x, y, maxWidth = pageWidth - 40) => {
+        const lines = pdf.splitTextToSize(text, maxWidth);
+        pdf.text(lines, x, y);
+        return y + (lines.length * 5);
+      };
+
+      // Helper function to add a new page with colored background
+      const addNewPage = (bgColor) => {
+        pdf.addPage();
+        // Fill entire page with background color
+        pdf.setFillColor(bgColor);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        currentY = 20;
+      };
+
+      // Helper function to add header with logo
+      const addHeader = async (title) => {
+        if (currentY > 250) addNewPage('#eef5ff');
+        
+        // Logo positioning - left side with proper alignment
+        const logoX = 20;
+        const logoY = currentY + 15;
+        const logoSize = 30; // Reduced logo size
+        const logoRadius = 15; // Reduced radius
+        
+        try {
+          // Try to load and add the school logo
+          const logoResponse = await fetch('/assets/image/villelogo.png');
+          if (logoResponse.ok) {
+            const logoBlob = await logoResponse.blob();
+            const logoDataUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.readAsDataURL(logoBlob);
+            });
+            
+            // Draw circular background for logo
+            pdf.setFillColor(255, 255, 255); // White background
+            pdf.circle(logoX + logoRadius, logoY, logoRadius, 'F'); // White circle background
+            pdf.setDrawColor(200, 200, 200); // Light gray border
+            pdf.circle(logoX + logoRadius, logoY, logoRadius, 'S'); // Circle border
+            
+            // Add logo centered in the circle
+            pdf.addImage(logoDataUrl, 'PNG', logoX + 2, logoY - logoRadius + 2, logoSize - 4, logoSize - 4);
+          }
+        } catch (error) {
+          console.log('Could not load logo, using text fallback');
+          // Draw empty circle if logo fails to load
+          pdf.setFillColor(255, 255, 255); // White background
+          pdf.circle(logoX + logoRadius, logoY, logoRadius, 'F'); // White circle background
+          pdf.setDrawColor(200, 200, 200); // Light gray border
+          pdf.circle(logoX + logoRadius, logoY, logoRadius, 'S'); // Circle border
+        }
+        
+        // School name - centered on page, aligned with logo center
+        pdf.setTextColor(35, 44, 103); // Dark blue color
+        pdf.setFontSize(18);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('LEARNERS\' VILLE', pageWidth / 2, logoY + 2, { align: 'center' });
+        
+        // Address - centered below school name
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0); // Black color
+        pdf.text('6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines', pageWidth / 2, logoY + 10, { align: 'center' });
+        
+        // Separator line
+        pdf.setDrawColor(100, 100, 100); // Dark gray line
+        pdf.setLineWidth(0.5);
+        pdf.line(10, logoY + 20, pageWidth - 10, logoY + 20);
+        
+        // Title - centered below separator
+        pdf.setFontSize(20);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(title, pageWidth / 2, logoY + 35, { align: 'center' });
+        
+        currentY = logoY + 50; // Set currentY for next content
+      };
+
+      // Helper function to start a white box
+      const startWhiteBox = (boxHeight = 60) => {
+        const footerTopY = pageHeight - 30; // Keep clear area for footer
+        // If the box would collide with footer, move to a new page first
+        if ((currentY - 5) + boxHeight > footerTopY) {
+          addNewPage('#eef5ff');
+        }
+        const boxStartY = currentY - 5;
+        const boxEndY = boxStartY + boxHeight;
+        
+        // Draw white background box (further reduced side margins)
+        pdf.setFillColor(255, 255, 255); // White
+        pdf.rect(8, boxStartY, pageWidth - 16, boxHeight, 'F');
+        
+        // Draw border
+        pdf.setDrawColor(200, 200, 200); // Light gray
+        pdf.rect(8, boxStartY, pageWidth - 16, boxHeight, 'S');
+        
+        return { boxStartY, boxEndY };
+      };
+
+      // Helper function to end a white box
+      const endWhiteBox = (boxEndY) => {
+        currentY = boxEndY + 8; // Reduced spacing
+      };
+
+      // Helper function to add a chart in a white box
+      const addChartBox = (data, labels, title, colors) => {
+        // Start white box
+        const { boxStartY, boxEndY } = startWhiteBox(90);
+        
+        // Add centered legend at the top - positioned within white box
+        const legendY = boxStartY + 15;
+        const legendSpacing = 45; // Reduced space between legend items
+        const totalLegendWidth = data.length * legendSpacing;
+        const startX = (pageWidth - totalLegendWidth) / 2; // Center the legend
+        
+        data.forEach((dataset, index) => {
+          const x = startX + (index * legendSpacing);
+          if (x < pageWidth - 20) {
+            // Color box
+            pdf.setFillColor(colors[index] || '#60a5fa');
+            pdf.rect(x, legendY - 2, 6, 6, 'F');
+            // Label
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(dataset.label, x + 10, legendY + 2);
+          }
+        });
+
+        // Add bar chart representation
+        const chartWidth = pageWidth - 40; // widen more
+        const chartHeight = 50; // Reduced chart height
+        const barGroupWidth = chartWidth / labels.length;
+        const chartStartX = 28; // shift slightly right to avoid overlapping y-labels
+        const barSpacing = 5; // Slightly more space between bars
+        const chartStartY = boxStartY + 30; // Position chart within white box
+        
+        // Y-axis labels
+        pdf.setFontSize(10);
+        pdf.setTextColor(0, 0, 0);
+        for (let i = 0; i <= 5; i++) {
+          const value = i * 20;
+          const y = chartStartY + chartHeight - (i * 10);
+          pdf.text(`${value}%`, 12, y); // move further left
+        }
+
+        // Draw grid lines
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.3);
+        for (let i = 0; i <= 5; i++) {
+          const y = chartStartY + chartHeight - (i * 10);
+          pdf.line(chartStartX, y, chartStartX + chartWidth, y);
+        }
+
+        // Draw bars
+        labels.forEach((label, labelIndex) => {
+          const groupX = chartStartX + (labelIndex * barGroupWidth);
+          const baseBarWidth = (barGroupWidth - (data.length - 1) * barSpacing) / data.length;
+          const individualBarWidth = baseBarWidth * 0.85; // reduce bar width slightly
+          
+          data.forEach((dataset, datasetIndex) => {
+            const value = dataset.data[labelIndex] || 0;
+            const barHeight = (value / 100) * chartHeight;
+            const barY = chartStartY + chartHeight - barHeight;
+            const barX = groupX + (datasetIndex * (individualBarWidth + barSpacing)) + 1;
+            
+            if (value > 0) {
+              pdf.setFillColor(colors[datasetIndex] || '#60a5fa');
+              pdf.rect(barX, barY, individualBarWidth, barHeight, 'F');
+            }
+          });
+          
+          // X-axis label - centered below each group, within the white box
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'normal');
+          pdf.text(label, groupX + barGroupWidth/2, chartStartY + chartHeight + 8, { align: 'center' });
+        });
+        
+        // End white box
+        endWhiteBox(boxEndY);
+      };
+
+      // Helper function to add insights in a white box
+      const addInsightsBox = (insights) => {
+        // Calculate optimal box height based on content
+        const titleHeight = 20; // Title + spacing
+        const insightsHeight = insights.length * 20; // 2 lines per insight + spacing
+        const calculatedBoxHeight = titleHeight + insightsHeight + 10; // Small bottom padding
+        
+        // Start white box with calculated height
+        let { boxStartY, boxEndY } = startWhiteBox(calculatedBoxHeight);
+        
+        // Add insights title - positioned within white box
+        pdf.setFontSize(13);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Insight Summary', 12, boxStartY + 12);
+        
+        // Add insights text with colored class names and proper wrapping
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        let currentTextY = boxStartY + 24; // Start text closer to title
+        
+        insights.forEach((insight, index) => {
+          // Check if we need to go to next page
+          if (currentTextY > boxEndY - 20) {
+            // Close the current box cleanly before moving
+            endWhiteBox(boxEndY);
+            addNewPage('#eef5ff');
+            const newBox = startWhiteBox(calculatedBoxHeight);
+            // Reset available region for new box
+            boxStartY = newBox.boxStartY;
+            boxEndY = newBox.boxEndY;
+            currentTextY = newBox.boxStartY + 24;
+          }
+          
+          // Process insight text to add colors to class names
+          let processedInsight = insight;
+          const classColors = {
+            'Discoverer': [96, 165, 250], // Blue
+            'Explorer': [250, 204, 21],   // Yellow
+            'Adventurer': [248, 113, 113] // Red
+          };
+          
+          // Use maximum available width
+          const contentX = 12; // minimal left padding
+          const indentX = 16; // slight indentation for second line
+          const maxWidthLine1 = pageWidth - 24; // maximize width usage
+          const maxWidthLine2 = pageWidth - 28; // account for indentation
+          
+          // Split text into exactly 2 lines using full width
+          const fullText = `${index + 1}. ${processedInsight}`;
+          const lines = pdf.splitTextToSize(fullText, maxWidthLine1);
+          
+          // First line
+          const line1 = lines[0] || fullText;
+          addColoredText(line1, contentX, currentTextY, classColors);
+          currentTextY += 8;
+          
+          // Second line - combine remaining text
+          if (lines.length > 1) {
+            const remainingText = lines.slice(1).join(' ').trim();
+            const secondLines = pdf.splitTextToSize(remainingText, maxWidthLine2);
+            const line2 = secondLines[0] || remainingText;
+            addColoredText(line2, indentX, currentTextY, classColors);
+            currentTextY += 8;
+          }
+          
+          currentTextY += 4; // Extra spacing between insights
+        });
+        
+        // End white box
+        endWhiteBox(boxEndY);
+      };
+      
+      // Helper function to add colored text (simplified - no truncation)
+      const addColoredText = (text, x, y, classColors) => {
+        const classNames = Object.keys(classColors);
+        let currentX = x;
+        let remainingText = text;
+        
+        // Find first class name in the text
+        let firstClassIndex = -1;
+        let firstClassName = '';
+        classNames.forEach(className => {
+          const index = remainingText.indexOf(className);
+          if (index !== -1 && (firstClassIndex === -1 || index < firstClassIndex)) {
+            firstClassIndex = index;
+            firstClassName = className;
+          }
+        });
+        
+        if (firstClassIndex !== -1) {
+          // Add text before class name
+          if (firstClassIndex > 0) {
+            const beforeText = remainingText.substring(0, firstClassIndex);
+            pdf.setTextColor(0, 0, 0); // Black
+            pdf.text(beforeText, currentX, y);
+            currentX += pdf.getTextWidth(beforeText);
+          }
+          
+          // Add colored class name
+          const color = classColors[firstClassName];
+          pdf.setTextColor(color[0], color[1], color[2]);
+          pdf.setFont('helvetica', 'bold'); // Make class name bold
+          pdf.text(firstClassName, currentX, y);
+          currentX += pdf.getTextWidth(firstClassName);
+          
+          // Add remaining text in black
+          const afterText = remainingText.substring(firstClassIndex + firstClassName.length);
+          pdf.setTextColor(0, 0, 0); // Black
+          pdf.setFont('helvetica', 'normal');
+          pdf.text(afterText, currentX, y);
+        } else {
+          // No class name found, just add the text
+          pdf.setTextColor(0, 0, 0); // Black
+          pdf.text(remainingText, currentX, y);
+        }
+      };
+
+      // Set first page background color
+      pdf.setFillColor(238, 245, 255); // Light blue
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      // Page 1: Attendance Report
+      await addHeader('Attendance Report');
+      
+      if (attendanceData && attendanceData.hasData) {
+        // Create attendance chart data
+        const attendanceChartData = attendanceData.levelNames.map((levelName, index) => ({
+          label: levelName,
+          data: attendanceData.quarterData[levelName] || [0, 0, 0, 0]
+        }));
+        
+        // Add chart in white box
+        addChartBox(
+          attendanceChartData,
+          attendanceData.quarterNames || ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'],
+          'Attendance Percentage',
+          ['#60a5fa', '#facc15', '#f87171']
+        );
+
+        // Add insights in white box
+        const attendanceInsights = renderAttendanceInsights();
+        addInsightsBox(attendanceInsights);
+      } else {
+        addWhiteBox(() => {
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'normal');
+          currentY = addText('No attendance data available for the current year.', 25, currentY + 5);
+        }, 30);
+      }
+
+      // Page 2: Progress Report
+      addNewPage('#eaf7f1'); // Light green
+      await addHeader('Progress Report');
+      
+      if (progressData && progressData.hasData) {
+        // Create progress chart data
+        const progressChartData = progressData.levelNames.map((levelName, index) => ({
+          label: levelName,
+          data: progressData.quarterData[levelName] || [0, 0, 0, 0]
+        }));
+        
+        // Add chart in white box
+        addChartBox(
+          progressChartData,
+          progressData.quarterNames || ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'],
+          'Progress Percentage',
+          ['#5C9EFF', '#FDCB44', '#FF7B7B']
+        );
+
+        // Add insights in white box
+        const progressInsights = renderProgressInsights();
+        addInsightsBox(progressInsights);
+      } else {
+        addWhiteBox(() => {
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'normal');
+          currentY = addText('No progress data available for the current year.', 25, currentY + 5);
+        }, 30);
+      }
+
+      // Page 3: Subject Report
+      addNewPage('#fff7e6'); // Light yellow
+      await addHeader('Subject Report');
+      
+      if (subjectData && subjectData.hasSubjectData) {
+        // Create subject chart data
+        const subjectChartData = subjectData.levelNames.map((levelName, index) => ({
+          label: levelName,
+          data: subjectData.subjectNames.map(subjectName => 
+            subjectData.subjectData[levelName]?.[subjectName] || 0
+          )
+        }));
+        
+        // Add chart in white box
+        addChartBox(
+          subjectChartData,
+          subjectData.subjectNames || [],
+          'Subject Performance',
+          ['#5C9EFF', '#FDCB44', '#FF7B7B']
+        );
+
+        // Add insights in white box
+        const subjectInsights = renderSubjectInsights();
+        addInsightsBox(subjectInsights);
+      } else {
+        addWhiteBox(() => {
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'normal');
+          currentY = addText('No subject data available for the current year.', 25, currentY + 5);
+        }, 30);
+      }
+
+      // Add footer to each page (outside white boxes)
+      const pageCount = pdf.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`Generated on ${new Date().toLocaleDateString()} | School Year ${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
+        pdf.text(`Page ${i} of ${pageCount}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
+      }
+
+      // Download the PDF
+      const fileName = `Learners_Ville_Reports_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success("PDF downloaded successfully!");
+      
+    } catch (err) {
+      console.error('Error downloading report:', err);
+      toast.error("Failed to download. Please try again.");
+    }
+  };
+
+  // Helper function to get insights for a specific report type
+  const getInsightsForReport = (reportType) => {
+    const originalReport = selectedReport;
+    // Temporarily set the report type to get insights
+    if (reportType === "Attendance Report") {
+      return renderAttendanceInsights();
+    } else if (reportType === "Progress Report") {
+      return renderProgressInsights();
+    } else if (reportType === "Subject Report") {
+      return renderSubjectInsights();
+    }
+    return [];
+  };
+
+  // Helper function to render attendance insights
+  const renderAttendanceInsights = () => {
+    if (!attendanceData || !attendanceData.hasData) {
+      return [
+        "No attendance data available for the current year. Attendance insights will appear once teachers start recording daily attendance for students linked to parents.",
+        "The system is ready to track attendance patterns across all student levels (Discoverer, Explorer, Adventurer) once data becomes available."
+      ];
+    }
+
+    const insights = [];
+    if (attendanceData.levelNames && attendanceData.quarterData) {
+      attendanceData.levelNames.forEach(levelName => {
+        const quarterData = attendanceData.quarterData[levelName] || [];
+        const availableQuarters = quarterData.filter(value => value > 0);
+        
+        if (availableQuarters.length === 0) {
+          insights.push(`${levelName} - No attendance data recorded yet for any quarter. Attendance tracking will begin once teachers start recording daily attendance.`);
+        } else {
+          const quartersWithData = [];
+          quarterData.forEach((value, index) => {
+            if (value > 0) {
+              const quarterName = attendanceData.quarterNames ? attendanceData.quarterNames[index] : `${index + 1}st Quarter`;
+              quartersWithData.push({ quarter: quarterName, percentage: value });
+            }
+          });
+
+          if (quartersWithData.length === 1) {
+            const quarter = quartersWithData[0];
+            insights.push(`${levelName} - In ${quarter.quarter} has ${quarter.percentage}% attendance rate. This represents the current attendance performance for this level.`);
+          } else if (quartersWithData.length === 2) {
+            const [first, second] = quartersWithData;
+            const trend = second.percentage > first.percentage ? "improved" : 
+                         second.percentage < first.percentage ? "decreased" : "remained stable";
+            insights.push(`${levelName} - ${first.quarter} shows ${first.percentage}% attendance, ${second.quarter} shows ${second.percentage}% attendance. Attendance has ${trend} between these quarters.`);
+          } else if (quartersWithData.length === 3) {
+            const [first, second, third] = quartersWithData;
+            const avgPercentage = ((first.percentage + second.percentage + third.percentage) / 3).toFixed(1);
+            insights.push(`${levelName} - ${first.quarter} (${first.percentage}%), ${second.quarter} (${second.percentage}%), and ${third.quarter} (${third.percentage}%) show an average attendance rate of ${avgPercentage}% across these three quarters.`);
+          } else if (quartersWithData.length === 4) {
+            const [first, second, third, fourth] = quartersWithData;
+            const avgPercentage = ((first.percentage + second.percentage + third.percentage + fourth.percentage) / 4).toFixed(1);
+            const highestQuarter = quartersWithData.reduce((max, current) => 
+              current.percentage > max.percentage ? current : max
+            );
+            insights.push(`${levelName} - Complete year data available: ${first.quarter} (${first.percentage}%), ${second.quarter} (${second.percentage}%), ${third.quarter} (${third.percentage}%), and ${fourth.quarter} (${fourth.percentage}%). Average attendance is ${avgPercentage}% with ${highestQuarter.quarter} showing the highest rate at ${highestQuarter.percentage}%.`);
+          }
+        }
+      });
+    }
+    return insights;
+  };
+
+  // Helper function to render progress insights
+  const renderProgressInsights = () => {
+    if (!progressData || !progressData.hasData) {
+      return [
+        "No progress data available. Data will appear once progress assessments are recorded for students linked to parents."
+      ];
+    }
+
+    const insights = [];
+    if (progressData.levelNames && progressData.quarterData) {
+      progressData.levelNames.forEach(levelName => {
+        const quarterData = progressData.quarterData[levelName] || [];
+        const availableQuarters = quarterData.filter(value => value !== null && value !== undefined && value > 0);
+        
+        if (availableQuarters.length === 0) {
+          insights.push(`${levelName} - No progress assessment data recorded yet. Progress tracking will begin once teachers start recording assessments for students linked to parents.`);
+        } else {
+          const quartersWithData = [];
+          quarterData.forEach((value, index) => {
+            if (value !== null && value !== undefined && value > 0) {
+              const quarterName = progressData.quarterNames ? progressData.quarterNames[index] : `${index + 1}st Quarter`;
+              quartersWithData.push({ quarter: quarterName, percentage: value });
+            }
+          });
+
+          if (quartersWithData.length === 1) {
+            const quarter = quartersWithData[0];
+            insights.push(`${levelName} - In ${quarter.quarter} has achieved ${quarter.percentage}% progress. This represents the current progress performance for this class.`);
+          } else if (quartersWithData.length === 2) {
+            const [first, second] = quartersWithData;
+            const trend = second.percentage > first.percentage ? "improved" : 
+                         second.percentage < first.percentage ? "decreased" : "remained stable";
+            insights.push(`${levelName} - ${first.quarter} shows ${first.percentage}% progress, ${second.quarter} shows ${second.percentage}% progress. Progress has ${trend} between these quarters.`);
+          } else if (quartersWithData.length === 3) {
+            const [first, second, third] = quartersWithData;
+            const avgPercentage = ((first.percentage + second.percentage + third.percentage) / 3).toFixed(1);
+            insights.push(`${levelName} - ${first.quarter} (${first.percentage}%), ${second.quarter} (${second.percentage}%), and ${third.quarter} (${third.percentage}%) show an average progress of ${avgPercentage}% across these three quarters.`);
+          } else if (quartersWithData.length === 4) {
+            const [first, second, third, fourth] = quartersWithData;
+            const avgPercentage = ((first.percentage + second.percentage + third.percentage + fourth.percentage) / 4).toFixed(1);
+            const highestQuarter = quartersWithData.reduce((max, current) => 
+              current.percentage > max.percentage ? current : max
+            );
+            insights.push(`${levelName} - Complete year data available: ${first.quarter} (${first.percentage}%), ${second.quarter} (${second.percentage}%), ${third.quarter} (${third.percentage}%), and ${fourth.quarter} (${fourth.percentage}%). Average progress is ${avgPercentage}% with ${highestQuarter.quarter} showing the highest progress at ${highestQuarter.percentage}%.`);
+          }
+        }
+      });
+    }
+    return insights;
+  };
+
+  // Helper function to render subject insights
+  const renderSubjectInsights = () => {
+    if (!subjectData || !subjectData.hasSubjectData) {
+      return [
+        "No subject performance data available. Data will appear once subject assessments are recorded for students linked to parents."
+      ];
+    }
+
+    const insights = [];
+    if (subjectData.levelNames && subjectData.subjectData && subjectData.subjectNames) {
+      subjectData.levelNames.forEach(levelName => {
+        const classSubjectData = subjectData.subjectData[levelName] || {};
+        const availableSubjects = subjectData.subjectNames.filter(subjectName => 
+          classSubjectData[subjectName] && classSubjectData[subjectName] > 0
+        );
+        
+        if (availableSubjects.length === 0) {
+          insights.push(`${levelName} - No subject performance data recorded yet. Subject tracking will begin once teachers start recording assessments for students linked to parents.`);
+        } else {
+          const totalScore = availableSubjects.reduce((sum, subjectName) => 
+            sum + classSubjectData[subjectName], 0
+          );
+          const averageScore = totalScore / availableSubjects.length;
+          
+          if (availableSubjects.length === 1) {
+            const subject = availableSubjects[0];
+            const score = classSubjectData[subject];
+            insights.push(`${levelName} - ${subject} shows ${score}% performance. This represents the current subject performance for this class.`);
+          } else {
+            const performanceLevel = averageScore >= 90 ? "Excellent" : 
+                                   averageScore >= 80 ? "Very Good" : 
+                                   averageScore >= 70 ? "Good" : 
+                                   averageScore >= 60 ? "Needs Improvement" : "Not Met";
+            insights.push(`${levelName} - Average performance across ${availableSubjects.length} subjects is ${averageScore.toFixed(1)}% (${performanceLevel}). Shows comprehensive subject tracking.`);
+          }
+        }
+      });
+    }
+    return insights;
   };
 
   const renderInsightSummary = () => {
@@ -1007,43 +1604,58 @@ export default function AdminReportsPage() {
   return (
     <ProtectedRoute role="Admin">
       <div className="flex-1 p-2 pt-0">
-        <div className="flex justify-between items-center mb-2 bg-[#232c67] text-white p-2 rounded-none">
-          <h2 className="text-base sm:text-2xl font-semibold text-white ml-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-2 bg-[#232c67] text-white p-2 rounded-none">
+          <h2 className="text-base sm:text-2xl font-semibold text-white sm:ml-4">
             {selectedReport}
           </h2>
-          
-          {/* Dropdown Selector */}
-          <div className="relative dropdown-container">
+
+          {/* Download Button and Dropdown Container */}
+          <div className="flex w-full sm:w-auto items-stretch sm:items-center gap-2 sm:gap-3">
+            {/* Download Button */}
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={handleDownloadReport}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 min-w-0"
+              title="Download Report to PDF"
             >
-              View Report
-              <FaChevronDown className={`text-xs transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              <FaPrint className="text-sm shrink-0" />
+              <span className="hidden sm:inline">Download Reports</span>
+              <span className="sm:hidden">Download</span>
             </button>
-            
-            {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
-                <div className="py-1">
-                  {reports.map((report) => (
-                    <button
-                      key={report}
-                      onClick={() => {
-                        setSelectedReport(report);
-                        setIsDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors ${
-                        selectedReport === report 
-                          ? "bg-[#232c67] text-white hover:bg-gray-100 hover:text-black" 
-                          : "text-gray-900 hover:bg-gray-100 hover:text-black"
-                      }`}
-                    >
-                      {report}
-                    </button>
-                  ))}
+
+            {/* Dropdown Selector */}
+            <div className="relative dropdown-container flex-1 sm:flex-none">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <span className="hidden sm:inline">View Report</span>
+                <span className="sm:hidden">View</span>
+                <FaChevronDown className={`text-xs transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                  <div className="py-1">
+                    {reports.map((report) => (
+                      <button
+                        key={report}
+                        onClick={() => {
+                          setSelectedReport(report);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm font-medium transition-colors ${
+                          selectedReport === report 
+                            ? "bg-[#232c67] text-white hover:bg-gray-100 hover:text-black" 
+                            : "text-gray-900 hover:bg-gray-100 hover:text-black"
+                        }`}
+                      >
+                        {report}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -1095,6 +1707,64 @@ export default function AdminReportsPage() {
                  </div>
                )}
             </div>
+        </div>
+
+        {/* Admin Report Export Component */}
+        <div ref={printRef} className="hidden print:block" style={{margin: 0, padding: 0}}>
+          {attendanceData && progressData && subjectData && (
+          <AdminReportDownload
+            attendanceData={attendanceData}
+            progressData={progressData}
+            subjectData={subjectData}
+            attendanceChartData={(() => {
+              // Create attendance chart data - always return data structure
+              const labels = attendanceData?.quarterNames || ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
+              const levelNames = attendanceData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
+              
+              return {
+                labels: labels,
+                datasets: levelNames.map((levelName, index) => ({
+                  label: levelName,
+                  data: attendanceData?.quarterData?.[levelName] || [0, 0, 0, 0],
+                  backgroundColor: ["#60a5fa", "#facc15", "#f87171"][index] || "#60a5fa",
+                }))
+              };
+            })()}
+            progressChartData={(() => {
+              // Create progress chart data - always return data structure
+              const labels = progressData?.quarterNames || ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
+              const levelNames = progressData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
+              
+              return {
+                labels: labels,
+                datasets: levelNames.map((levelName, index) => ({
+                  label: levelName,
+                  data: progressData?.quarterData?.[levelName] || [0, 0, 0, 0],
+                  backgroundColor: ["#5C9EFF", "#FDCB44", "#FF7B7B"][index] || "#5C9EFF",
+                }))
+              };
+            })()}
+            subjectChartData={(() => {
+              // Create subject chart data - always return data structure
+              const labels = subjectData?.subjectNames || [];
+              const levelNames = subjectData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
+              
+              return {
+                labels: labels,
+                datasets: levelNames.map((levelName, index) => ({
+                  label: levelName,
+                  data: labels.map(subjectName => 
+                    subjectData?.subjectData?.[levelName]?.[subjectName] || 0
+                  ),
+                  backgroundColor: ["#5C9EFF", "#FDCB44", "#FF7B7B"][index] || "#5C9EFF",
+                }))
+              };
+            })()}
+            attendanceInsights={renderAttendanceInsights()}
+            progressInsights={renderProgressInsights()}
+            subjectInsights={renderSubjectInsights()}
+          />
+          )}
         </div>
       </div>
     </ProtectedRoute>

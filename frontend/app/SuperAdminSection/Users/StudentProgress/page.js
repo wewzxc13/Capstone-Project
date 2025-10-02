@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "../../../Context/UserContext";
+import jsPDF from 'jspdf';
 
 // Helper function to construct full photo URL from filename
 function getPhotoUrl(filename) {
@@ -661,154 +662,963 @@ export default function StudentProgress({ formData: initialFormData }) {
     return "";
   };
 
-  // Export/Print: use a print-only stylesheet; do not mutate screen layout
-  const handleExportAssessment = () => {
+  const handleExportAssessment = async () => {
     try {
-      const printableElement = printRef.current || assessmentRef.current;
-      if (!printableElement) {
-        toast.error("Nothing to export yet.");
-        return;
-      }
+      // Show loading toast
+      toast.info("Generating PDF...", { autoClose: 5000 });
 
-      // Mobile-optimized iframe printing
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
-      if (isMobile) {
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
-
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
-        const tempId = 'studentprogress-printable';
-        const cloned = printableElement.cloneNode(true);
-        cloned.setAttribute('id', tempId);
-
-        const head = doc.createElement('head');
-        document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
-          const newLink = doc.createElement('link');
-          newLink.rel = 'stylesheet';
-          newLink.href = link.href;
-          head.appendChild(newLink);
-        });
-        document.querySelectorAll('style').forEach((styleEl) => {
-          const newStyle = doc.createElement('style');
-          newStyle.textContent = styleEl.textContent;
-          head.appendChild(newStyle);
-        });
-
-        const style = doc.createElement('style');
-        style.setAttribute('media', 'print');
-        style.innerHTML = `
-          @page { size: Letter portrait; margin: 0; }
-          @media print {
-            html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            #${tempId} { position: static !important; width: 8.5in !important; margin: 0 auto !important; }
-            #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
-            table, tr, td, th { page-break-inside: avoid !important; }
-            .print-page { width: 8.5in !important; min-height: 11in !important; height: 11in !important; box-sizing: border-box !important; position: relative !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; }
-            /* Colored backgrounds via pseudo layer */
-            .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
-            .print-page > * { position: relative; z-index: 1; }
-            .pastel-blue::before { background: #eef5ff !important; }
-            .pastel-green::before { background: #eaf7f1 !important; }
-            .pastel-yellow::before { background: #fff7e6 !important; }
-            .pastel-pink::before { background: #ffeef2 !important; }
-            .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
-            .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
-            .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
-            .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
-          }
-        `;
-        head.appendChild(style);
-
-        const html = doc.createElement('html');
-        html.appendChild(head);
-        const body = doc.createElement('body');
-        body.style.margin = '0';
-        body.appendChild(cloned);
-        html.appendChild(body);
-        doc.open();
-        doc.write('<!doctype html>' + html.outerHTML);
-        doc.close();
-
-        const assignPageNumbers = () => {
-          const pages = doc.querySelectorAll('.print-page');
-          const totalPages = pages.length;
-          pages.forEach((p, i) => p.setAttribute('data-page-number', `${i+1}/${totalPages}`));
-        };
-
-        setTimeout(() => {
-          assignPageNumbers();
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          setTimeout(() => { if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1500);
-        }, 800);
-        return;
-      }
-
-      // Desktop behavior unchanged
-      const originalTitle = document.title;
-      const tempId = "studentprogress-printable";
-      const cloned = printableElement.cloneNode(true);
-      cloned.setAttribute("id", tempId);
-      cloned.style.display = 'block';
-      cloned.style.margin = '0';
-      cloned.style.padding = '0';
-      document.body.appendChild(cloned);
-
-      const style = document.createElement("style");
-      style.setAttribute("media", "print");
-      style.innerHTML = `
-        @page { size: auto; margin: 0; }
-        @media print {
-          html, body { margin: 0 !important; padding: 0 !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          body > *:not(#${tempId}) { display: none !important; }
-          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; padding: 0; margin: 0; display: flex !important; flex-direction: column !important; max-width: none !important; }
-          #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
-          table, tr, td, th { page-break-inside: avoid !important; }
-          .print-page { width: 100% !important; position: relative !important; min-height: 100vh !important; box-sizing: border-box !important; }
-          .print-page + .print-page { page-break-before: always; break-before: page; }
-          .no-break { page-break-inside: avoid; break-inside: avoid; }
-          .border-soft { border: 1px solid #e5e7eb; }
-          .pastel-blue { background: #eef5ff; }
-          .pastel-green { background: #eaf7f1; }
-          .pastel-yellow { background: #fff7e6; }
-          .pastel-pink { background: #ffeef2; }
-          .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
-        }
-      `;
-      document.head.appendChild(style);
-
-      const pages = cloned.querySelectorAll('.print-page');
-      const totalPages = pages.length;
-      pages.forEach((pageEl, index) => {
-        pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
+      // Debug: Log the data being used for PDF generation
+      console.log("PDF Generation Debug:", {
+        selectedStudent: selectedStudent,
+        advisory: advisory,
+        parentProfile: parentProfile,
+        leadTeacher: advisory?.lead_teacher_name,
+        assistantTeacher: advisory?.assistant_teacher_name,
+        fatherName: buildParentName(parentProfile, 'father'),
+        motherName: buildParentName(parentProfile, 'mother'),
+        fatherAge: getParentAge(parentProfile, 'father'),
+        motherAge: getParentAge(parentProfile, 'mother'),
+        fatherOccupation: getParentOccupation(parentProfile, 'father'),
+        motherOccupation: getParentOccupation(parentProfile, 'mother')
       });
 
-      const studentName = selectedStudent ? `${selectedStudent.stud_lastname || ''}, ${selectedStudent.stud_firstname || ''}`.trim() : "";
-      document.title = `Student Progress ${studentName ? `- ${studentName}` : ''}`;
+      // Create PDF directly using jsPDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      let currentY = 20;
 
-      const cleanup = () => {
+      // Set UTF-8 encoding to support Unicode symbols
+      pdf.setLanguage("en-US");
+      pdf.setProperties({
+        title: 'Student Progress Report',
+        creator: 'Learners Ville',
+        producer: 'jsPDF'
+      });
+
+      // Try to load Unicode font for symbols
+      let canRenderSymbols = false;
+      const ensureUnicodeFont = async () => {
         try {
-          if (style && style.parentNode) document.head.removeChild(style);
-          if (cloned && cloned.parentNode) cloned.parentNode.removeChild(cloned);
-          document.title = originalTitle;
-        } catch (e) {}
+          const res = await fetch('/fonts/DejaVuSans.ttf');
+          if (!res.ok) return;
+          const blob = await res.blob();
+          const dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          const base64 = String(dataUrl).split(',')[1];
+          pdf.addFileToVFS('DejaVuSans.ttf', base64);
+          pdf.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+          pdf.setFont('DejaVuSans', 'normal');
+          canRenderSymbols = true;
+        } catch (e) {
+          canRenderSymbols = false;
+        }
+      };
+      await ensureUnicodeFont();
+
+      // Helper function to convert shapes to Unicode symbols
+      const toUnicodeShape = (raw) => {
+        const s = (raw ?? '').toString().trim();
+        if (!s) return '';
+        if (['♥','❤','❤️','★','⭐','◆','🔷','▲','⬤','●','■','⬢'].includes(s)) {
+          if (s === '●') return '⬤';
+          if (s === '❤️' || s === '♥') return '❤';
+          if (s === '⭐') return '★';
+          if (s === '🔷') return '◆';
+          return s;
+        }
+        const map = {
+          '&': '❤', '%Ï': '❤', '%Ã\u0017' : '❤', '%C1%8F': '❤',
+          '&e': '★', '&E': '★',
+          '%Æ': '◆', '%Ã†': '◆', '%Â†': '◆', '&c': '◆',
+          '%²': '▲', '%2': '▲', '%?': '▲', '%C2%B2': '▲', '&t': '▲',
+          '%I': '⬤', '%1': '⬤', '%l': '⬤', '+$': '⬤', '+S': '⬤', '+s': '⬤', '+5': '⬤', '&o': '⬤',
+          '%25': '■', '%5B%5D': '■', '[]': '■', '%': '■',
+          '+^': '⬢', '+"': '⬢'
+        };
+        if (map[s]) return map[s];
+        if (s.includes('%')) return '■';
+        if (s.includes('+')) return '⬢';
+        return s;
       };
 
-      const afterPrint = () => { window.removeEventListener('afterprint', afterPrint); cleanup(); };
-      window.addEventListener('afterprint', afterPrint);
-      setTimeout(() => { window.print(); }, 300);
-      setTimeout(() => { cleanup(); }, 1500);
-    } catch (err) {
-      console.error('Error exporting assessment:', err);
-      toast.error("Failed to export. Please try again.");
+      // PDF color map for symbols
+      const pdfShapeColorMap = {
+        '❤️': [244, 67, 54], '❤': [244, 67, 54], '♥': [244, 67, 54],
+        '■': [0, 188, 212], '⭐': [255, 152, 0], '★': [255, 152, 0],
+        '⬢': [205, 220, 57], '🔷': [33, 150, 243], '◆': [33, 150, 243],
+        '▲': [76, 175, 80], '🟡': [255, 235, 59], '●': [255, 235, 59], '⬤': [255, 235, 59],
+      };
+
+      // Helper function to render symbols
+      const renderSymbol = (symbol, x, y, fontSize = 12) => {
+        if (!symbol) return;
+        const finalSymbol = toUnicodeShape(symbol);
+        const rgb = pdfShapeColorMap[finalSymbol] || [0, 0, 0];
+        
+        if (canRenderSymbols && finalSymbol !== '❤' && finalSymbol !== '⬢' && finalSymbol !== '⬤') {
+          pdf.setFont('DejaVuSans', 'normal');
+          pdf.setFontSize(fontSize);
+          pdf.setTextColor(rgb[0], rgb[1], rgb[2]);
+          pdf.text(finalSymbol, x, y, { align: 'center' });
+        return;
+      }
+
+        // Vector fallbacks
+        const size = fontSize * 0.8;
+        const r = size / 3.2;
+        const cx = x;
+        const cy = y - size / 4.5;
+        pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
+        pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+        pdf.setLineWidth(0.6);
+        switch (finalSymbol) {
+          case '⬤':
+            pdf.circle(cx, cy, r * 1.25, 'F');
+            break;
+          case '▲': {
+            const h = r * 2.1;
+            pdf.triangle(cx, cy - h / 1.3, cx - r * 1.2, cy + h / 2.2, cx + r * 1.2, cy + h / 2.2, 'F');
+            break;
+          }
+          case '❤': {
+            const cyh = cy - r * 0.05;
+            const lobeRadius = r * 0.75;
+            const lobeOffsetX = r * 0.55;
+            const lobeOffsetY = r * 0.25;
+            pdf.circle(cx - lobeOffsetX, cyh - lobeOffsetY, lobeRadius, 'F');
+            pdf.circle(cx + lobeOffsetX, cyh - lobeOffsetY, lobeRadius, 'F');
+            const baseY = cyh + r * 0.2;
+            const baseHalfWidth = lobeRadius * 1.2;
+            const pointDepth = r * 1.2;
+            pdf.triangle(cx - baseHalfWidth, baseY, cx + baseHalfWidth, baseY, cx, cyh + pointDepth, 'F');
+            break;
+          }
+          case '◆': {
+            const w = r * 1.6;
+            const h = r * 1.6;
+            pdf.triangle(cx, cy - h, cx - w, cy, cx + w, cy, 'F');
+            pdf.triangle(cx, cy + h, cx - w, cy, cx + w, cy, 'F');
+            break;
+          }
+          case '★': {
+            try {
+              const points = 5;
+              const outer = r * 1.4;
+              const inner = outer * 0.5;
+              const coords = [];
+              for (let i = 0; i < points * 2; i++) {
+                const angle = (i * Math.PI) / points;
+                const radius = i % 2 === 0 ? outer : inner;
+                coords.push([cx + radius * Math.cos(angle - Math.PI / 2), cy + radius * Math.sin(angle - Math.PI / 2)]);
+              }
+              
+              pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
+              pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+              pdf.setLineWidth(0.3);
+              
+              // Draw star by connecting points with lines
+              for (let i = 1; i < coords.length; i++) {
+                pdf.line(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+              }
+              // Close the star
+              pdf.line(coords[coords.length - 1][0], coords[coords.length - 1][1], coords[0][0], coords[0][1]);
+              
+              // Simple fill approach - draw triangles from center to each point
+              for (let i = 0; i < coords.length - 1; i++) {
+                pdf.triangle(cx, cy, coords[i][0], coords[i][1], coords[i + 1][0], coords[i + 1][1], 'F');
+              }
+              pdf.triangle(cx, cy, coords[coords.length - 1][0], coords[coords.length - 1][1], coords[0][0], coords[0][1], 'F');
+            } catch (error) {
+              // Fallback to simple circle if star rendering fails
+              pdf.circle(cx, cy, r * 0.8, 'F');
+            }
+            break;
+          }
+          case '■': {
+            const w = r * 1.6;
+            pdf.rect(cx - w, cy - w, w * 2, w * 2, 'F');
+            break;
+          }
+          case '⬢': {
+            try {
+              const points = 6;
+              const coords = [];
+              for (let i = 0; i < points; i++) {
+                const angle = (i * 2 * Math.PI) / points;
+                coords.push([cx + r * Math.cos(angle), cy + r * Math.sin(angle)]);
+              }
+              
+              pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
+              pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+              pdf.setLineWidth(0.3);
+              
+              // Draw hexagon by connecting points with lines
+              for (let i = 1; i < coords.length; i++) {
+                pdf.line(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+              }
+              // Close the hexagon
+              pdf.line(coords[coords.length - 1][0], coords[coords.length - 1][1], coords[0][0], coords[0][1]);
+              
+              // Fill by drawing triangles from center to each edge
+              for (let i = 0; i < coords.length - 1; i++) {
+                pdf.triangle(cx, cy, coords[i][0], coords[i][1], coords[i + 1][0], coords[i + 1][1], 'F');
+              }
+              pdf.triangle(cx, cy, coords[coords.length - 1][0], coords[coords.length - 1][1], coords[0][0], coords[0][1], 'F');
+            } catch (error) {
+              // Fallback to simple circle if hexagon rendering fails
+              pdf.circle(cx, cy, r * 0.8, 'F');
+            }
+            break;
+          }
+          default:
+            pdf.circle(cx, cy, r * 0.8, 'F');
+            break;
+        }
+      };
+
+      // Helper functions for layout
+      const addNewPage = (bgColor) => {
+        pdf.addPage();
+        pdf.setFillColor(bgColor);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        currentY = 20;
+      };
+
+      const startWhiteBox = (boxHeight = 60) => {
+        const footerTopY = pageHeight - 30;
+        if ((currentY - 5) + boxHeight > footerTopY) {
+          addNewPage('#eef5ff');
+        }
+        const boxStartY = currentY - 5;
+        const boxEndY = boxStartY + boxHeight;
+        
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(8, boxStartY, pageWidth - 16, boxHeight, 'F');
+        pdf.setDrawColor(200, 200, 200);
+        pdf.rect(8, boxStartY, pageWidth - 16, boxHeight, 'S');
+        
+        return { boxStartY, boxEndY };
+      };
+
+      const endWhiteBox = (boxEndY) => {
+        currentY = boxEndY + 8;
+      };
+
+      // Add header with logo
+      const addHeader = async (title) => {
+        if (currentY > 250) addNewPage('#eef5ff');
+        
+        const logoX = 20;
+        const logoY = currentY + 15;
+        const logoSize = 30;
+        const logoRadius = 15;
+        
+        try {
+          const logoResponse = await fetch('/assets/image/villelogo.png');
+          if (logoResponse.ok) {
+            const logoBlob = await logoResponse.blob();
+            const logoDataUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.readAsDataURL(logoBlob);
+            });
+            
+            pdf.setFillColor(255, 255, 255);
+            pdf.circle(logoX + logoRadius, logoY, logoRadius, 'F');
+            pdf.setDrawColor(200, 200, 200);
+            pdf.circle(logoX + logoRadius, logoY, logoRadius, 'S');
+            
+            pdf.addImage(logoDataUrl, 'PNG', logoX + 2, logoY - logoRadius + 2, logoSize - 4, logoSize - 4);
+          }
+        } catch (error) {
+          pdf.setFillColor(255, 255, 255);
+          pdf.circle(logoX + logoRadius, logoY, logoRadius, 'F');
+          pdf.setDrawColor(200, 200, 200);
+          pdf.circle(logoX + logoRadius, logoY, logoRadius, 'S');
+        }
+        
+        pdf.setTextColor(35, 44, 103);
+        pdf.setFontSize(18);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('LEARNERS\' VILLE', pageWidth / 2, logoY + 2, { align: 'center' });
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text('6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines', pageWidth / 2, logoY + 10, { align: 'center' });
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`SY ${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`, pageWidth - 20, logoY + 2, { align: 'right' });
+        
+        pdf.setDrawColor(100, 100, 100);
+        pdf.setLineWidth(0.5);
+        pdf.line(10, logoY + 20, pageWidth - 10, logoY + 20);
+        
+        currentY = logoY + 30;
+      };
+
+      // Helper functions for layout
+      const addText = (text, x, y, maxWidth = pageWidth - 40) => {
+        const lines = pdf.splitTextToSize(text, maxWidth);
+        pdf.text(lines, x, y);
+        return y + (lines.length * 5);
+      };
+
+      // Set first page background color
+      pdf.setFillColor(238, 245, 255); // Light blue
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      // Page 1: School & Learner Info
+      await addHeader('Learner\'s Information');
+      
+      // Learner's Information Card
+      const learnerBox = startWhiteBox(80);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Learner\'s Information', 15, learnerBox.boxStartY + 15);
+      
+      // Student details
+      const studentName = selectedStudent ? 
+        `${selectedStudent.stud_lastname || ''}, ${selectedStudent.stud_firstname || ''} ${selectedStudent.stud_middlename || ''}`.trim() : 
+        '____________________________';
+      
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      
+      // Left Column
+      const leftX = 15;
+      const rightX = 100;
+      const startY = learnerBox.boxStartY + 30;
+      const lineHeight = 10;
+      
+      // Name (Left Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('Name:', leftX, startY);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(studentName, leftX + 15, startY);
+      
+      // Level (Left Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Level:', leftX, startY + lineHeight);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      const levelDisplay = studentLevelData?.level_name || studentLevelData?.levelName || studentLevelData?.level?.level_name || selectedStudent?.level_name || selectedStudent?.levelName || selectedStudent?.level?.level_name || selectedStudent?.stud_level || (studentLevelData?.levelId ? (classes.find(c => c.level_id == studentLevelData.levelId)?.level_name || `Level ${studentLevelData.levelId}`) : '');
+      pdf.text(levelDisplay || '________________________', leftX + 15, startY + lineHeight);
+      
+      // Lead Teacher (Left Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Lead Teacher:', leftX, startY + (lineHeight * 2));
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(advisory?.lead_teacher_name ? formatName(advisory.lead_teacher_name) : '________________________', leftX + 30, startY + (lineHeight * 2));
+      
+      // Right Column
+      // Sex (Right Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Sex:', rightX, startY);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(selectedStudent?.stud_gender || '________________________', rightX + 10, startY);
+      
+      // Date of Birth (Right Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Date of Birth:', rightX, startY + lineHeight);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      const birthDate = formatDateOfBirth(selectedStudent?.stud_birthdate);
+      pdf.text(birthDate, rightX + 28, startY + lineHeight);
+      
+      // Assistant Teacher (Right Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Assistant Teacher:', rightX, startY + (lineHeight * 2));
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(advisory?.assistant_teacher_name ? formatName(advisory.assistant_teacher_name) : '________________________', rightX + 40, startY + (lineHeight * 2));
+      
+      endWhiteBox(learnerBox.boxEndY);
+
+      // Sociodemographic Profile Card
+      const socioBox = startWhiteBox(100);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Sociodemographic Profile', 15, socioBox.boxStartY + 15);
+      
+      // Handedness
+      pdf.setFontSize(12);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Handedness:', 15, socioBox.boxStartY + 30);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(selectedStudent?.stud_handedness || '________________________', 43, socioBox.boxStartY + 30);
+      
+      // Parent Details - Two Column Layout
+      const parentStartY = socioBox.boxStartY + 45;
+      const parentLeftX = 15;
+      const parentRightX = 100;
+      const parentLineHeight = 8;
+      
+      // Father's Details (Left Column)
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Father\'s Details', parentLeftX, parentStartY);
+      
+      pdf.setFontSize(12);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Name:', parentLeftX, parentStartY + 15);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(buildParentName(parentProfile, 'father') || '________________________', parentLeftX + 15, parentStartY + 15);
+      
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Age:', parentLeftX, parentStartY + 25);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(getParentAge(parentProfile, 'father') || '________________________', parentLeftX + 15, parentStartY + 25);
+      
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Occupation:', parentLeftX, parentStartY + 35);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(getParentOccupation(parentProfile, 'father') || '________________________', parentLeftX + 27, parentStartY + 35);
+      
+      // Mother's Details (Right Column)
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Mother\'s Details', parentRightX, parentStartY);
+      
+      pdf.setFontSize(12);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Name:', parentRightX, parentStartY + 15);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(buildParentName(parentProfile, 'mother') || '________________________', parentRightX + 15, parentStartY + 15);
+      
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Age:', parentRightX, parentStartY + 25);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(getParentAge(parentProfile, 'mother') || '________________________', parentRightX + 13, parentStartY + 25);
+      
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Occupation:', parentRightX, parentStartY + 35);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(getParentOccupation(parentProfile, 'mother') || '________________________', parentRightX + 27, parentStartY + 35);
+      
+      endWhiteBox(socioBox.boxEndY);
+
+      // Page 2: Record of Attendance
+      addNewPage('#eaf7f1'); // Light green
+      currentY = 20;
+      
+      const attendanceBox = startWhiteBox(120);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Record of Attendance', 15, attendanceBox.boxStartY + 15);
+      
+      // Create attendance table with actual data
+      const attendanceSummary = getAttendanceSummary();
+      let attendanceData;
+      
+      if (attendanceSummary && attendanceSummary.summary && Array.isArray(attendanceSummary.summary)) {
+        const summary = attendanceSummary.summary;
+        attendanceData = [
+          ['Category', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'Total'],
+          ['No. of\nSchool Days', ...summary.map(m => m.total.toString()), attendanceSummary.totalSchoolDays.toString()],
+          ['No. of Days\nPresent', ...summary.map(m => m.present.toString()), attendanceSummary.totalPresent.toString()],
+          ['No. of Days\nAbsent', ...summary.map(m => m.absent.toString()), attendanceSummary.totalAbsent.toString()]
+        ];
+      } else {
+        attendanceData = [
+          ['Category', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'Total'],
+          ['No. of\nSchool Days', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'],
+          ['No. of Days\nPresent', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'],
+          ['No. of Days\nAbsent', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0']
+        ];
+      }
+      
+      // Draw table with custom column widths
+      const tableStartY = attendanceBox.boxStartY + 30;
+      const tableWidth = pageWidth - 30;
+      const categoryWidth = tableWidth * 0.30;
+      const monthWidth = tableWidth * 0.07;
+      const rowHeight = 14;
+      
+      // Header row
+      pdf.setFillColor(235, 246, 249); 
+      pdf.rect(15, tableStartY, tableWidth, rowHeight, 'F');
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      
+      // Calculate column positions
+      const colPositions = [15];
+      colPositions.push(colPositions[0] + categoryWidth);
+      for (let i = 1; i <= 10; i++) {
+        colPositions.push(colPositions[i] + monthWidth);
+      }
+      
+      attendanceData[0].forEach((header, colIndex) => {
+        const x = colPositions[colIndex];
+        const width = colIndex === 0 ? categoryWidth : monthWidth;
+        pdf.text(header, x + (width / 2), tableStartY + 6, { align: 'center' });
+      });
+      
+      // Data rows
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      
+      for (let rowIndex = 1; rowIndex < attendanceData.length; rowIndex++) {
+        const y = tableStartY + (rowIndex * rowHeight);
+        attendanceData[rowIndex].forEach((cell, colIndex) => {
+          const x = colPositions[colIndex];
+          const width = colIndex === 0 ? categoryWidth : monthWidth;
+          
+          if (colIndex === 0) {
+            const lines = cell.split('\n');
+            lines.forEach((line, lineIndex) => {
+              pdf.text(line, x + 2, y + 6 + (lineIndex * 4));
+            });
+          } else {
+            pdf.text(cell, x + (width / 2), y + 6, { align: 'center' });
+          }
+        });
+      }
+      
+      // Draw grid lines
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.5);
+      
+      for (let row = 0; row <= attendanceData.length; row++) {
+        const y = tableStartY + (row * rowHeight);
+        pdf.line(15, y, 15 + tableWidth, y);
+      }
+      
+      for (let col = 0; col <= attendanceData[0].length; col++) {
+        const x = colPositions[col];
+        pdf.line(x, tableStartY, x, tableStartY + (attendanceData.length * rowHeight));
+      }
+      
+      endWhiteBox(attendanceBox.boxEndY);
+
+      // Parent/Guardian Signatures section
+      const signatureBox = startWhiteBox(120);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Parent/Guardian Signatures', 15, signatureBox.boxStartY + 15);
+      
+      // Quarters with proper layout
+      const quarterNames = ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'];
+      const availableHeight = signatureBox.boxEndY - (signatureBox.boxStartY + 40);
+      const quarterSpacing = availableHeight / 4;
+      
+      quarterNames.forEach((quarter, index) => {
+        const startY = signatureBox.boxStartY + 35 + (index * quarterSpacing);
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(quarter, 15, startY);
+        
+        const quarterWidth = pdf.getTextWidth(quarter);
+        const underlineStartX = 15 + quarterWidth + 5;
+        const underlineEndX = underlineStartX + 100;
+        
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(0.5);
+        pdf.line(underlineStartX, startY + 2, underlineEndX, startY + 2);
+        
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('(Parent/Guardian Signature)', underlineEndX + 5, startY + 2);
+        
+        const commentY = startY + 10;
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('Teacher Comment:', 15, commentY);
+        
+        const comment = quarterFeedback.find(fb => fb && Number(fb.quarter_id) === index + 1);
+        if (comment && comment.feedback_text && typeof comment.feedback_text === 'string') {
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(comment.feedback_text, 60, commentY);
+        } else {
+          pdf.setDrawColor(200, 200, 200);
+          pdf.setLineWidth(0.5);
+          pdf.line(60, commentY + 2, 120, commentY + 2);
+        }
+      });
+      
+      endWhiteBox(signatureBox.boxEndY);
+
+      // Page 3: Quarterly Assessment
+      addNewPage('#fff7e6'); // Light yellow
+      currentY = 20;
+      
+      const assessmentBox = startWhiteBox(140);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Quarterly Assessment', 15, assessmentBox.boxStartY + 15);
+      
+      const pdfSubjects = Array.isArray(subjects) ? [...subjects].sort((a,b) => {
+        const nameA = a?.subject_name || '';
+        const nameB = b?.subject_name || '';
+        return nameA.localeCompare(nameB);
+      }) : [];
+      const assessmentQuarters = ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'];
+      
+      if (pdfSubjects.length === 0) {
+        toast.error('Assessment data not available. Please try again later.');
+        return;
+      }
+
+      const assessmentTableStartY = assessmentBox.boxStartY + 30;
+      const subjectsColWidth = (pageWidth - 30) * 0.35;
+      const quarterColWidth = (pageWidth - 30) * 0.13;
+      const assessmentRowHeight = 12;
+      
+      // Headers
+      const headers = ['Subjects', ...assessmentQuarters];
+      headers.forEach((header, colIndex) => {
+        let x, colWidth;
+        if (colIndex === 0) {
+          x = 15;
+          colWidth = subjectsColWidth;
+        } else {
+          x = 15 + subjectsColWidth + ((colIndex - 1) * quarterColWidth);
+          colWidth = quarterColWidth;
+        }
+        
+        pdf.setFillColor(235, 246, 249);
+        pdf.rect(x, assessmentTableStartY, colWidth, assessmentRowHeight, 'F');
+        pdf.setDrawColor(0, 0, 0);
+        pdf.rect(x, assessmentTableStartY, colWidth, assessmentRowHeight, 'S');
+        
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(header, x + (colWidth / 2), assessmentTableStartY + 8, { align: 'center' });
+      });
+      
+      // Subject rows
+      pdf.setFont('helvetica', 'normal');
+      pdfSubjects.forEach((subject, rowIndex) => {
+        const y = assessmentTableStartY + ((rowIndex + 1) * assessmentRowHeight);
+        
+        // Draw grid lines for each row
+        headers.forEach((header, colIndex) => {
+          let x, colWidth;
+          if (colIndex === 0) {
+            x = 15;
+            colWidth = subjectsColWidth;
+          } else {
+            x = 15 + subjectsColWidth + ((colIndex - 1) * quarterColWidth);
+            colWidth = quarterColWidth;
+          }
+          
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(x, y, colWidth, assessmentRowHeight, 'F');
+          pdf.setDrawColor(0, 0, 0);
+          pdf.rect(x, y, colWidth, assessmentRowHeight, 'S');
+        });
+        
+        // Subject name
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        const subjectName = subject?.subject_name || 'Unknown Subject';
+        pdf.text(subjectName, 15 + 2, y + 8);
+        
+        // Assessment symbols for each quarter
+        assessmentQuarters.forEach((quarter, colIndex) => {
+          const quarterId = colIndex + 1;
+          const x = 15 + subjectsColWidth + (colIndex * quarterColWidth);
+          
+          const assessment = progressCards.find(card => 
+            card && card.subject_id === subject?.subject_id && 
+            Number(card.quarter_id) === quarterId
+          );
+          
+          if (assessment && assessment.assessment_symbol && typeof assessment.assessment_symbol === 'string') {
+            renderSymbol(assessment.assessment_symbol, x + (quarterColWidth / 2), y + 8, 12);
+          }
+        });
+      });
+      
+      endWhiteBox(assessmentBox.boxEndY);
+
+      // Assessment Legend and Risk Levels
+      const legendStartY = currentY;
+      const marginX = 15;
+      const gapX = 10;
+      const boxWidth = (pageWidth - marginX * 2 - gapX) / 2;
+      const boxHeight = 100;
+      
+      // Assessment Legend Box - Left side
+      const legendBoxStartY = legendStartY - 5;
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(marginX, legendBoxStartY, boxWidth, boxHeight, 'F');
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(marginX, legendBoxStartY, boxWidth, boxHeight, 'S');
+      
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Assessment Legend', 20, legendBoxStartY + 15);
+      
+      // Legend table structure
+      const legendTableStartY = legendBoxStartY + 25;
+      const legendRowHeight = 12;
+      
+      // Legend data
+      const legendData = [
+        ['❤', 'Excellent', 'Passed'],
+        ['★', 'Very Good', 'Passed'],
+        ['▲', 'Good', 'Passed'],
+        ['▲', 'Need Help', 'Passed'],
+        ['⬤', 'Not Met', 'Failed']
+      ];
+      
+      legendData.forEach((row, index) => {
+        const y = legendTableStartY + (index * legendRowHeight);
+        
+        // Draw grid lines
+        const colWidths = [boxWidth * 0.25, boxWidth * 0.50, boxWidth * 0.25];
+        let x = marginX;
+        
+        colWidths.forEach((width, colIndex) => {
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(x, y, width, legendRowHeight, 'F');
+          pdf.setDrawColor(0, 0, 0);
+          pdf.rect(x, y, width, legendRowHeight, 'S');
+          
+          if (colIndex === 0) {
+            if (row[0] && typeof row[0] === 'string') {
+              renderSymbol(row[0], x + (width / 2), y + 8, 10);
+            }
+          } else {
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            const text = row[colIndex] || '';
+            if (typeof text === 'string') {
+              pdf.text(text, x + (width / 2), y + 8, { align: 'center' });
+            }
+          }
+          
+          x += width;
+        });
+      });
+      
+      // Risk Levels Box - Right side
+      const riskBoxStartY = legendStartY - 5;
+      const riskBoxX = marginX + boxWidth + gapX;
+      
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(riskBoxX, riskBoxStartY, boxWidth, boxHeight, 'F');
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(riskBoxX, riskBoxStartY, boxWidth, boxHeight, 'S');
+      
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Risk Levels', riskBoxX + 5, riskBoxStartY + 15);
+      
+      // Risk levels table
+      const riskTableStartY = riskBoxStartY + 25;
+      const riskRowHeight = 15;
+      
+      const riskData = [
+        { color: [34, 197, 94], label: 'Low', description: 'Meeting Expectations' },
+        { color: [251, 191, 36], label: 'Moderate', description: 'Needs Some Support' },
+        { color: [239, 68, 68], label: 'High', description: 'Needs Close Attention' }
+      ];
+      
+      riskData.forEach((risk, index) => {
+        const y = riskTableStartY + (index * riskRowHeight);
+        
+        // Draw grid lines
+        const colWidths = [boxWidth * 0.40, boxWidth * 0.60];
+        let x = riskBoxX + 5;
+        
+        colWidths.forEach((width, colIndex) => {
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(x, y, width, riskRowHeight, 'F');
+          pdf.setDrawColor(0, 0, 0);
+          pdf.rect(x, y, width, riskRowHeight, 'S');
+          
+          if (colIndex === 0) {
+            // Color circle
+            pdf.setFillColor(risk.color[0], risk.color[1], risk.color[2]);
+            pdf.circle(x + 6, y + 8, 3.5, 'F');
+            
+            // Label
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(risk.label, x + 12, y + 10);
+          } else {
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(risk.description, x + (width / 2), y + 10, { align: 'center' });
+          }
+          
+          x += width;
+        });
+      });
+      
+      currentY = Math.max(legendBoxStartY + boxHeight, riskBoxStartY + boxHeight) + 15;
+
+      // Only include Page 4 when overall progress exists
+      const includeStatusPage = hasOverallProgress();
+      if (includeStatusPage) {
+        // Page 4: Quarterly Performance Trend
+        addNewPage('#ffeef2'); // Light pink
+        
+        const trendBox = startWhiteBox(130);
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Quarterly Performance Trend', 15, trendBox.boxStartY + 15);
+        
+        // Simple line chart grid and labels
+        const chartStartY = trendBox.boxStartY + 30;
+        const chartHeight = 60;
+        const marginXConsistent = 15;
+        const gridLeft = marginXConsistent + 40;
+        const gridRight = pageWidth - marginXConsistent;
+        const chartWidth = gridRight - gridLeft;
+        
+        // Draw grid
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.3);
+        for (let i = 0; i <= 4; i++) {
+          const y = chartStartY + (i * (chartHeight / 4));
+          pdf.line(gridLeft, y, gridLeft + chartWidth, y);
+        }
+        
+        // Y-axis labels
+        const perfLevels = ['Not Met', 'Need Help', 'Good', 'Very Good', 'Excellent'];
+        perfLevels.forEach((level, index) => {
+          const y = chartStartY + (index * (chartHeight / 4));
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(0, 0, 0);
+          pdf.text(level, marginXConsistent, y + 2.5);
+        });
+        
+        // X-axis labels
+        const xLabelOrdinals = ['1st', '2nd', '3rd', '4th'];
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        xLabelOrdinals.forEach((ord, i) => {
+          const x = gridLeft + (i * (chartWidth / 3));
+          const bottomY = chartStartY + chartHeight + 8;
+          const align = i === 0 ? 'left' : i === 3 ? 'right' : 'center';
+          pdf.text(ord, x, bottomY, { align });
+          pdf.text('Quarter', x, bottomY + 5, { align });
+        });
+        
+        // Axis titles
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Performance Level', marginXConsistent, chartStartY - 6);
+        pdf.text('Quarter', gridLeft + chartWidth / 2, chartStartY + chartHeight + 18, { align: 'center' });
+        
+        // Draw performance points/line
+        const yMap = {
+          'Not Met': 0, 'Need Help': 1, 'Good': 2, 'Very Good': 3, 'Excellent': 4
+        };
+        
+        const xs = (idx) => gridLeft + (idx * (chartWidth / 3));
+        const ys = (val) => chartStartY + (val * (chartHeight / 4));
+        
+        const dataPoints = [1,2,3,4].map((qid) => {
+          const card = quarterlyPerformance.find(c => Number(c.quarter_id) === qid);
+          const desc = card && visualFeedbackMap[card.quarter_visual_feedback_id];
+          return desc && yMap.hasOwnProperty(desc) ? yMap[desc] : null;
+        });
+        
+        // Draw line
+        pdf.setDrawColor(96, 165, 250);
+        pdf.setLineWidth(2);
+        let prev = null;
+        dataPoints.forEach((v, i) => {
+          if (v === null) return;
+          const x = xs(i);
+          const y = ys(4 - v);
+          if (prev) {
+            pdf.line(prev.x, prev.y, x, y);
+          }
+          prev = { x, y };
+          pdf.setFillColor(96, 165, 250);
+          pdf.circle(x, y, 2.5, 'F');
+        });
+        
+        endWhiteBox(trendBox.boxEndY);
+        
+        // Performance Summary
+        const summaryBox = startWhiteBox(120);
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Performance Summary', 15, summaryBox.boxStartY + 15);
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        
+        // Risk level
+        const riskLevel = overallRisk?.risk;
+        const riskInfo = getRiskInfo(riskLevel);
+        
+        let description = 'Risk assessment data is not available.';
+        if (riskLevel === 1) description = 'Student is performing well and meeting expectations.';
+        else if (riskLevel === 2) description = 'Student may need additional support in some areas.';
+        else if (riskLevel === 3) description = 'Student requires immediate attention and intervention.';
+        
+        pdf.text(`Risk Level: ${riskInfo.text || 'No Data'}`, 15, summaryBox.boxStartY + 35);
+        pdf.text(`Description: ${description}`, 15, summaryBox.boxStartY + 50);
+        
+        endWhiteBox(summaryBox.boxEndY);
+      }
+
+      // Add footer to each page
+      const pageCount = pdf.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`Generated on ${new Date().toLocaleDateString()} | School Year ${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
+        pdf.text(`Page ${i} of ${pageCount}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
+      }
+
+      // Generate filename
+      const studentNameForFile = selectedStudent ? 
+        `${selectedStudent.stud_firstname || ''}_${selectedStudent.stud_lastname || ''}`.replace(/\s+/g, '_') : 
+        'Student';
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `Report_Card_${studentNameForFile}_${timestamp}.pdf`;
+
+      // Save the PDF
+      pdf.save(filename);
+      
+      toast.success("PDF downloaded successfully!", { autoClose: 3000 });
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error("Failed to generate PDF. Please try again.");
     }
   };
 
@@ -1047,6 +1857,13 @@ export default function StudentProgress({ formData: initialFormData }) {
     return profile?.[`${prefix}_occupation`] || '';
   }
 
+  function formatDateOfBirth(dateStr) {
+    if (!dateStr) return '________________________';
+    const date = new Date(dateStr);
+    if (isNaN(date)) return dateStr;
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
   // Helper to format names as "Lastname, Firstname Middlename"
   function formatName(fullName) {
     if (!fullName) return '';
@@ -1279,15 +2096,15 @@ export default function StudentProgress({ formData: initialFormData }) {
               )}
             </div>
             
-            {/* Export PDF Button - Better mobile positioning */}
+            {/* Download PDF Button - Better mobile positioning */}
             {selectedStudent && (activeTab === "Assessment" || activeTab === "Status") && (
               <button
                 onClick={handleExportAssessment}
                 className="w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-2 bg-[#2c2f6f] text-white px-4 py-2.5 sm:px-3 sm:py-1.5 rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm sm:text-base"
-                title="Print or Save Assessment as PDF"
+                title="Download Student Progress Report as PDF"
               >
                 <FaPrint className="text-sm sm:text-base" />
-                <span className="font-semibold">Export PDF</span>
+                <span className="font-semibold">Download PDF</span>
               </button>
             )}
           </div>

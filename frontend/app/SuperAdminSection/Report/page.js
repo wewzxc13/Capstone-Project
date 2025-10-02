@@ -6,9 +6,11 @@ import '../../../lib/chart-config.js';
 import { FaBell, FaCog, FaChevronDown, FaEdit, FaMale, FaFemale, FaUsers, FaMars, FaVenus, FaPrint } from "react-icons/fa";
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useRouter } from "next/navigation";
-import SuperAdminReportExport from './SuperAdminReportExport';
+import SuperAdminReportDownload from './SuperAdminReportDownload';
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function SuperAdminReportsPage() {
   const [selectedReport, setSelectedReport] = useState("Attendance Report");
@@ -376,219 +378,433 @@ export default function SuperAdminReportsPage() {
     router.push("/LoginSection");
   };
 
-  // Export/Print function
-  const handleExportReport = () => {
+  // Download PDF function
+  const handleDownloadReport = async () => {
     try {
-      const printableElement = printRef.current;
-      if (!printableElement) {
-        toast.error("Nothing to export yet.");
-        return;
-      }
+      // Show loading toast
+      toast.info("Generating PDF...", { autoClose: 5000 });
 
-      // Prefer iframe-based printing on mobile for reliable pagination
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
-      if (isMobile) {
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
+      // Create PDF directly using jsPDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      let currentY = 20;
 
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
+      // Helper function to add text with word wrap
+      const addText = (text, x, y, maxWidth = pageWidth - 40) => {
+        const lines = pdf.splitTextToSize(text, maxWidth);
+        pdf.text(lines, x, y);
+        return y + (lines.length * 5);
+      };
 
-        // Clone printable content
-        const cloned = printableElement.cloneNode(true);
-        cloned.style.display = 'block';
+      // Helper function to add a new page with colored background
+      const addNewPage = (bgColor) => {
+        pdf.addPage();
+        // Fill entire page with background color
+        pdf.setFillColor(bgColor);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        currentY = 20;
+      };
 
-        // Build head with existing stylesheets
-        const head = doc.createElement('head');
-        // Copy link stylesheets
-        document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
-          const newLink = doc.createElement('link');
-          newLink.rel = 'stylesheet';
-          newLink.href = link.href;
-          head.appendChild(newLink);
-        });
-        // Copy inline styles
-        document.querySelectorAll('style').forEach((styleEl) => {
-          const newStyle = doc.createElement('style');
-          newStyle.textContent = styleEl.textContent;
-          head.appendChild(newStyle);
-        });
-
-        // Add our print styles (same rules as desktop path)
-        const style = doc.createElement('style');
-        style.setAttribute('media', 'print');
-        const tempId = 'report-printable';
-        cloned.setAttribute('id', tempId);
-        style.innerHTML = `
-          @page { size: Letter portrait; margin: 0; }
-          @media print {
-            html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            #${tempId} { position: static !important; width: 8.5in !important; margin: 0 auto !important; }
-            #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
-            table, tr, td, th { page-break-inside: avoid !important; }
-            .rounded-xl, .rounded-lg { box-shadow: none !important; }
-            .print-page { width: 8.5in !important; min-height: 8.5in !important; height: 8.5in !important; box-sizing: border-box !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; position: relative !important; }
-            /* Force colored backgrounds via pseudo element so mobile prints them */
-            .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
-            .print-page > * { position: relative; z-index: 1; }
-            .pastel-blue::before { background: #eef5ff !important; }
-            .pastel-green::before { background: #eaf7f1 !important; }
-            .pastel-yellow::before { background: #fff7e6 !important; }
-            .pastel-pink::before { background: #ffeef2 !important; }
-            .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
-            .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
-            .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
-            .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; z-index: 10; }
-          }
-        `;
-        head.appendChild(style);
-
-        // Write document
-        const html = doc.createElement('html');
-        html.appendChild(head);
-        const body = doc.createElement('body');
-        body.style.margin = '0';
-        body.appendChild(cloned);
-        html.appendChild(body);
-        doc.open();
-        doc.write('<!doctype html>' + html.outerHTML);
-        doc.close();
-
-        // Assign page numbers
-        const assignPageNumbers = () => {
-          const pages = doc.querySelectorAll('.print-page');
-          const totalPages = pages.length;
-          pages.forEach((pageEl, index) => {
-            pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
-          });
-        };
-
-        // Wait a moment for stylesheets to load, then print
-        const printNow = () => {
-          try {
-            assignPageNumbers();
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-          } finally {
-            setTimeout(() => { if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1500);
-          }
-        };
-
-        // Give external styles time to load (mobile needs longer)
-        setTimeout(printNow, 800);
-        return; // stop; mobile path handled
-      }
-
-      const originalTitle = document.title;
-
-      // Clone printable element to body to avoid clipping by scroll containers
-      const tempId = "report-printable";
-      const cloned = printableElement.cloneNode(true);
-      cloned.setAttribute("id", tempId);
-      cloned.style.display = 'block';
-      cloned.style.margin = '0';
-      cloned.style.padding = '0';
-      document.body.appendChild(cloned);
-
-      const style = document.createElement("style");
-      style.setAttribute("media", "print");
-      style.innerHTML = `
-        /* Use explicit Letter portrait sizing so mobile print engines paginate consistently */
-        @page { size: Letter portrait; margin: 0; }
-        @media print {
-          html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-          /* Ensure colors are kept */
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          /* Hide everything except the cloned print container */
-          body > *:not(#${tempId}) { display: none !important; }
-          /* Normalize the printable container */
-          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: 8.5in !important; padding: 0; margin: 0 auto !important; font-family: Calibri, 'Arial Rounded MT Bold', 'Comic Sans MS', Arial, sans-serif; display: block !important; max-width: none !important; }
-          /* Remove clipping/overflow from ancestors inside the container */
-          #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
-          /* Avoid page breaks inside table rows/cards */
-          table, tr, td, th { page-break-inside: avoid !important; }
-          .rounded-xl, .rounded-lg { box-shadow: none !important; }
-          /* Page breaks: force every .print-page onto its own page (mobile-safe) */
-          .print-page { 
-            width: 8.5in !important; 
-            position: relative !important; 
-            box-sizing: border-box !important; 
-            /* Make each section independent and avoid it being merged */
-            break-inside: avoid !important; 
-            page-break-inside: avoid !important; 
-            /* Use exact page height to enforce one section per physical page */
-            min-height: 8.5in !important; 
-            height: 8.5in !important;
-            page-break-after: always !important; 
-            break-after: page !important;
-          }
-          /* Force background colors to print by drawing them as real elements */
-          .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
-          .print-page > * { position: relative; z-index: 1; }
-          .pastel-blue::before { background: #eef5ff !important; }
-          .pastel-green::before { background: #eaf7f1 !important; }
-          .pastel-yellow::before { background: #fff7e6 !important; }
-          .pastel-pink::before { background: #ffeef2 !important; }
-          /* Do not add an extra blank page after the last section */
-          .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
-          /* Also ensure a hard break before subsequent sections for engines that only honor before */
-          .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
-          .no-break { page-break-inside: avoid; break-inside: avoid; }
-          .section-title { font-weight: 700; color: #1f2937; }
-          .pastel-blue { background: #eef5ff; }
-          .pastel-green { background: #eaf7f1; }
-          .pastel-yellow { background: #fff7e6; }
-          .pastel-pink { background: #ffeef2; }
-          .border-soft { border: 1px solid #e5e7eb; }
-          /* Custom page number footer (bottom-right) */
-          .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; z-index: 10; }
-        }
-      `;
-
-      document.head.appendChild(style);
-
-      // Assign page numbers to each print page (enables footer while allowing browser header/footer to be turned off)
-      const pages = cloned.querySelectorAll('.print-page');
-      const totalPages = pages.length;
-      pages.forEach((pageEl, index) => {
-        pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
-      });
-
-      // Set a descriptive title for the print/PDF
-      document.title = `Export Reports - Learners' Ville`;
-
-      const cleanup = () => {
+      // Helper function to add header with logo
+      const addHeader = async (title) => {
+        if (currentY > 250) addNewPage('#eef5ff');
+        
+        // Logo positioning - left side with proper alignment
+        const logoX = 20;
+        const logoY = currentY + 15;
+        const logoSize = 30; // Reduced logo size
+        const logoRadius = 15; // Reduced radius
+        
         try {
-          if (style && style.parentNode) document.head.removeChild(style);
-          if (cloned && cloned.parentNode) cloned.parentNode.removeChild(cloned);
-          document.title = originalTitle;
-        } catch (e) {
-          // no-op
+          // Try to load and add the school logo
+          const logoResponse = await fetch('/assets/image/villelogo.png');
+          if (logoResponse.ok) {
+            const logoBlob = await logoResponse.blob();
+            const logoDataUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.readAsDataURL(logoBlob);
+            });
+            
+            // Draw circular background for logo
+            pdf.setFillColor(255, 255, 255); // White background
+            pdf.circle(logoX + logoRadius, logoY, logoRadius, 'F'); // White circle background
+            pdf.setDrawColor(200, 200, 200); // Light gray border
+            pdf.circle(logoX + logoRadius, logoY, logoRadius, 'S'); // Circle border
+            
+            // Add logo centered in the circle
+            pdf.addImage(logoDataUrl, 'PNG', logoX + 2, logoY - logoRadius + 2, logoSize - 4, logoSize - 4);
+          }
+        } catch (error) {
+          console.log('Could not load logo, using text fallback');
+          // Draw empty circle if logo fails to load
+          pdf.setFillColor(255, 255, 255); // White background
+          pdf.circle(logoX + logoRadius, logoY, logoRadius, 'F'); // White circle background
+          pdf.setDrawColor(200, 200, 200); // Light gray border
+          pdf.circle(logoX + logoRadius, logoY, logoRadius, 'S'); // Circle border
+        }
+        
+        // School name - centered on page, aligned with logo center
+        pdf.setTextColor(35, 44, 103); // Dark blue color
+        pdf.setFontSize(18);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('LEARNERS\' VILLE', pageWidth / 2, logoY + 2, { align: 'center' });
+        
+        // Address - centered below school name
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0); // Black color
+        pdf.text('6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines', pageWidth / 2, logoY + 10, { align: 'center' });
+        
+        // Separator line
+        pdf.setDrawColor(100, 100, 100); // Dark gray line
+        pdf.setLineWidth(0.5);
+        pdf.line(10, logoY + 20, pageWidth - 10, logoY + 20);
+        
+        // Title - centered below separator
+        pdf.setFontSize(20);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(title, pageWidth / 2, logoY + 35, { align: 'center' });
+        
+        currentY = logoY + 50; // Set currentY for next content
+      };
+
+      // Helper function to start a white box
+      const startWhiteBox = (boxHeight = 60) => {
+        const footerTopY = pageHeight - 30; // Keep clear area for footer
+        // If the box would collide with footer, move to a new page first
+        if ((currentY - 5) + boxHeight > footerTopY) {
+          addNewPage('#eef5ff');
+        }
+        const boxStartY = currentY - 5;
+        const boxEndY = boxStartY + boxHeight;
+        
+        // Draw white background box (further reduced side margins)
+        pdf.setFillColor(255, 255, 255); // White
+        pdf.rect(8, boxStartY, pageWidth - 16, boxHeight, 'F');
+        
+        // Draw border
+        pdf.setDrawColor(200, 200, 200); // Light gray
+        pdf.rect(8, boxStartY, pageWidth - 16, boxHeight, 'S');
+        
+        return { boxStartY, boxEndY };
+      };
+
+      // Helper function to end a white box
+      const endWhiteBox = (boxEndY) => {
+        currentY = boxEndY + 8; // Reduced spacing
+      };
+
+      // Helper function to add a chart in a white box
+      const addChartBox = (data, labels, title, colors) => {
+        // Start white box
+        const { boxStartY, boxEndY } = startWhiteBox(90);
+        
+        // Add centered legend at the top - positioned within white box
+        const legendY = boxStartY + 15;
+        const legendSpacing = 45; // Reduced space between legend items
+        const totalLegendWidth = data.length * legendSpacing;
+        const startX = (pageWidth - totalLegendWidth) / 2; // Center the legend
+        
+        data.forEach((dataset, index) => {
+          const x = startX + (index * legendSpacing);
+          if (x < pageWidth - 20) {
+            // Color box
+            pdf.setFillColor(colors[index] || '#60a5fa');
+            pdf.rect(x, legendY - 2, 6, 6, 'F');
+            // Label
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(dataset.label, x + 10, legendY + 2);
+          }
+        });
+
+        // Add bar chart representation
+        const chartWidth = pageWidth - 40; // widen more
+        const chartHeight = 50; // Reduced chart height
+        const barGroupWidth = chartWidth / labels.length;
+        const chartStartX = 28; // shift slightly right to avoid overlapping y-labels
+        const barSpacing = 5; // Slightly more space between bars
+        const chartStartY = boxStartY + 30; // Position chart within white box
+        
+        // Y-axis labels
+        pdf.setFontSize(10);
+        pdf.setTextColor(0, 0, 0);
+        for (let i = 0; i <= 5; i++) {
+          const value = i * 20;
+          const y = chartStartY + chartHeight - (i * 10);
+          pdf.text(`${value}%`, 12, y); // move further left
+        }
+
+        // Draw grid lines
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.3);
+        for (let i = 0; i <= 5; i++) {
+          const y = chartStartY + chartHeight - (i * 10);
+          pdf.line(chartStartX, y, chartStartX + chartWidth, y);
+        }
+
+        // Draw bars
+        labels.forEach((label, labelIndex) => {
+          const groupX = chartStartX + (labelIndex * barGroupWidth);
+          const baseBarWidth = (barGroupWidth - (data.length - 1) * barSpacing) / data.length;
+          const individualBarWidth = baseBarWidth * 0.85; // reduce bar width slightly
+          
+          data.forEach((dataset, datasetIndex) => {
+            const value = dataset.data[labelIndex] || 0;
+            const barHeight = (value / 100) * chartHeight;
+            const barY = chartStartY + chartHeight - barHeight;
+            const barX = groupX + (datasetIndex * (individualBarWidth + barSpacing)) + 1;
+            
+            if (value > 0) {
+              pdf.setFillColor(colors[datasetIndex] || '#60a5fa');
+              pdf.rect(barX, barY, individualBarWidth, barHeight, 'F');
+            }
+          });
+          
+          // X-axis label - centered below each group, within the white box
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'normal');
+          pdf.text(label, groupX + barGroupWidth/2, chartStartY + chartHeight + 8, { align: 'center' });
+        });
+        
+        // End white box
+        endWhiteBox(boxEndY);
+      };
+
+      // Helper function to add insights in a white box
+      const addInsightsBox = (insights) => {
+        // Calculate optimal box height based on content
+        const titleHeight = 20; // Title + spacing
+        const insightsHeight = insights.length * 20; // 2 lines per insight + spacing
+        const calculatedBoxHeight = titleHeight + insightsHeight + 10; // Small bottom padding
+        
+        // Start white box with calculated height
+        let { boxStartY, boxEndY } = startWhiteBox(calculatedBoxHeight);
+        
+        // Add insights title - positioned within white box
+        pdf.setFontSize(13);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Insight Summary', 12, boxStartY + 12);
+        
+        // Add insights text with colored class names and proper wrapping
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        let currentTextY = boxStartY + 24; // Start text closer to title
+        
+        insights.forEach((insight, index) => {
+          // Check if we need to go to next page
+          if (currentTextY > boxEndY - 20) {
+            // Close the current box cleanly before moving
+            endWhiteBox(boxEndY);
+            addNewPage('#eef5ff');
+            const newBox = startWhiteBox(calculatedBoxHeight);
+            // Reset available region for new box
+            boxStartY = newBox.boxStartY;
+            boxEndY = newBox.boxEndY;
+            currentTextY = newBox.boxStartY + 24;
+          }
+          
+          // Process insight text to add colors to class names
+          let processedInsight = insight;
+          const classColors = {
+            'Discoverer': [96, 165, 250], // Blue
+            'Explorer': [250, 204, 21],   // Yellow
+            'Adventurer': [248, 113, 113] // Red
+          };
+          
+          // Use maximum available width
+          const contentX = 12; // minimal left padding
+          const indentX = 16; // slight indentation for second line
+          const maxWidthLine1 = pageWidth - 24; // maximize width usage
+          const maxWidthLine2 = pageWidth - 28; // account for indentation
+          
+          // Split text into exactly 2 lines using full width
+          const fullText = `${index + 1}. ${processedInsight}`;
+          const lines = pdf.splitTextToSize(fullText, maxWidthLine1);
+          
+          // First line
+          const line1 = lines[0] || fullText;
+          addColoredText(line1, contentX, currentTextY, classColors);
+          currentTextY += 8;
+          
+          // Second line - combine remaining text
+          if (lines.length > 1) {
+            const remainingText = lines.slice(1).join(' ').trim();
+            const secondLines = pdf.splitTextToSize(remainingText, maxWidthLine2);
+            const line2 = secondLines[0] || remainingText;
+            addColoredText(line2, indentX, currentTextY, classColors);
+            currentTextY += 8;
+          }
+          
+          currentTextY += 4; // Extra spacing between insights
+        });
+        
+        // End white box
+        endWhiteBox(boxEndY);
+      };
+      
+      // Helper function to add colored text (simplified - no truncation)
+      const addColoredText = (text, x, y, classColors) => {
+        const classNames = Object.keys(classColors);
+        let currentX = x;
+        let remainingText = text;
+        
+        // Find first class name in the text
+        let firstClassIndex = -1;
+        let firstClassName = '';
+        classNames.forEach(className => {
+          const index = remainingText.indexOf(className);
+          if (index !== -1 && (firstClassIndex === -1 || index < firstClassIndex)) {
+            firstClassIndex = index;
+            firstClassName = className;
+          }
+        });
+        
+        if (firstClassIndex !== -1) {
+          // Add text before class name
+          if (firstClassIndex > 0) {
+            const beforeText = remainingText.substring(0, firstClassIndex);
+            pdf.setTextColor(0, 0, 0); // Black
+            pdf.text(beforeText, currentX, y);
+            currentX += pdf.getTextWidth(beforeText);
+          }
+          
+          // Add colored class name
+          const color = classColors[firstClassName];
+          pdf.setTextColor(color[0], color[1], color[2]);
+          pdf.setFont('helvetica', 'bold'); // Make class name bold
+          pdf.text(firstClassName, currentX, y);
+          currentX += pdf.getTextWidth(firstClassName);
+          
+          // Add remaining text in black
+          const afterText = remainingText.substring(firstClassIndex + firstClassName.length);
+          pdf.setTextColor(0, 0, 0); // Black
+          pdf.setFont('helvetica', 'normal');
+          pdf.text(afterText, currentX, y);
+        } else {
+          // No class name found, just add the text
+          pdf.setTextColor(0, 0, 0); // Black
+          pdf.text(remainingText, currentX, y);
         }
       };
 
-      const afterPrint = () => {
-        window.removeEventListener('afterprint', afterPrint);
-        cleanup();
-      };
-      window.addEventListener('afterprint', afterPrint);
+      // Set first page background color
+      pdf.setFillColor(238, 245, 255); // Light blue
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
 
-      // Give React a beat to render the print layout
-      setTimeout(() => {
-        window.print();
-      }, 300);
+      // Page 1: Attendance Report
+      await addHeader('Attendance Report');
+      
+      if (attendanceData && attendanceData.hasData) {
+        // Create attendance chart data
+        const attendanceChartData = attendanceData.levelNames.map((levelName, index) => ({
+          label: levelName,
+          data: attendanceData.quarterData[levelName] || [0, 0, 0, 0]
+        }));
+        
+        // Add chart in white box
+        addChartBox(
+          attendanceChartData,
+          attendanceData.quarterNames || ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'],
+          'Attendance Percentage',
+          ['#60a5fa', '#facc15', '#f87171']
+        );
 
-      // Fallback cleanup for browsers that don't fire afterprint reliably
-      setTimeout(() => { cleanup(); }, 1500);
+        // Add insights in white box
+        const attendanceInsights = renderAttendanceInsights();
+        addInsightsBox(attendanceInsights);
+      } else {
+        addWhiteBox(() => {
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'normal');
+          currentY = addText('No attendance data available for the current year.', 25, currentY + 5);
+        }, 30);
+      }
+
+      // Page 2: Progress Report
+      addNewPage('#eaf7f1'); // Light green
+      await addHeader('Progress Report');
+      
+      if (progressData && progressData.hasData) {
+        // Create progress chart data
+        const progressChartData = progressData.levelNames.map((levelName, index) => ({
+          label: levelName,
+          data: progressData.quarterData[levelName] || [0, 0, 0, 0]
+        }));
+        
+        // Add chart in white box
+        addChartBox(
+          progressChartData,
+          progressData.quarterNames || ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'],
+          'Progress Percentage',
+          ['#5C9EFF', '#FDCB44', '#FF7B7B']
+        );
+
+        // Add insights in white box
+        const progressInsights = renderProgressInsights();
+        addInsightsBox(progressInsights);
+      } else {
+        addWhiteBox(() => {
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'normal');
+          currentY = addText('No progress data available for the current year.', 25, currentY + 5);
+        }, 30);
+      }
+
+      // Page 3: Subject Report
+      addNewPage('#fff7e6'); // Light yellow
+      await addHeader('Subject Report');
+      
+      if (subjectData && subjectData.hasSubjectData) {
+        // Create subject chart data
+        const subjectChartData = subjectData.levelNames.map((levelName, index) => ({
+          label: levelName,
+          data: subjectData.subjectNames.map(subjectName => 
+            subjectData.subjectData[levelName]?.[subjectName] || 0
+          )
+        }));
+        
+        // Add chart in white box
+        addChartBox(
+          subjectChartData,
+          subjectData.subjectNames || [],
+          'Subject Performance',
+          ['#5C9EFF', '#FDCB44', '#FF7B7B']
+        );
+
+        // Add insights in white box
+        const subjectInsights = renderSubjectInsights();
+        addInsightsBox(subjectInsights);
+      } else {
+        addWhiteBox(() => {
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'normal');
+          currentY = addText('No subject data available for the current year.', 25, currentY + 5);
+        }, 30);
+      }
+
+      // Add footer to each page (outside white boxes)
+      const pageCount = pdf.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`Generated on ${new Date().toLocaleDateString()} | School Year ${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
+        pdf.text(`Page ${i} of ${pageCount}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
+      }
+
+      // Download the PDF
+      const fileName = `Learners_Ville_Reports_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success("PDF downloaded successfully!");
+      
     } catch (err) {
-      console.error('Error exporting report:', err);
-      toast.error("Failed to export. Please try again.");
+      console.error('Error downloading report:', err);
+      toast.error("Failed to download. Please try again.");
     }
   };
 
@@ -1388,37 +1604,37 @@ export default function SuperAdminReportsPage() {
   return (
     <ProtectedRoute role="Super Admin">
       <div className="flex-1 p-2 pt-0">
-        <div className="flex justify-between items-center mb-2 bg-[#232c67] text-white p-2 rounded-none">
-          <h2 className="text-base sm:text-2xl font-semibold text-white ml-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-2 bg-[#232c67] text-white p-2 rounded-none">
+          <h2 className="text-base sm:text-2xl font-semibold text-white sm:ml-4">
             {selectedReport}
           </h2>
-          
-          {/* Export Button and Dropdown Container */}
-          <div className="flex items-center gap-3">
-            {/* Export Button */}
+
+          {/* Download Button and Dropdown Container */}
+          <div className="flex w-full sm:w-auto items-stretch sm:items-center gap-2 sm:gap-3">
+            {/* Download Button */}
             <button
-              onClick={handleExportReport}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-              title="Export Report to PDF"
+              onClick={handleDownloadReport}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 min-w-0"
+              title="Download Report to PDF"
             >
-              <FaPrint className="text-sm" />
-              <span className="hidden sm:inline">Export Reports</span>
-              <span className="sm:hidden">Export</span>
+              <FaPrint className="text-sm shrink-0" />
+              <span className="hidden sm:inline">Download Reports</span>
+              <span className="sm:hidden">Download</span>
             </button>
-            
+
             {/* Dropdown Selector */}
-            <div className="relative dropdown-container">
+            <div className="relative dropdown-container flex-1 sm:flex-none">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <span className="hidden sm:inline">View Report</span>
                 <span className="sm:hidden">View</span>
                 <FaChevronDown className={`text-xs transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
                   <div className="py-1">
                     {reports.map((report) => (
                       <button
@@ -1495,58 +1711,60 @@ export default function SuperAdminReportsPage() {
 
         {/* Super Admin Report Export Component */}
         <div ref={printRef} className="hidden print:block" style={{margin: 0, padding: 0}}>
-          <SuperAdminReportExport
-            attendanceData={attendanceData}
-            progressData={progressData}
-            subjectData={subjectData}
-            attendanceChartData={(() => {
-              // Create attendance chart data - always return data structure
-              const labels = attendanceData?.quarterNames || ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
-              const levelNames = attendanceData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
-              
-              return {
-                labels: labels,
-                datasets: levelNames.map((levelName, index) => ({
-                  label: levelName,
-                  data: attendanceData?.quarterData?.[levelName] || [0, 0, 0, 0],
-                  backgroundColor: ["#60a5fa", "#facc15", "#f87171"][index] || "#60a5fa",
-                }))
-              };
-            })()}
-            progressChartData={(() => {
-              // Create progress chart data - always return data structure
-              const labels = progressData?.quarterNames || ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
-              const levelNames = progressData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
-              
-              return {
-                labels: labels,
-                datasets: levelNames.map((levelName, index) => ({
-                  label: levelName,
-                  data: progressData?.quarterData?.[levelName] || [0, 0, 0, 0],
-                  backgroundColor: ["#5C9EFF", "#FDCB44", "#FF7B7B"][index] || "#5C9EFF",
-                }))
-              };
-            })()}
-            subjectChartData={(() => {
-              // Create subject chart data - always return data structure
-              const labels = subjectData?.subjectNames || [];
-              const levelNames = subjectData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
-              
-              return {
-                labels: labels,
-                datasets: levelNames.map((levelName, index) => ({
-                  label: levelName,
-                  data: labels.map(subjectName => 
-                    subjectData?.subjectData?.[levelName]?.[subjectName] || 0
-                  ),
-                  backgroundColor: ["#5C9EFF", "#FDCB44", "#FF7B7B"][index] || "#5C9EFF",
-                }))
-              };
-            })()}
-            attendanceInsights={renderAttendanceInsights()}
-            progressInsights={renderProgressInsights()}
-            subjectInsights={renderSubjectInsights()}
-          />
+          {attendanceData && progressData && subjectData && (
+            <SuperAdminReportDownload
+              attendanceData={attendanceData}
+              progressData={progressData}
+              subjectData={subjectData}
+              attendanceChartData={(() => {
+                // Create attendance chart data - always return data structure
+                const labels = attendanceData?.quarterNames || ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
+                const levelNames = attendanceData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
+                
+                return {
+                  labels: labels,
+                  datasets: levelNames.map((levelName, index) => ({
+                    label: levelName,
+                    data: attendanceData?.quarterData?.[levelName] || [0, 0, 0, 0],
+                    backgroundColor: ["#60a5fa", "#facc15", "#f87171"][index] || "#60a5fa",
+                  }))
+                };
+              })()}
+              progressChartData={(() => {
+                // Create progress chart data - always return data structure
+                const labels = progressData?.quarterNames || ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
+                const levelNames = progressData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
+                
+                return {
+                  labels: labels,
+                  datasets: levelNames.map((levelName, index) => ({
+                    label: levelName,
+                    data: progressData?.quarterData?.[levelName] || [0, 0, 0, 0],
+                    backgroundColor: ["#5C9EFF", "#FDCB44", "#FF7B7B"][index] || "#5C9EFF",
+                  }))
+                };
+              })()}
+              subjectChartData={(() => {
+                // Create subject chart data - always return data structure
+                const labels = subjectData?.subjectNames || [];
+                const levelNames = subjectData?.levelNames || ["Discoverer", "Explorer", "Adventurer"];
+                
+                return {
+                  labels: labels,
+                  datasets: levelNames.map((levelName, index) => ({
+                    label: levelName,
+                    data: labels.map(subjectName => 
+                      subjectData?.subjectData?.[levelName]?.[subjectName] || 0
+                    ),
+                    backgroundColor: ["#5C9EFF", "#FDCB44", "#FF7B7B"][index] || "#5C9EFF",
+                  }))
+                };
+              })()}
+              attendanceInsights={renderAttendanceInsights()}
+              progressInsights={renderProgressInsights()}
+              subjectInsights={renderSubjectInsights()}
+            />
+          )}
         </div>
       </div>
     </ProtectedRoute>

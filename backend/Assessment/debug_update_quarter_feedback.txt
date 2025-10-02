@@ -124,3 +124,33 @@ Total=28.589, Count=13
 Average=2.199
 Shape lookup result: {"visual_feedback_id":4}
 Updated tbl_quarter_feedback with visual_feedback_id=4
+Received: student_id=20, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":1}]
+Total=4.6, Count=1
+Average=4.6
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1
+Received: student_id=20, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":1}]
+Total=4.6, Count=1
+Average=4.6
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1
+Received: student_id=20, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":5}]
+Total=1.399, Count=1
+Average=1.399
+Shape lookup result: {"visual_feedback_id":5}
+Updated tbl_quarter_feedback with visual_feedback_id=5
+Received: student_id=20, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":1}]
+Total=4.6, Count=1
+Average=4.6
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1
+Received: student_id=20, quarter_id=1, subject_id=2
+Feedbacks found: [{"visual_feedback_id":1}]
+Total=4.6, Count=1
+Average=4.6
+Shape lookup result: {"visual_feedback_id":1}
+Updated tbl_quarter_feedback with visual_feedback_id=1
