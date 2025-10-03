@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "../../../Context/UserContext";
+import jsPDF from 'jspdf';
 
 // Helper function to construct full photo URL from filename
 function getPhotoUrl(filename) {
@@ -661,154 +662,1225 @@ export default function StudentProgress({ formData: initialFormData }) {
     return "";
   };
 
-  // Export/Print: use a print-only stylesheet; do not mutate screen layout
-  const handleExportAssessment = () => {
+  const handleExportAssessment = async () => {
     try {
-      const printableElement = printRef.current || assessmentRef.current;
-      if (!printableElement) {
-        toast.error("Nothing to export yet.");
-        return;
-      }
+      // Show loading toast
+      toast.info("Generating PDF...", { autoClose: 5000 });
 
-      // Mobile-optimized iframe printing
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
-      if (isMobile) {
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
-
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
-        const tempId = 'studentprogress-printable';
-        const cloned = printableElement.cloneNode(true);
-        cloned.setAttribute('id', tempId);
-
-        const head = doc.createElement('head');
-        document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
-          const newLink = doc.createElement('link');
-          newLink.rel = 'stylesheet';
-          newLink.href = link.href;
-          head.appendChild(newLink);
-        });
-        document.querySelectorAll('style').forEach((styleEl) => {
-          const newStyle = doc.createElement('style');
-          newStyle.textContent = styleEl.textContent;
-          head.appendChild(newStyle);
-        });
-
-        const style = doc.createElement('style');
-        style.setAttribute('media', 'print');
-        style.innerHTML = `
-          @page { size: Letter portrait; margin: 0; }
-          @media print {
-            html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            #${tempId} { position: static !important; width: 8.5in !important; margin: 0 auto !important; }
-            #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
-            table, tr, td, th { page-break-inside: avoid !important; }
-            .print-page { width: 8.5in !important; min-height: 11in !important; height: 11in !important; box-sizing: border-box !important; position: relative !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; }
-            /* Colored backgrounds via pseudo layer */
-            .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
-            .print-page > * { position: relative; z-index: 1; }
-            .pastel-blue::before { background: #eef5ff !important; }
-            .pastel-green::before { background: #eaf7f1 !important; }
-            .pastel-yellow::before { background: #fff7e6 !important; }
-            .pastel-pink::before { background: #ffeef2 !important; }
-            .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
-            .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
-            .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
-            .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
-          }
-        `;
-        head.appendChild(style);
-
-        const html = doc.createElement('html');
-        html.appendChild(head);
-        const body = doc.createElement('body');
-        body.style.margin = '0';
-        body.appendChild(cloned);
-        html.appendChild(body);
-        doc.open();
-        doc.write('<!doctype html>' + html.outerHTML);
-        doc.close();
-
-        const assignPageNumbers = () => {
-          const pages = doc.querySelectorAll('.print-page');
-          const totalPages = pages.length;
-          pages.forEach((p, i) => p.setAttribute('data-page-number', `${i+1}/${totalPages}`));
-        };
-
-        setTimeout(() => {
-          assignPageNumbers();
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          setTimeout(() => { if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1500);
-        }, 800);
-        return;
-      }
-
-      // Desktop behavior unchanged
-      const originalTitle = document.title;
-      const tempId = "studentprogress-printable";
-      const cloned = printableElement.cloneNode(true);
-      cloned.setAttribute("id", tempId);
-      cloned.style.display = 'block';
-      cloned.style.margin = '0';
-      cloned.style.padding = '0';
-      document.body.appendChild(cloned);
-
-      const style = document.createElement("style");
-      style.setAttribute("media", "print");
-      style.innerHTML = `
-        @page { size: auto; margin: 0; }
-        @media print {
-          html, body { margin: 0 !important; padding: 0 !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          body > *:not(#${tempId}) { display: none !important; }
-          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; padding: 0; margin: 0; display: flex !important; flex-direction: column !important; max-width: none !important; }
-          #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
-          table, tr, td, th { page-break-inside: avoid !important; }
-          .print-page { width: 100% !important; position: relative !important; min-height: 100vh !important; box-sizing: border-box !important; }
-          .print-page + .print-page { page-break-before: always; break-before: page; }
-          .no-break { page-break-inside: avoid; break-inside: avoid; }
-          .border-soft { border: 1px solid #e5e7eb; }
-          .pastel-blue { background: #eef5ff; }
-          .pastel-green { background: #eaf7f1; }
-          .pastel-yellow { background: #fff7e6; }
-          .pastel-pink { background: #ffeef2; }
-          .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
-        }
-      `;
-      document.head.appendChild(style);
-
-      const pages = cloned.querySelectorAll('.print-page');
-      const totalPages = pages.length;
-      pages.forEach((pageEl, index) => {
-        pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
+      // Debug: Log the data being used for PDF generation
+      console.log("PDF Generation Debug:", {
+        selectedStudent: selectedStudent,
+        advisory: advisory,
+        parentProfile: parentProfile,
+        leadTeacher: advisory?.lead_teacher_name,
+        assistantTeacher: advisory?.assistant_teacher_name,
+        fatherName: buildParentName(parentProfile, 'father'),
+        motherName: buildParentName(parentProfile, 'mother'),
+        fatherAge: getParentAge(parentProfile, 'father'),
+        motherAge: getParentAge(parentProfile, 'mother'),
+        fatherOccupation: getParentOccupation(parentProfile, 'father'),
+        motherOccupation: getParentOccupation(parentProfile, 'mother')
       });
 
-      const studentName = selectedStudent ? `${selectedStudent.stud_lastname || ''}, ${selectedStudent.stud_firstname || ''}`.trim() : "";
-      document.title = `Student Progress ${studentName ? `- ${studentName}` : ''}`;
+      // Create PDF directly using jsPDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      let currentY = 20;
 
-      const cleanup = () => {
+      // Set UTF-8 encoding to support Unicode symbols
+      pdf.setLanguage("en-US");
+      pdf.setProperties({
+        title: 'Student Progress Report',
+        creator: 'Learners Ville',
+        producer: 'jsPDF'
+      });
+
+      // Try to load Unicode font for symbols
+      let canRenderSymbols = false;
+      const ensureUnicodeFont = async () => {
         try {
-          if (style && style.parentNode) document.head.removeChild(style);
-          if (cloned && cloned.parentNode) cloned.parentNode.removeChild(cloned);
-          document.title = originalTitle;
-        } catch (e) {}
+          const res = await fetch('/fonts/DejaVuSans.ttf');
+          if (!res.ok) return;
+          const blob = await res.blob();
+          const dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          const base64 = String(dataUrl).split(',')[1];
+          pdf.addFileToVFS('DejaVuSans.ttf', base64);
+          pdf.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+          pdf.setFont('DejaVuSans', 'normal');
+          canRenderSymbols = true;
+        } catch (e) {
+          canRenderSymbols = false;
+        }
+      };
+      await ensureUnicodeFont();
+
+      // Helper function to convert shapes to Unicode symbols
+      const toUnicodeShape = (raw) => {
+        const s = (raw ?? '').toString().trim();
+        if (!s) return '';
+        if (['♥','❤','❤️','★','⭐','◆','🔷','▲','⬤','●','■','⬢'].includes(s)) {
+          if (s === '●') return '⬤';
+          if (s === '❤️' || s === '♥') return '❤';
+          if (s === '⭐') return '★';
+          if (s === '🔷') return '◆';
+          return s;
+        }
+        const map = {
+          '&': '❤', '%Ï': '❤', '%Ã\u0017' : '❤', '%C1%8F': '❤',
+          '&e': '★', '&E': '★',
+          '%Æ': '◆', '%Ã†': '◆', '%Â†': '◆', '&c': '◆',
+          '%²': '▲', '%2': '▲', '%?': '▲', '%C2%B2': '▲', '&t': '▲',
+          '%I': '⬤', '%1': '⬤', '%l': '⬤', '+$': '⬤', '+S': '⬤', '+s': '⬤', '+5': '⬤', '&o': '⬤',
+          '%25': '■', '%5B%5D': '■', '[]': '■', '%': '■',
+          '+^': '⬢', '+"': '⬢'
+        };
+        if (map[s]) return map[s];
+        if (s.includes('%')) return '■';
+        if (s.includes('+')) return '⬢';
+        return s;
       };
 
-      const afterPrint = () => { window.removeEventListener('afterprint', afterPrint); cleanup(); };
-      window.addEventListener('afterprint', afterPrint);
-      setTimeout(() => { window.print(); }, 300);
-      setTimeout(() => { cleanup(); }, 1500);
-    } catch (err) {
-      console.error('Error exporting assessment:', err);
-      toast.error("Failed to export. Please try again.");
+      // PDF color map for symbols
+      const pdfShapeColorMap = {
+        '❤️': [244, 67, 54], '❤': [244, 67, 54], '♥': [244, 67, 54],
+        '■': [0, 188, 212], '⭐': [255, 152, 0], '★': [255, 152, 0],
+        '⬢': [205, 220, 57], '🔷': [33, 150, 243], '◆': [33, 150, 243],
+        '▲': [76, 175, 80], '🟡': [255, 235, 59], '●': [255, 235, 59], '⬤': [255, 235, 59],
+      };
+
+      // Helper function to render symbols
+      const renderSymbol = (symbol, x, y, fontSize = 12) => {
+        if (!symbol) return;
+        const finalSymbol = toUnicodeShape(symbol);
+        const rgb = pdfShapeColorMap[finalSymbol] || [0, 0, 0];
+        
+        if (canRenderSymbols && finalSymbol !== '❤' && finalSymbol !== '⬢' && finalSymbol !== '⬤') {
+          pdf.setFont('DejaVuSans', 'normal');
+          pdf.setFontSize(fontSize);
+          pdf.setTextColor(rgb[0], rgb[1], rgb[2]);
+          pdf.text(finalSymbol, x, y, { align: 'center' });
+        return;
+      }
+
+        // Vector fallbacks
+        const size = fontSize * 0.8;
+        const r = size / 3.2;
+        const cx = x;
+        const cy = y - size / 4.5;
+        pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
+        pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+        pdf.setLineWidth(0.6);
+        switch (finalSymbol) {
+          case '⬤':
+            pdf.circle(cx, cy, r * 1.25, 'F');
+            break;
+          case '▲': {
+            const h = r * 2.1;
+            pdf.triangle(cx, cy - h / 1.3, cx - r * 1.2, cy + h / 2.2, cx + r * 1.2, cy + h / 2.2, 'F');
+            break;
+          }
+          case '❤': {
+            const cyh = cy - r * 0.05;
+            const lobeRadius = r * 0.75;
+            const lobeOffsetX = r * 0.55;
+            const lobeOffsetY = r * 0.25;
+            pdf.circle(cx - lobeOffsetX, cyh - lobeOffsetY, lobeRadius, 'F');
+            pdf.circle(cx + lobeOffsetX, cyh - lobeOffsetY, lobeRadius, 'F');
+            const baseY = cyh + r * 0.2;
+            const baseHalfWidth = lobeRadius * 1.2;
+            const pointDepth = r * 1.2;
+            pdf.triangle(cx - baseHalfWidth, baseY, cx + baseHalfWidth, baseY, cx, cyh + pointDepth, 'F');
+            break;
+          }
+          case '◆': {
+            const w = r * 1.6;
+            const h = r * 1.6;
+            pdf.triangle(cx, cy - h, cx - w, cy, cx + w, cy, 'F');
+            pdf.triangle(cx, cy + h, cx - w, cy, cx + w, cy, 'F');
+            break;
+          }
+          case '★': {
+            try {
+              const points = 5;
+              const outer = r * 1.4;
+              const inner = outer * 0.5;
+              const coords = [];
+              for (let i = 0; i < points * 2; i++) {
+                const angle = (i * Math.PI) / points;
+                const radius = i % 2 === 0 ? outer : inner;
+                coords.push([cx + radius * Math.cos(angle - Math.PI / 2), cy + radius * Math.sin(angle - Math.PI / 2)]);
+              }
+              
+              pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
+              pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+              pdf.setLineWidth(0.3);
+              
+              // Draw star by connecting points with lines
+              for (let i = 1; i < coords.length; i++) {
+                pdf.line(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+              }
+              // Close the star
+              pdf.line(coords[coords.length - 1][0], coords[coords.length - 1][1], coords[0][0], coords[0][1]);
+              
+              // Simple fill approach - draw triangles from center to each point
+              for (let i = 0; i < coords.length - 1; i++) {
+                pdf.triangle(cx, cy, coords[i][0], coords[i][1], coords[i + 1][0], coords[i + 1][1], 'F');
+              }
+              pdf.triangle(cx, cy, coords[coords.length - 1][0], coords[coords.length - 1][1], coords[0][0], coords[0][1], 'F');
+            } catch (error) {
+              // Fallback to simple circle if star rendering fails
+              pdf.circle(cx, cy, r * 0.8, 'F');
+            }
+            break;
+          }
+          case '■': {
+            // Reduce square size to visually match other shapes
+            const w = r * 1.3; // side = 2.6r (smaller than previous 3.2r)
+            pdf.rect(cx - w, cy - w, w * 2, w * 2, 'F');
+            break;
+          }
+          case '⬢': {
+            try {
+              // Increase hexagon size slightly to match other shapes
+              const scale = 1.35;
+              const radius = r * scale;
+              const points = 6;
+              const coords = [];
+              for (let i = 0; i < points; i++) {
+                const angle = (i * 2 * Math.PI) / points;
+                coords.push([cx + radius * Math.cos(angle), cy + radius * Math.sin(angle)]);
+              }
+              
+              pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
+              pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+              pdf.setLineWidth(0.3);
+              
+              // Draw hexagon by connecting points with lines
+              for (let i = 1; i < coords.length; i++) {
+                pdf.line(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+              }
+              // Close the hexagon
+              pdf.line(coords[coords.length - 1][0], coords[coords.length - 1][1], coords[0][0], coords[0][1]);
+              
+              // Fill by drawing triangles from center to each edge
+              for (let i = 0; i < coords.length - 1; i++) {
+                pdf.triangle(cx, cy, coords[i][0], coords[i][1], coords[i + 1][0], coords[i + 1][1], 'F');
+              }
+              pdf.triangle(cx, cy, coords[coords.length - 1][0], coords[coords.length - 1][1], coords[0][0], coords[0][1], 'F');
+            } catch (error) {
+              // Fallback to simple circle if hexagon rendering fails
+              pdf.circle(cx, cy, r * 0.8, 'F');
+            }
+            break;
+          }
+          default:
+            pdf.circle(cx, cy, r * 0.8, 'F');
+            break;
+        }
+      };
+
+      // Helper functions for layout
+      const addNewPage = (bgColor) => {
+        pdf.addPage();
+        pdf.setFillColor(bgColor);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        currentY = 20;
+      };
+
+      const startWhiteBox = (boxHeight = 60) => {
+        const footerTopY = pageHeight - 30;
+        if ((currentY - 5) + boxHeight > footerTopY) {
+          addNewPage('#eef5ff');
+        }
+        const boxStartY = currentY - 5;
+        const boxEndY = boxStartY + boxHeight;
+        
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(8, boxStartY, pageWidth - 16, boxHeight, 'F');
+        pdf.setDrawColor(200, 200, 200);
+        pdf.rect(8, boxStartY, pageWidth - 16, boxHeight, 'S');
+        
+        return { boxStartY, boxEndY };
+      };
+
+      const endWhiteBox = (boxEndY) => {
+        currentY = boxEndY + 8;
+      };
+
+      // Add header with logo
+      const addHeader = async (title) => {
+        if (currentY > 250) addNewPage('#eef5ff');
+        
+        const logoX = 20;
+        const logoY = currentY + 15;
+        const logoSize = 30;
+        const logoRadius = 15;
+        
+        try {
+          const logoResponse = await fetch('/assets/image/villelogo.png');
+          if (logoResponse.ok) {
+            const logoBlob = await logoResponse.blob();
+            const logoDataUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.readAsDataURL(logoBlob);
+            });
+            
+            pdf.setFillColor(255, 255, 255);
+            pdf.circle(logoX + logoRadius, logoY, logoRadius, 'F');
+            pdf.setDrawColor(200, 200, 200);
+            pdf.circle(logoX + logoRadius, logoY, logoRadius, 'S');
+            
+            pdf.addImage(logoDataUrl, 'PNG', logoX + 2, logoY - logoRadius + 2, logoSize - 4, logoSize - 4);
+          }
+        } catch (error) {
+          pdf.setFillColor(255, 255, 255);
+          pdf.circle(logoX + logoRadius, logoY, logoRadius, 'F');
+          pdf.setDrawColor(200, 200, 200);
+          pdf.circle(logoX + logoRadius, logoY, logoRadius, 'S');
+        }
+        
+        pdf.setTextColor(35, 44, 103);
+        pdf.setFontSize(18);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('LEARNERS\' VILLE', pageWidth / 2, logoY + 2, { align: 'center' });
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text('6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines', pageWidth / 2, logoY + 10, { align: 'center' });
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`SY ${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`, pageWidth - 20, logoY + 2, { align: 'right' });
+        
+        pdf.setDrawColor(100, 100, 100);
+        pdf.setLineWidth(0.5);
+        pdf.line(10, logoY + 20, pageWidth - 10, logoY + 20);
+        
+        currentY = logoY + 30;
+      };
+
+      // Helper functions for layout
+      const addText = (text, x, y, maxWidth = pageWidth - 40) => {
+        const lines = pdf.splitTextToSize(text, maxWidth);
+        pdf.text(lines, x, y);
+        return y + (lines.length * 5);
+      };
+
+      // Set first page background color
+      pdf.setFillColor(238, 245, 255); // Light blue
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      // Page 1: School & Learner Info
+      await addHeader('Learner\'s Information');
+      
+      // Learner's Information Card
+      const learnerBox = startWhiteBox(80);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Learner\'s Information', 15, learnerBox.boxStartY + 15);
+      
+      // Student details
+      const studentName = selectedStudent ? 
+        `${selectedStudent.stud_lastname || ''}, ${selectedStudent.stud_firstname || ''} ${selectedStudent.stud_middlename || ''}`.trim() : 
+        '____________________________';
+      
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      
+      // Left Column
+      const leftX = 15;
+      const rightX = 100;
+      const startY = learnerBox.boxStartY + 30;
+      const lineHeight = 10;
+      
+      // Name (Left Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('Name:', leftX, startY);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(studentName, leftX + 15, startY);
+      
+      // Level (Left Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Level:', leftX, startY + lineHeight);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      const levelDisplay = studentLevelData?.level_name || studentLevelData?.levelName || studentLevelData?.level?.level_name || selectedStudent?.level_name || selectedStudent?.levelName || selectedStudent?.level?.level_name || selectedStudent?.stud_level || (studentLevelData?.levelId ? (classes.find(c => c.level_id == studentLevelData.levelId)?.level_name || `Level ${studentLevelData.levelId}`) : '');
+      pdf.text(levelDisplay || '________________________', leftX + 15, startY + lineHeight);
+      
+      // Lead Teacher (Left Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Lead Teacher:', leftX, startY + (lineHeight * 2));
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(advisory?.lead_teacher_name ? formatName(advisory.lead_teacher_name) : '________________________', leftX + 30, startY + (lineHeight * 2));
+      
+      // Right Column
+      // Sex (Right Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Sex:', rightX, startY);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(selectedStudent?.stud_gender || '________________________', rightX + 10, startY);
+      
+      // Date of Birth (Right Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Date of Birth:', rightX, startY + lineHeight);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      const birthDate = formatDateOfBirth(selectedStudent?.stud_birthdate);
+      pdf.text(birthDate, rightX + 28, startY + lineHeight);
+      
+      // Assistant Teacher (Right Column)
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Assistant Teacher:', rightX, startY + (lineHeight * 2));
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(advisory?.assistant_teacher_name ? formatName(advisory.assistant_teacher_name) : '________________________', rightX + 40, startY + (lineHeight * 2));
+      
+      endWhiteBox(learnerBox.boxEndY);
+
+      // Sociodemographic Profile Card
+      const socioBox = startWhiteBox(100);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Sociodemographic Profile', 15, socioBox.boxStartY + 15);
+      
+      // Handedness
+      pdf.setFontSize(12);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Handedness:', 15, socioBox.boxStartY + 30);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(selectedStudent?.stud_handedness || '________________________', 43, socioBox.boxStartY + 30);
+      
+      // Parent Details - Two Column Layout
+      const parentStartY = socioBox.boxStartY + 45;
+      const parentLeftX = 15;
+      const parentRightX = 100;
+      const parentLineHeight = 8;
+      
+      // Father's Details (Left Column)
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Father\'s Details', parentLeftX, parentStartY);
+      
+      pdf.setFontSize(12);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Name:', parentLeftX, parentStartY + 15);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(buildParentName(parentProfile, 'father') || '________________________', parentLeftX + 15, parentStartY + 15);
+      
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Age:', parentLeftX, parentStartY + 25);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(getParentAge(parentProfile, 'father') || '________________________', parentLeftX + 15, parentStartY + 25);
+      
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Occupation:', parentLeftX, parentStartY + 35);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(getParentOccupation(parentProfile, 'father') || '________________________', parentLeftX + 27, parentStartY + 35);
+      
+      // Mother's Details (Right Column)
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Mother\'s Details', parentRightX, parentStartY);
+      
+      pdf.setFontSize(12);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Name:', parentRightX, parentStartY + 15);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(buildParentName(parentProfile, 'mother') || '________________________', parentRightX + 15, parentStartY + 15);
+      
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Age:', parentRightX, parentStartY + 25);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(getParentAge(parentProfile, 'mother') || '________________________', parentRightX + 13, parentStartY + 25);
+      
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Occupation:', parentRightX, parentStartY + 35);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(getParentOccupation(parentProfile, 'mother') || '________________________', parentRightX + 27, parentStartY + 35);
+      
+      endWhiteBox(socioBox.boxEndY);
+
+      // Page 2: Record of Attendance
+      addNewPage('#eaf7f1'); // Light green
+      currentY = 20;
+      
+      const attendanceBox = startWhiteBox(120);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Record of Attendance', 15, attendanceBox.boxStartY + 15);
+      
+      // Create attendance table with actual data
+      const attendanceSummary = getAttendanceSummary();
+      let attendanceData;
+      
+      if (attendanceSummary && attendanceSummary.summary && Array.isArray(attendanceSummary.summary)) {
+        const summary = attendanceSummary.summary;
+        attendanceData = [
+          ['Category', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'Total'],
+          ['No. of\nSchool Days', ...summary.map(m => m.total.toString()), attendanceSummary.totalSchoolDays.toString()],
+          ['No. of Days\nPresent', ...summary.map(m => m.present.toString()), attendanceSummary.totalPresent.toString()],
+          ['No. of Days\nAbsent', ...summary.map(m => m.absent.toString()), attendanceSummary.totalAbsent.toString()]
+        ];
+      } else {
+        attendanceData = [
+          ['Category', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'Total'],
+          ['No. of\nSchool Days', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'],
+          ['No. of Days\nPresent', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'],
+          ['No. of Days\nAbsent', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0']
+        ];
+      }
+      
+      // Draw table with custom column widths
+      const tableStartY = attendanceBox.boxStartY + 30;
+      const tableWidth = pageWidth - 30;
+      const categoryWidth = tableWidth * 0.30;
+      const monthWidth = tableWidth * 0.07;
+      const rowHeight = 14;
+      
+      // Header row
+      pdf.setFillColor(235, 246, 249); 
+      pdf.rect(15, tableStartY, tableWidth, rowHeight, 'F');
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      
+      // Calculate column positions
+      const colPositions = [15];
+      colPositions.push(colPositions[0] + categoryWidth);
+      for (let i = 1; i <= 10; i++) {
+        colPositions.push(colPositions[i] + monthWidth);
+      }
+      
+      attendanceData[0].forEach((header, colIndex) => {
+        const x = colPositions[colIndex];
+        const width = colIndex === 0 ? categoryWidth : monthWidth;
+        pdf.text(header, x + (width / 2), tableStartY + 6, { align: 'center' });
+      });
+      
+      // Data rows
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      
+      for (let rowIndex = 1; rowIndex < attendanceData.length; rowIndex++) {
+        const y = tableStartY + (rowIndex * rowHeight);
+        attendanceData[rowIndex].forEach((cell, colIndex) => {
+          const x = colPositions[colIndex];
+          const width = colIndex === 0 ? categoryWidth : monthWidth;
+          
+          if (colIndex === 0) {
+            const lines = cell.split('\n');
+            lines.forEach((line, lineIndex) => {
+              pdf.text(line, x + 2, y + 6 + (lineIndex * 4));
+            });
+          } else {
+            pdf.text(cell, x + (width / 2), y + 6, { align: 'center' });
+          }
+        });
+      }
+      
+      // Draw grid lines
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.5);
+      
+      for (let row = 0; row <= attendanceData.length; row++) {
+        const y = tableStartY + (row * rowHeight);
+        pdf.line(15, y, 15 + tableWidth, y);
+      }
+      
+      for (let col = 0; col <= attendanceData[0].length; col++) {
+        const x = colPositions[col];
+        pdf.line(x, tableStartY, x, tableStartY + (attendanceData.length * rowHeight));
+      }
+      
+      endWhiteBox(attendanceBox.boxEndY);
+
+      // Parent/Guardian Signatures section
+      const signatureBox = startWhiteBox(120);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Parent/Guardian Signatures', 15, signatureBox.boxStartY + 15);
+      
+      // Quarters with proper layout
+      const quarterNames = ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'];
+      const availableHeight = signatureBox.boxEndY - (signatureBox.boxStartY + 40);
+      const quarterSpacing = availableHeight / 4;
+      
+      quarterNames.forEach((quarter, index) => {
+        const startY = signatureBox.boxStartY + 35 + (index * quarterSpacing);
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(quarter, 15, startY);
+        
+        const quarterWidth = pdf.getTextWidth(quarter);
+        const underlineStartX = 15 + quarterWidth + 5;
+        const underlineEndX = underlineStartX + 100;
+        
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(0.5);
+        pdf.line(underlineStartX, startY + 2, underlineEndX, startY + 2);
+        
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('(Parent/Guardian Signature)', underlineEndX + 5, startY + 2);
+        
+        const commentY = startY + 10;
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('Teacher Comment:', 15, commentY);
+        
+        const quarterComment = getQuarterCommentText(index + 1);
+        if (quarterComment && quarterComment.length > 0) {
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(quarterComment, 60, commentY);
+        } else {
+          pdf.setDrawColor(200, 200, 200);
+          pdf.setLineWidth(0.5);
+          pdf.line(60, commentY + 2, 120, commentY + 2);
+        }
+      });
+      
+      endWhiteBox(signatureBox.boxEndY);
+
+      // Page 3: Quarterly Assessment
+      addNewPage('#fff7e6'); // Light yellow
+      currentY = 20;
+      
+      const assessmentBox = startWhiteBox(140);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Quarterly Assessment', 15, assessmentBox.boxStartY + 15);
+      
+      const pdfSubjects = Array.isArray(subjects) ? [...subjects].sort((a,b) => {
+        const nameA = typeof a === 'string' ? a : (a?.subject_name || '');
+        const nameB = typeof b === 'string' ? b : (b?.subject_name || '');
+        return nameA.localeCompare(nameB);
+      }) : [];
+      const assessmentQuarters = ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter', 'Final'];
+      
+      if (pdfSubjects.length === 0) {
+        toast.error('Assessment data not available. Please try again later.');
+        return;
+      }
+
+      const assessmentTableStartY = assessmentBox.boxStartY + 30;
+      const tableMarginX = 15; // Consistent left margin (same gap on both sides)
+      const assessmentTableWidth = pageWidth - (tableMarginX * 2); // Full width: 210mm - 30mm margins = 180mm
+      // Optimize column widths to better utilize the available space
+      const subjectsColWidth = assessmentTableWidth * 0.40; // Wider for subject names
+      const quarterColWidth = assessmentTableWidth * 0.12; // Quarter columns
+      
+      // Debug logging for table layout
+      console.log('PDF Table Layout Debug:', {
+        pageWidth,
+        tableMarginX,
+        assessmentTableWidth,
+        subjectsColWidth,
+        quarterColWidth,
+        totalTableWidth: subjectsColWidth + (5 * quarterColWidth),
+        leftMargin: tableMarginX,
+        rightMargin: pageWidth - (tableMarginX + subjectsColWidth + (5 * quarterColWidth))
+      });
+      const assessmentRowHeight = 12;
+      
+      // Headers
+      const headers = ['Subjects', ...assessmentQuarters];
+      headers.forEach((header, colIndex) => {
+        let x, colWidth;
+        if (colIndex === 0) {
+          x = tableMarginX;
+          colWidth = subjectsColWidth;
+        } else {
+          x = tableMarginX + subjectsColWidth + ((colIndex - 1) * quarterColWidth);
+          colWidth = quarterColWidth;
+        }
+        
+        pdf.setFillColor(235, 246, 249);
+        pdf.rect(x, assessmentTableStartY, colWidth, assessmentRowHeight, 'F');
+        pdf.setDrawColor(0, 0, 0);
+        pdf.rect(x, assessmentTableStartY, colWidth, assessmentRowHeight, 'S');
+        
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(header, x + (colWidth / 2), assessmentTableStartY + 8, { align: 'center' });
+      });
+      
+      // Subject rows
+      pdf.setFont('helvetica', 'normal');
+      pdfSubjects.forEach((subject, rowIndex) => {
+        const y = assessmentTableStartY + ((rowIndex + 1) * assessmentRowHeight);
+        
+        // Draw grid lines for each row
+        headers.forEach((header, colIndex) => {
+          let x, colWidth;
+          if (colIndex === 0) {
+            x = tableMarginX;
+            colWidth = subjectsColWidth;
+          } else {
+            x = tableMarginX + subjectsColWidth + ((colIndex - 1) * quarterColWidth);
+            colWidth = quarterColWidth;
+          }
+          
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(x, y, colWidth, assessmentRowHeight, 'F');
+          pdf.setDrawColor(0, 0, 0);
+          pdf.rect(x, y, colWidth, assessmentRowHeight, 'S');
+        });
+        
+        // Subject name
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        const subjectName = typeof subject === 'string' ? subject : (subject?.subject_name || 'Unknown Subject');
+        pdf.text(subjectName, tableMarginX + 2, y + 8);
+        
+        // Assessment symbols for each quarter
+        assessmentQuarters.forEach((quarter, colIndex) => {
+          const quarterId = colIndex + 1;
+          const x = tableMarginX + subjectsColWidth + (colIndex * quarterColWidth);
+          let shape = '';
+          let riskId = null;
+          
+          if (quarterId === 5) {
+            // Final column - per subject: use finalSubjectProgress mapping
+            const subjProgress = Array.isArray(finalSubjectProgress)
+              ? finalSubjectProgress.find(row => (row.subject_name || row.subject) === subjectName)
+              : null;
+            if (subjProgress && subjProgress.finalsubj_visual_feedback_id) {
+              const vf = Array.isArray(visualFeedback)
+                ? visualFeedback.find(v => v.visual_feedback_id == subjProgress.finalsubj_visual_feedback_id)
+                : null;
+              shape = vf?.visual_feedback_shape || '';
+            }
+            // Fallback: use Q4 subject feedback when final not available
+            if (!shape) {
+              const fbQ4 = Array.isArray(quarterFeedback)
+                ? quarterFeedback.find(f => f.subject_name === subjectName && Number(f.quarter_id) === 4)
+                : null;
+              shape = fbQ4?.shape || '';
+            }
+          } else {
+            // Quarter columns (1-4): only show when the quarter is finalized (has a progress card)
+            const card = progressCards.find(pc => Number(pc.quarter_id) === quarterId);
+            if (card) {
+              // Quarter is finalized; use subject-level feedback shape for that quarter
+              const fb = quarterFeedback.find(f => f.subject_name === subjectName && Number(f.quarter_id) === quarterId);
+              if (fb) {
+                shape = fb.shape || '';
+              }
+            }
+          }
+          
+          if (shape && typeof shape === 'string') {
+            // normalize DB variants to renderable Unicode
+            const normalized = shape === '🔷' ? '◆' : (shape === '●' ? '⬤' : (shape === '❤️' ? '❤' : (shape === '⭐' ? '★' : shape)));
+            renderSymbol(normalized, x + (quarterColWidth / 2), y + 8, 12);
+          }
+        });
+      });
+      
+      // Add Quarter Result row
+      const quarterResultY = assessmentTableStartY + ((pdfSubjects.length + 1) * assessmentRowHeight);
+      
+      // Draw grid lines for Quarter Result row
+      headers.forEach((header, colIndex) => {
+        let x, colWidth;
+        if (colIndex === 0) {
+          x = tableMarginX;
+          colWidth = subjectsColWidth;
+        } else {
+          x = tableMarginX + subjectsColWidth + ((colIndex - 1) * quarterColWidth);
+          colWidth = quarterColWidth;
+        }
+        
+        pdf.setFillColor(255, 255, 255); // White background
+        pdf.rect(x, quarterResultY, colWidth, assessmentRowHeight, 'F');
+        pdf.setDrawColor(0, 0, 0);
+        pdf.rect(x, quarterResultY, colWidth, assessmentRowHeight, 'S');
+      });
+      
+      // Quarter Result label
+      pdf.setTextColor(0, 0, 0); // Dark text to match ReportCard text-blue-900
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Quarter Result', tableMarginX + 2, quarterResultY + 8);
+      pdf.setTextColor(0, 0, 0); // Reset to black for other text
+      
+      // Quarter Result symbols for each quarter
+      assessmentQuarters.forEach((quarter, colIndex) => {
+        const quarterId = colIndex + 1;
+        const x = tableMarginX + subjectsColWidth + (colIndex * quarterColWidth);
+        let shape = '';
+        let riskId = null;
+        
+        if (quarterId === 5) {
+          // Final column - use overallProgress when all quarters finalized
+          const allQuartersFinalized = [1,2,3,4].every(qId => progressCards.some(pc => Number(pc.quarter_id) === qId));
+          if (overallProgress && overallProgress.visual_shape && allQuartersFinalized) {
+            shape = overallProgress.visual_shape;
+            riskId = overallProgress.risk_id ?? null;
+          }
+        } else {
+          // Quarter columns - derive shape from visual_feedback_id and risk from card.risk_id
+          const card = progressCards.find(pc => Number(pc.quarter_id) === quarterId);
+          if (card) {
+            const vf = visualFeedback.find(v => v.visual_feedback_id == card.quarter_visual_feedback_id);
+            shape = vf?.visual_feedback_shape || '';
+            riskId = card.risk_id ?? null;
+          }
+        }
+        
+        // Draw risk color dot if available
+        if (riskId === 1 || riskId === '1') {
+          pdf.setFillColor(34, 197, 94); // green
+          pdf.circle(x + (quarterColWidth / 2) - 6, quarterResultY + 8, 1.8, 'F');
+        } else if (riskId === 2 || riskId === '2') {
+          pdf.setFillColor(251, 191, 36); // yellow
+          pdf.circle(x + (quarterColWidth / 2) - 6, quarterResultY + 8, 1.8, 'F');
+        } else if (riskId === 3 || riskId === '3') {
+          pdf.setFillColor(239, 68, 68); // red
+          pdf.circle(x + (quarterColWidth / 2) - 6, quarterResultY + 8, 1.8, 'F');
+        }
+        
+        if (shape && typeof shape === 'string') {
+          // normalize DB variants to renderable Unicode
+          const normalized = shape === '🔷' ? '◆' : (shape === '●' ? '⬤' : (shape === '❤️' ? '❤' : (shape === '⭐' ? '★' : shape)));
+          renderSymbol(normalized, x + (quarterColWidth / 2) + 3, quarterResultY + 8, 12);
+        }
+      });
+      
+      endWhiteBox(assessmentBox.boxEndY);
+
+      // Assessment Legend and Risk Levels - Mirror ReportCard layout: grid grid-cols-2 gap-6
+      const legendStartY = currentY;
+      const marginX = tableMarginX; // Same 15mm margin as quarterly assessment table
+      const tableTotalWidth = pageWidth - 30; // Same calculation as quarterly assessment: (210 - 30) = 180mm
+      const gapBetweenBoxes = 6; // Match ReportCard gap-6 (24px = 6mm approximately)
+      const boxWidth = (tableTotalWidth - gapBetweenBoxes) / 2; // Each box width: (180-6)/2 = 87mm
+      const boxHeight = 100;
+      
+      // Layout: 15mm margin | 87mm legend | 6mm gap | 87mm risk | 15mm margin = 210mm total
+      // This mirrors the ReportCard: grid-cols-2 with equal 50% width boxes minus gap
+      
+      // Debug logging
+      console.log('PDF Legend Layout Debug:', {
+        pageWidth,
+        marginX,
+        tableTotalWidth,
+        gapBetweenBoxes,
+        boxWidth,
+        leftBoxStart: marginX,
+        leftBoxEnd: marginX + boxWidth,
+        rightBoxStart: marginX + boxWidth + gapBetweenBoxes,
+        rightBoxEnd: marginX + boxWidth + gapBetweenBoxes + boxWidth,
+        rightMargin: pageWidth - (marginX + boxWidth + gapBetweenBoxes + boxWidth)
+      });
+      
+      // Assessment Legend Box - Left side
+      const legendBoxStartY = legendStartY - 5;
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(marginX, legendBoxStartY, boxWidth, boxHeight, 'F');
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(marginX, legendBoxStartY, boxWidth, boxHeight, 'S');
+      
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Assessment Legend', marginX + 5, legendBoxStartY + 15);
+      
+      // Legend table structure
+      const legendTableStartY = legendBoxStartY + 25;
+      const legendRowHeight = 12;
+      const legendHeaderHeight = 10;
+      
+      // Draw Assessment Legend table headers
+      const availableWidth = boxWidth - 10; // Subtract 5mm margin on each side
+      const colWidths = [availableWidth * 0.20, availableWidth * 0.60, availableWidth * 0.20];
+      let x = marginX + 5;
+      
+      // Header row
+      const headerY = legendTableStartY;
+      colWidths.forEach((width, colIndex) => {
+        pdf.setFillColor(235, 246, 249); // Same light blue background as quarterly assessment table header
+        pdf.rect(x, headerY, width, legendHeaderHeight, 'F');
+        pdf.setDrawColor(0, 0, 0);
+        pdf.rect(x, headerY, width, legendHeaderHeight, 'S');
+        
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        const headerText = ['Shapes', 'Descriptions', 'Remarks'][colIndex];
+        pdf.text(headerText, x + (width / 2), headerY + 6, { align: 'center' });
+        
+        x += width;
+      });
+      
+      // Legend data
+      const legendData = (Array.isArray(visualFeedback) && visualFeedback.length > 0)
+        ? visualFeedback
+            .sort((a,b) => Number(a.visual_feedback_id) - Number(b.visual_feedback_id))
+            .map((vf) => [
+              // use actual shape from DB, but normalize blue diamond
+              (vf.visual_feedback_shape === '🔷' ? '◆' : vf.visual_feedback_shape) || '',
+              vf.visual_feedback_description || '',
+              (vf.visual_feedback_description === 'Not Met') ? 'Failed' : 'Passed'
+            ])
+        : [
+            ['❤', 'Excellent', 'Passed'],
+            ['★', 'Very Good', 'Passed'],
+            ['◆', 'Good', 'Passed'],
+            ['▲', 'Need Help', 'Passed'],
+            ['⬤', 'Not Met', 'Failed']
+          ];
+      
+      legendData.forEach((row, index) => {
+        const y = legendTableStartY + legendHeaderHeight + (index * legendRowHeight);
+        
+        // Draw grid lines - adjusted for compressed box with 5mm margins on both sides
+        const availableWidth = boxWidth - 10; // Subtract 5mm margin on each side
+        const colWidths = [availableWidth * 0.20, availableWidth * 0.60, availableWidth * 0.20];
+        let x = marginX + 5;
+        
+        colWidths.forEach((width, colIndex) => {
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(x, y, width, legendRowHeight, 'F');
+          pdf.setDrawColor(0, 0, 0);
+          pdf.rect(x, y, width, legendRowHeight, 'S');
+          
+          if (colIndex === 0) {
+            if (row[0] && typeof row[0] === 'string') {
+              renderSymbol(row[0], x + (width / 2), y + 8, 10);
+            }
+          } else {
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            const text = row[colIndex] || '';
+            if (typeof text === 'string') {
+              pdf.text(text, x + (width / 2), y + 8, { align: 'center' });
+            }
+          }
+          
+          x += width;
+        });
+      });
+      
+      // Risk Levels Box - Right side
+      const riskBoxStartY = legendStartY - 5;
+      const riskBoxX = marginX + boxWidth + gapBetweenBoxes;
+      
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(riskBoxX, riskBoxStartY, boxWidth, boxHeight, 'F');
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(riskBoxX, riskBoxStartY, boxWidth, boxHeight, 'S');
+      
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Risk Levels', riskBoxX + 5, riskBoxStartY + 15);
+      
+      // Risk levels table
+      const riskTableStartY = riskBoxStartY + 25;
+      const riskRowHeight = 15;
+      const riskHeaderHeight = 10;
+      
+      // Draw Risk Levels table headers
+      const riskAvailableWidth = boxWidth - 10; // Subtract 5mm margin on each side
+      const riskColWidths = [riskAvailableWidth * 0.40, riskAvailableWidth * 0.60]; // Increased level column width
+      let riskX = riskBoxX + 5;
+      
+      // Header row
+      const riskHeaderY = riskTableStartY;
+      riskColWidths.forEach((width, colIndex) => {
+        pdf.setFillColor(235, 246, 249); // Same light blue background as quarterly assessment table header
+        pdf.rect(riskX, riskHeaderY, width, riskHeaderHeight, 'F');
+        pdf.setDrawColor(0, 0, 0);
+        pdf.rect(riskX, riskHeaderY, width, riskHeaderHeight, 'S');
+        
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        const headerText = ['Level', 'Meaning'][colIndex];
+        pdf.text(headerText, riskX + (width / 2), riskHeaderY + 6, { align: 'center' });
+        
+        riskX += width;
+      });
+      
+      const riskData = [
+        { color: [34, 197, 94], label: 'Low', description: 'Meeting Expectations' },
+        { color: [251, 191, 36], label: 'Moderate', description: 'Needs Some Support' },
+        { color: [239, 68, 68], label: 'High', description: 'Needs Close Attention' }
+      ];
+      
+      riskData.forEach((risk, index) => {
+        const y = riskTableStartY + riskHeaderHeight + (index * riskRowHeight);
+        
+        // Draw grid lines - adjusted for compressed box with 5mm margins on both sides
+        const availableWidth = boxWidth - 10; // Subtract 5mm margin on each side
+        const colWidths = [availableWidth * 0.40, availableWidth * 0.60]; // Increased level column width
+        let x = riskBoxX + 5;
+        
+        colWidths.forEach((width, colIndex) => {
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(x, y, width, riskRowHeight, 'F');
+          pdf.setDrawColor(0, 0, 0);
+          pdf.rect(x, y, width, riskRowHeight, 'S');
+          
+          if (colIndex === 0) {
+            // Color circle
+            pdf.setFillColor(risk.color[0], risk.color[1], risk.color[2]);
+            pdf.circle(x + 6, y + 8, 3.5, 'F');
+            
+            // Label
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(risk.label, x + 12, y + 10);
+          } else {
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(risk.description, x + (width / 2), y + 10, { align: 'center' });
+          }
+          
+          x += width;
+        });
+      });
+      
+      currentY = Math.max(legendBoxStartY + boxHeight, riskBoxStartY + boxHeight) + 15;
+
+      // Only include Page 4 when overall progress exists
+      const includeStatusPage = hasOverallProgress();
+      if (includeStatusPage) {
+        // Page 4: Quarterly Performance Trend
+        addNewPage('#ffeef2'); // Light pink
+        
+        const trendBox = startWhiteBox(130);
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Quarterly Performance Trend', 15, trendBox.boxStartY + 15);
+        
+        // Simple line chart grid and labels
+        const chartStartY = trendBox.boxStartY + 30;
+        const chartHeight = 60;
+        const marginXConsistent = 15;
+        const gridLeft = marginXConsistent + 40;
+        const gridRight = pageWidth - marginXConsistent;
+        const chartWidth = gridRight - gridLeft;
+        
+        // Draw grid
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.3);
+        for (let i = 0; i <= 4; i++) {
+          const y = chartStartY + (i * (chartHeight / 4));
+          pdf.line(gridLeft, y, gridLeft + chartWidth, y);
+        }
+        
+        // Y-axis labels (Excellent at top, Not Met at bottom)
+        const perfLevels = ['Excellent', 'Very Good', 'Good', 'Need Help', 'Not Met'];
+        perfLevels.forEach((level, index) => {
+          const y = chartStartY + (index * (chartHeight / 4));
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(0, 0, 0);
+          pdf.text(level, marginXConsistent, y + 2.5);
+        });
+        
+        // X-axis labels
+        const xLabelOrdinals = ['1st', '2nd', '3rd', '4th'];
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        xLabelOrdinals.forEach((ord, i) => {
+          const x = gridLeft + (i * (chartWidth / 3));
+          const bottomY = chartStartY + chartHeight + 8;
+          const align = i === 0 ? 'left' : i === 3 ? 'right' : 'center';
+          pdf.text(ord, x, bottomY, { align });
+          pdf.text('Quarter', x, bottomY + 5, { align });
+        });
+        
+        // Axis titles
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Performance Level', marginXConsistent, chartStartY - 6);
+        pdf.text('Quarter', gridLeft + chartWidth / 2, chartStartY + chartHeight + 18, { align: 'center' });
+        
+        // Draw performance points/line using dynamic data
+        const yMap = {
+          'Excellent': 0, 'Very Good': 1, 'Good': 2, 'Need Help': 3, 'Not Met': 4
+        };
+        
+        const xs = (idx) => gridLeft + (idx * (chartWidth / 3));
+        const ys = (val) => chartStartY + (val * (chartHeight / 4));
+        
+        // Get dynamic data from quarterlyPerformance and visualFeedbackMap
+        const dataPoints = [1,2,3,4].map((qid) => {
+          const card = quarterlyPerformance.find(c => Number(c.quarter_id) === qid);
+          const desc = card && visualFeedbackMap[card.quarter_visual_feedback_id];
+          return desc && yMap.hasOwnProperty(desc) ? yMap[desc] : null;
+        });
+        
+        // Check if we have any data points
+        const hasData = dataPoints.some(v => v !== null);
+        
+        if (hasData) {
+          // Draw line
+          pdf.setDrawColor(96, 165, 250);
+          pdf.setLineWidth(2);
+          let prev = null;
+          dataPoints.forEach((v, i) => {
+            if (v === null) return;
+            const x = xs(i);
+            const y = ys(v); // Use v directly since yMap now has correct order
+            if (prev) {
+              pdf.line(prev.x, prev.y, x, y);
+            }
+            prev = { x, y };
+            pdf.setFillColor(96, 165, 250);
+            pdf.circle(x, y, 2.5, 'F');
+          });
+        } else {
+          // Show "No data available" message
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(128, 128, 128);
+          pdf.text('No chart data available', gridLeft + chartWidth / 2, chartStartY + chartHeight / 2, { align: 'center' });
+        }
+        
+        endWhiteBox(trendBox.boxEndY);
+        
+        // Performance Summary (unified style for detailed and overall assessment)
+        // Precompute height needed to keep everything on a single page
+        const summaryParts = [];
+        if (milestoneSummary && String(milestoneSummary).trim()) summaryParts.push(String(milestoneSummary).trim());
+        if (milestoneOverallSummary && String(milestoneOverallSummary).trim()) summaryParts.push(String(milestoneOverallSummary).trim());
+        const combinedSummary = summaryParts.length ? summaryParts.join('\n\n') : 'No summary available.';
+        const summaryLines = pdf.splitTextToSize(combinedSummary, pageWidth - 30);
+        const estimatedTextHeight = summaryLines.length * 5; // 5px per line from addText
+        const riskBarAllowance = 22; // bar + spacing
+        const basePadding = 40; // title + top/bottom padding
+        const dynamicSummaryHeight = Math.min(110, Math.max(60, basePadding + estimatedTextHeight + riskBarAllowance));
+        const summaryBox = startWhiteBox(dynamicSummaryHeight);
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Performance Summary', 15, summaryBox.boxStartY + 15);
+        
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        const afterSummaryY = addText(combinedSummary, 15, summaryBox.boxStartY + 30, pageWidth - 30);
+        
+        // Replace green bar with compact risk info box (web-style)
+        const finalRiskId = (overallRisk && overallRisk.risk) || (overallProgress && overallProgress.risk_id);
+        let barColor = [96, 165, 250];
+        let riskLabel = 'No Data';
+        let riskDesc = 'Risk assessment data is not available.';
+        
+        if (finalRiskId) {
+          if (finalRiskId == 1) {
+            barColor = [34, 197, 94]; // green
+            riskLabel = 'Low';
+            riskDesc = 'Student requires immediate attention and intervention.';
+          } else if (finalRiskId == 2) {
+            barColor = [251, 191, 36]; // yellow
+            riskLabel = 'Moderate';
+            riskDesc = 'Student may need additional support in some areas.';
+          } else if (finalRiskId == 3) {
+            barColor = [239, 68, 68]; // red
+            riskLabel = 'High';
+            riskDesc = 'Student requires immediate attention and intervention.';
+          }
+        }
+        
+        // Risk status box with centered content - positioned within Performance Summary box
+        const riskBoxY = Math.max(afterSummaryY + 10, summaryBox.boxStartY + dynamicSummaryHeight - 25);
+        const riskBoxHeight = 25; // Reduced height for tighter fit
+        
+        // Ensure the risk box stays within the Performance Summary white box boundaries
+        const maxRiskBoxY = summaryBox.boxStartY + dynamicSummaryHeight - 5; // Leave 5mm margin from bottom of summary box
+        const adjustedRiskBoxY = Math.min(riskBoxY, maxRiskBoxY - riskBoxHeight);
+        const centerY = adjustedRiskBoxY + (riskBoxHeight / 2); // Center position for content
+        
+        pdf.setFillColor(255, 255, 255); // White background for risk status box
+        pdf.rect(15, adjustedRiskBoxY, pageWidth - 30, riskBoxHeight, 'F');
+        pdf.setDrawColor(200, 200, 200);
+        pdf.rect(15, adjustedRiskBoxY, pageWidth - 30, riskBoxHeight, 'S');
+        
+        // Left-aligned positioning with padding
+        const leftPadding = 35; // Increased padding from left edge of box
+        
+        // Risk circle - left-aligned with padding
+        pdf.setFillColor(barColor[0], barColor[1], barColor[2]);
+        pdf.circle(leftPadding, centerY, 3.5, 'F');
+        
+        // Risk label - left-aligned next to circle
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(riskLabel, leftPadding + 10, centerY + 1);
+        
+        // Risk description - left-aligned after label
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(riskDesc, leftPadding + 40, centerY + 1);
+        
+        // The gap space is now inside the box - no additional external spacing needed
+        const finalBoxEndY = adjustedRiskBoxY + riskBoxHeight;
+        
+        endWhiteBox(finalBoxEndY);
+      }
+
+      // Add footer to each page
+      const pageCount = pdf.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`Generated on ${new Date().toLocaleDateString()} | School Year ${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
+        pdf.text(`Page ${i} of ${pageCount}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
+      }
+
+      // Generate filename
+      const studentNameForFile = selectedStudent ? 
+        `${selectedStudent.stud_firstname || ''}_${selectedStudent.stud_lastname || ''}`.replace(/\s+/g, '_') : 
+        'Student';
+      const timestamp = new Date().toISOString().split('T')[0];
+      const timeStr = new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].split('.')[0];
+      const filename = `Report_Card_${studentNameForFile}_${timestamp}_${timeStr}.pdf`;
+
+      // Save the PDF
+      pdf.save(filename);
+      
+      toast.success("PDF downloaded successfully!", { autoClose: 3000 });
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error("Failed to generate PDF. Please try again.");
     }
   };
 
@@ -1047,6 +2119,13 @@ export default function StudentProgress({ formData: initialFormData }) {
     return profile?.[`${prefix}_occupation`] || '';
   }
 
+  function formatDateOfBirth(dateStr) {
+    if (!dateStr) return '________________________';
+    const date = new Date(dateStr);
+    if (isNaN(date)) return dateStr;
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
   // Helper to format names as "Lastname, Firstname Middlename"
   function formatName(fullName) {
     if (!fullName) return '';
@@ -1279,15 +2358,15 @@ export default function StudentProgress({ formData: initialFormData }) {
               )}
             </div>
             
-            {/* Export PDF Button - Better mobile positioning */}
+            {/* Download PDF Button - Better mobile positioning */}
             {selectedStudent && (activeTab === "Assessment" || activeTab === "Status") && (
               <button
                 onClick={handleExportAssessment}
                 className="w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-2 bg-[#2c2f6f] text-white px-4 py-2.5 sm:px-3 sm:py-1.5 rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm sm:text-base"
-                title="Print or Save Assessment as PDF"
+                title="Download Student Progress Report as PDF"
               >
                 <FaPrint className="text-sm sm:text-base" />
-                <span className="font-semibold">Export PDF</span>
+                <span className="font-semibold">Download PDF</span>
               </button>
             )}
           </div>

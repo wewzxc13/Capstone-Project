@@ -3336,11 +3336,15 @@ export default function StudentProgress({ formData: initialFormData }) {
                                         if (q.id === 5) {
                                           const subjProgress = finalSubjectProgress.find(row => row.subject_name === subject);
                                           const vf = visualFeedback.find(v => v.visual_feedback_id == subjProgress?.finalsubj_visual_feedback_id);
+                                          const shape = vf?.visual_feedback_shape || '';
                                           return (
                                             <td key={q.id} className="px-4 py-3 text-center">
-                                              {vf ? (
-                                                <span className="text-sm font-medium text-gray-700">
-                                                  {vf.visual_feedback_description}
+                                              {shape ? (
+                                                <span 
+                                                  style={{ color: shapeColorMap[shape] || 'inherit', fontSize: '1.5em' }}
+                                                  className="inline-block hover:scale-110 transition-transform"
+                                                >
+                                                  {shape}
                                                 </span>
                                               ) : (
                                                 <span></span>

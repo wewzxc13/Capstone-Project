@@ -421,3 +421,12 @@ Plain Input Password: Marg@123
 Input: manongdomargareth1335@gmail.com
 Hashed DB Password: $2y$10$em/CoMFNY1tjX8/ON.1x7.zpc2Bu3VbE55C.wM2oL1mrhZY/iTQUe
 Plain Input Password: Marg@123
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123
+Input: james@gmail.com
+Hashed DB Password: $2y$10$cgYa2YXBjNok6vsTEacAw.iTtHec8qCjZd7t.XoKRXEAIUzl.ou2G
+Plain Input Password: James@123
+Input: paulandrewnerona@gmail.com
+Hashed DB Password: $2y$10$qBYcdXlmymfYWk1GNMaHH.4hJB8K3Ft4G0L0v7gi4Ph0zvXceuCyG
+Plain Input Password: Andrew@123
