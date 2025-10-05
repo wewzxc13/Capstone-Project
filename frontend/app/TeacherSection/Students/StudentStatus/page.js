@@ -5,7 +5,7 @@ import { Line } from "react-chartjs-2";
 import "../../../../lib/chart-config.js";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import SharedExport from '../SharedExport';
+import { generateAssessmentPDF } from '../DownloadPDF.js';
 
 export default function StudentStatus({ student, renderChart, onBack, triggerExport, onExportComplete, parentProfile, studentLevelData, advisory }) {
   // Handle export trigger from parent
@@ -53,7 +53,7 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
   const [overallSummaryDraft, setOverallSummaryDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const printRef = useRef(null);
+  // Removed print-based export path; using shared jsPDF instead
   
   // Additional state for SharedExport component
   const [subjects, setSubjects] = useState([]);
@@ -278,154 +278,28 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
     return (typeof text === 'string' ? text.trim() : '') || "";
   }
 
-  // Export/Print function
-  const handleExportAssessment = () => {
+  // Export using shared jsPDF generator (same content as Assessment)
+  const handleExportAssessment = async () => {
     try {
-      const printableElement = printRef.current;
-      if (!printableElement) {
-        toast.error("Nothing to export yet.");
-        return;
-      }
-
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
-      if (isMobile) {
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
-
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
-        const cloned = printableElement.cloneNode(true);
-        const tempId = 'reportcard-printable';
-        cloned.setAttribute('id', tempId);
-
-        const head = doc.createElement('head');
-        document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
-          const newLink = doc.createElement('link');
-          newLink.rel = 'stylesheet';
-          newLink.href = link.href;
-          head.appendChild(newLink);
-        });
-        document.querySelectorAll('style').forEach((styleEl) => {
-          const newStyle = doc.createElement('style');
-          newStyle.textContent = styleEl.textContent;
-          head.appendChild(newStyle);
-        });
-
-        const style = doc.createElement('style');
-        style.setAttribute('media', 'print');
-        style.innerHTML = `
-          @page { size: Letter portrait; margin: 0; }
-          @media print {
-            html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            #${tempId} { position: static !important; width: 8.5in !important; margin: 0 auto !important; }
-            #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
-            table, tr, td, th { page-break-inside: avoid !important; }
-            .rounded-xl, .rounded-lg { box-shadow: none !important; }
-            .print-page { width: 8.5in !important; min-height: 11in !important; height: 11in !important; box-sizing: border-box !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; position: relative !important; }
-            .print-page::before { content: ""; position: absolute; inset: 0; z-index: 0; }
-            .print-page > * { position: relative; z-index: 1; }
-            .pastel-blue::before { background: #eef5ff !important; }
-            .pastel-green::before { background: #eaf7f1 !important; }
-            .pastel-yellow::before { background: #fff7e6 !important; }
-            .pastel-pink::before { background: #ffeef2 !important; }
-            .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
-            .print-page + .print-page { page-break-before: always !important; break-before: page !important; }
-            .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
-            .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
-          }
-        `;
-        head.appendChild(style);
-
-        const html = doc.createElement('html');
-        html.appendChild(head);
-        const body = doc.createElement('body');
-        body.style.margin = '0';
-        body.appendChild(cloned);
-        html.appendChild(body);
-        doc.open();
-        doc.write('<!doctype html>' + html.outerHTML);
-        doc.close();
-
-        const assignPageNumbers = () => {
-          const pages = doc.querySelectorAll('.print-page');
-          const total = pages.length;
-          pages.forEach((p, i) => p.setAttribute('data-page-number', `${i+1}/${total}`));
-        };
-
-        setTimeout(() => {
-          assignPageNumbers();
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          setTimeout(() => { if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1500);
-        }, 800);
-        return;
-      }
-
-      const originalTitle = document.title;
-
-      // Desktop path unchanged
-      const tempId = "reportcard-printable";
-      const cloned = printableElement.cloneNode(true);
-      cloned.setAttribute("id", tempId);
-      cloned.style.display = 'block';
-      cloned.style.margin = '0';
-      cloned.style.padding = '0';
-      document.body.appendChild(cloned);
-
-      const style = document.createElement("style");
-      style.setAttribute("media", "print");
-      style.innerHTML = `
-        @page { size: auto; margin: 0; }
-        @media print {
-          html, body { margin: 0 !important; padding: 0 !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          body > *:not(#${tempId}) { display: none !important; }
-          #${tempId} { position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important; padding: 0; margin: 0; font-family: Calibri, 'Arial Rounded MT Bold', 'Comic Sans MS', Arial, sans-serif; display: flex !important; flex-direction: column !important; max-width: none !important; }
-          #${tempId} * { overflow: visible !important; max-height: none !important; visibility: visible !important; }
-          table, tr, td, th { page-break-inside: avoid !important; }
-          .rounded-xl, .rounded-lg { box-shadow: none !important; }
-          .print-page { width: 100% !important; position: relative !important; min-height: 100vh !important; box-sizing: border-box !important; }
-          .print-page + .print-page { page-break-before: always; break-before: page; }
-          .no-break { page-break-inside: avoid; break-inside: avoid; }
-          .section-title { font-weight: 700; color: #1f2937; }
-          .pastel-blue { background: #eef5ff; }
-          .pastel-green { background: #eaf7f1; }
-          .pastel-yellow { background: #fff7e6; }
-          .pastel-pink { background: #ffeef2; }
-          .border-soft { border: 1px solid #e5e7eb; }
-          .print-page::after { content: attr(data-page-number); position: absolute; right: 0.25in; bottom: 0.15in; font-size: 10px; color: #6b7280; }
-        }
-      `;
-
-      document.head.appendChild(style);
-
-      const pages = cloned.querySelectorAll('.print-page');
-      const totalPages = pages.length;
-      pages.forEach((pageEl, index) => {
-        pageEl.setAttribute('data-page-number', `${index + 1}/${totalPages}`);
+      toast.info("Generating PDF...", { autoClose: 2000 });
+      await generateAssessmentPDF({
+        student,
+        parentProfile,
+        studentLevelData,
+        advisory,
+        attendanceData,
+        subjects,
+        quarterFeedback,
+        progressCards,
+        finalSubjectProgress,
+        overallProgress,
+        visualFeedback,
+        comments,
+        milestoneSummary,
+        milestoneOverallSummary,
+        quarters
       });
-
-      const studentName = student ? `${student.stud_lastname || student.lastName || ''}, ${student.stud_firstname || student.firstName || ''}`.trim() : "";
-      document.title = `Report Card ${studentName ? `- ${studentName}` : ''}`;
-
-      const cleanup = () => {
-        try {
-          if (style && style.parentNode) document.head.removeChild(style);
-          if (cloned && cloned.parentNode) cloned.parentNode.removeChild(cloned);
-          document.title = originalTitle;
-        } catch (e) {}
-      };
-
-      const afterPrint = () => { window.removeEventListener('afterprint', afterPrint); cleanup(); };
-      window.addEventListener('afterprint', afterPrint);
-      setTimeout(() => { window.print(); }, 300);
-      setTimeout(() => { cleanup(); }, 1500);
+      toast.success("PDF downloaded successfully!");
     } catch (err) {
       console.error('Error exporting assessment:', err);
       toast.error("Failed to export. Please try again.");
@@ -995,26 +869,7 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
         </div>
       </div>
 
-      {/* Shared Export Component */}
-      <div ref={printRef} className="hidden print:block" style={{margin: 0, padding: 0}}>
-        <SharedExport
-          student={student}
-          parentProfile={parentProfile}
-          studentLevelData={studentLevelData}
-          advisory={advisory}
-          attendanceData={attendanceData}
-          subjects={subjects}
-          quarterFeedback={quarterFeedback}
-          progressCards={progressCards}
-          finalSubjectProgress={finalSubjectProgress}
-          overallProgress={overallProgress}
-          visualFeedback={visualFeedback}
-          comments={comments}
-          milestoneSummary={milestoneSummary}
-          milestoneOverallSummary={milestoneOverallSummary}
-          quarters={quarters}
-        />
-      </div>
+      {/* Removed print-based SharedExport; using jsPDF generator for download */}
     </div>
   );
 }

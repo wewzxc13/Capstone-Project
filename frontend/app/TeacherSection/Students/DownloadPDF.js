@@ -1,5 +1,478 @@
 "use client";
 import React from "react";
+import jsPDF from 'jspdf';
+
+// Shared jsPDF generator used by both Assessment and Status tabs
+export async function generateAssessmentPDF({
+  student = {},
+  parentProfile = {},
+  studentLevelData = {},
+  advisory = {},
+  attendanceData = [],
+  subjects = [],
+  quarterFeedback = [],
+  progressCards = [],
+  finalSubjectProgress = [],
+  overallProgress = null,
+  visualFeedback = [],
+  comments = [],
+  milestoneSummary = null,
+  milestoneOverallSummary = null,
+  quarters = [
+    { id: 1, name: '1st Quarter' },
+    { id: 2, name: '2nd Quarter' },
+    { id: 3, name: '3rd Quarter' },
+    { id: 4, name: '4th Quarter' },
+    { id: 5, name: 'Final' },
+  ]
+}) {
+  // The implementation mirrors the Assessment tab's jsPDF generator,
+  // refactored to use passed-in data. It draws page-by-page to keep
+  // memory low and avoid timeouts.
+
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = 210;
+  const pageHeight = 295;
+  let currentY = 20;
+
+  const formatDateOfBirth = (dateStr) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return String(dateStr);
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  const formatName = (fullName) => {
+    if (!fullName) return '—';
+    const special = ['Not assigned','Not Assigned','not assigned','N/A','n/a','None','none','TBD','tbd'];
+    if (special.includes(String(fullName).trim())) return String(fullName).trim();
+    const parts = String(fullName).trim().split(' ');
+    if (parts.length < 2) return String(fullName);
+    const last = parts[parts.length - 1];
+    const first = parts[0];
+    const middle = parts.slice(1, -1).join(' ');
+    return middle ? `${last}, ${first} ${middle}` : `${last}, ${first}`;
+  };
+
+  const computeAge = (dateStr) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    const diff = Date.now() - d.getTime();
+    const ageDate = new Date(diff);
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
+  };
+
+  const buildParentName = (profile, prefix) => {
+    if (!profile) return '';
+    const direct = profile[`${prefix}_name`] || profile[`${prefix}Name`];
+    const first = profile[`${prefix}_firstname`] || profile[`${prefix}_first_name`] || profile[`${prefix}_first`] || profile[`${prefix}_fname`] || profile[`${prefix}FirstName`];
+    const middle = profile[`${prefix}_middlename`] || profile[`${prefix}_middle_name`] || profile[`${prefix}_mname`] || profile[`${prefix}MiddleName`];
+    const last = profile[`${prefix}_lastname`] || profile[`${prefix}_last_name`] || profile[`${prefix}_lname`] || profile[`${prefix}LastName`];
+    if (direct && String(direct).trim()) return String(direct).trim();
+    return [first, middle, last].filter(Boolean).map(v => String(v).trim()).join(' ');
+  };
+
+  const getParentAge = (profile, prefix) => {
+    if (!profile) return '';
+    const age = profile[`${prefix}_age`] || profile[`${prefix}Age`];
+    if (age) return String(age);
+    const bday = profile[`${prefix}_birthdate`] || profile[`${prefix}_dob`] || profile[`${prefix}Birthdate`];
+    const computed = computeAge(bday);
+    return Number.isFinite(computed) ? String(computed) : '';
+  };
+
+  const getParentOccupation = (profile, prefix) => {
+    if (!profile) return '';
+    return profile[`${prefix}_occupation`] || profile[`${prefix}Occupation`] || '';
+  };
+
+  const pdfShapeColorMap = {
+    '❤️': [244, 67, 54], '❤': [244, 67, 54], '♥': [244, 67, 54],
+    '■': [0, 188, 212], '⭐': [255, 152, 0], '★': [255, 152, 0],
+    '⬢': [205, 220, 57], '🔷': [33, 150, 243], '◆': [33, 150, 243],
+    '▲': [76, 175, 80], '🟡': [255, 235, 59], '●': [255, 235, 59], '⬤': [255, 235, 59],
+  };
+
+  const toUnicodeShape = (raw) => {
+    const s = (raw ?? '').toString().trim();
+    if (!s) return '';
+    if (['♥','❤','❤️','★','⭐','◆','🔷','▲','⬤','●','■','⬢'].includes(s)) {
+      if (s === '●') return '⬤';
+      if (s === '❤️' || s === '♥') return '❤';
+      if (s === '⭐') return '★';
+      if (s === '🔷') return '◆';
+      return s;
+    }
+    const map = { '&e': '★', '&E': '★', '%Æ': '◆', '&c': '◆', '%²': '▲', '&t': '▲', '%I': '⬤', '&o': '⬤', '[]': '■', '+^': '⬢' };
+    return map[s] || s;
+  };
+
+  const renderSymbol = (symbol, x, y, fontSize = 12) => {
+    if (!symbol) return;
+    const finalSymbol = toUnicodeShape(symbol);
+    const rgb = pdfShapeColorMap[finalSymbol] || [0, 0, 0];
+    const size = fontSize * 0.8;
+    const r = size / 3.2;
+    const cx = x;
+    const cy = y;
+    pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
+    pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+    pdf.setLineWidth(0.6);
+    switch (finalSymbol) {
+      case '⬤': pdf.circle(cx, cy, r * 1.25, 'F'); break;
+      case '▲': {
+        const h = r * 2.1;
+        pdf.triangle(cx, cy - h / 1.3, cx - r * 1.2, cy + h / 2.2, cx + r * 1.2, cy + h / 2.2, 'F');
+        break;
+      }
+      case '❤': {
+        const cyh = cy - r * 0.05;
+        const lobeRadius = r * 0.75;
+        const lobeOffsetX = r * 0.55;
+        const lobeOffsetY = r * 0.25;
+        pdf.circle(cx - lobeOffsetX, cyh - lobeOffsetY, lobeRadius, 'F');
+        pdf.circle(cx + lobeOffsetX, cyh - lobeOffsetY, lobeRadius, 'F');
+        const baseY = cyh + r * 0.2;
+        const baseHalfWidth = lobeRadius * 1.2;
+        const pointDepth = r * 1.2;
+        pdf.triangle(cx - baseHalfWidth, baseY, cx + baseHalfWidth, baseY, cx, cyh + pointDepth, 'F');
+        break;
+      }
+      case '◆': {
+        const w = r * 1.6; const h = r * 1.6;
+        pdf.triangle(cx, cy - h, cx - w, cy, cx + w, cy, 'F');
+        pdf.triangle(cx, cy + h, cx - w, cy, cx + w, cy, 'F');
+        break;
+      }
+      case '★': {
+        const points = 5; const outer = r * 1.4; const inner = outer * 0.5; const coords = [];
+        for (let i = 0; i < points * 2; i++) {
+          const radius = i % 2 === 0 ? outer : inner;
+          const angle = (Math.PI / points) * i - Math.PI / 2;
+          coords.push([cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius]);
+        }
+        coords.push(coords[0]);
+        for (let i = 1; i < coords.length; i++) { pdf.line(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]); }
+        pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+        for (let i = 0; i < coords.length - 1; i++) { pdf.triangle(coords[i][0], coords[i][1], coords[i + 1][0], coords[i + 1][1], cx, cy, 'F'); }
+        break;
+      }
+      case '■': { const side = r * 2.2; pdf.rect(cx - side / 2, cy - side / 2, side, side, 'F'); break; }
+      case '⬢': {
+        const sides = 6; const radius = r * 1.35; const pts = [];
+        for (let i = 0; i < sides; i++) { const ang = (Math.PI / 3) * i - Math.PI / 2; pts.push([cx + Math.cos(ang) * radius, cy + Math.sin(ang) * radius]); }
+        pts.push(pts[0]);
+        for (let i = 1; i < pts.length; i++) { pdf.line(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]); }
+        for (let i = 0; i < pts.length - 1; i++) { pdf.triangle(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], cx, cy, 'F'); }
+        break;
+      }
+      default: pdf.setFont('helvetica', 'normal'); pdf.setFontSize(fontSize); pdf.setTextColor(rgb[0], rgb[1], rgb[2]); pdf.text(finalSymbol, x, y + fontSize * 0.35, { align: 'center' });
+    }
+  };
+
+  const addNewPage = (bgRGB) => {
+    pdf.addPage();
+    pdf.setFillColor(bgRGB[0], bgRGB[1], bgRGB[2]);
+    pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+    currentY = 20;
+  };
+
+  // Page 1 background
+  pdf.setFillColor(238, 245, 255);
+  pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+  // Header
+  const addHeader = async () => {
+    const logoX = 15; const logoY = currentY + 15; const logoSize = 30; const logoRadius = 15;
+    try {
+      const resp = await fetch('/assets/image/villelogo.png');
+      if (resp.ok) {
+        const blob = await resp.blob();
+        const dataUrl = await new Promise((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.readAsDataURL(blob); });
+        pdf.setFillColor(255, 255, 255); pdf.circle(logoX + logoRadius, logoY, logoRadius, 'F');
+        pdf.setDrawColor(200, 200, 200); pdf.circle(logoX + logoRadius, logoY, logoRadius, 'S');
+        pdf.addImage(dataUrl, 'PNG', logoX + 2, logoY - logoRadius + 2, logoSize - 4, logoSize - 4);
+      }
+    } catch {}
+    pdf.setTextColor(35, 44, 103); pdf.setFontSize(18); pdf.setFont('helvetica', 'bold');
+    pdf.text("LEARNERS' VILLE", pageWidth / 2, logoY + 2, { align: 'center' });
+    pdf.setFontSize(12); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(0, 0, 0);
+    pdf.text('6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines', pageWidth / 2, logoY + 10, { align: 'center' });
+    pdf.setFontSize(12); pdf.setFont('helvetica', 'bold');
+    pdf.text(`SY ${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`, pageWidth - 20, logoY + 2, { align: 'right' });
+    pdf.setDrawColor(100, 100, 100); pdf.setLineWidth(0.5); pdf.line(10, logoY + 20, pageWidth - 10, logoY + 20);
+    currentY = logoY + 30;
+  };
+
+  await addHeader();
+
+  // Learner Info card
+  const startWhiteBox = (boxHeight = 60) => {
+    const footerTopY = pageHeight - 30;
+    if ((currentY - 5) + boxHeight > footerTopY) { addNewPage([238, 245, 255]); }
+    const boxStartY = currentY - 5; const boxEndY = boxStartY + boxHeight;
+    pdf.setFillColor(255, 255, 255); pdf.rect(8, boxStartY, pageWidth - 16, boxHeight, 'F');
+    pdf.setDrawColor(200, 200, 200); pdf.rect(8, boxStartY, pageWidth - 16, boxHeight, 'S');
+    return { boxStartY, boxEndY };
+  };
+  const endWhiteBox = (boxEndY) => { currentY = boxEndY + 8; };
+
+  const learnerBox = startWhiteBox(80);
+  pdf.setFontSize(16); pdf.setFont('helvetica', 'bold'); pdf.text("Learner's Information", 15, learnerBox.boxStartY + 15);
+  const studentName = student ? `${student.stud_lastname || student.lastName || ''}, ${student.stud_firstname || student.firstName || ''} ${student.stud_middlename || student.middleName || ''}`.trim() : '____________________________';
+  pdf.setFontSize(12); pdf.setFont('helvetica', 'normal');
+  const leftX = 15; const rightX = 100; const startY = learnerBox.boxStartY + 30; const lineHeight = 10;
+  pdf.setTextColor(100, 100, 100); pdf.text('Name:', leftX, startY);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); pdf.text(studentName, leftX + 15, startY);
+  pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Level:', leftX, startY + lineHeight);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold');
+  const studentLevel = studentLevelData?.level_name || studentLevelData?.levelName || student?.level_name || student?.levelName || student?.level?.level_name || '________________________';
+  pdf.text(studentLevel, leftX + 15, startY + lineHeight);
+  pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Lead Teacher:', leftX, startY + (lineHeight * 2));
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold');
+  const leadTeacher = advisory?.lead_teacher_name ? formatName(advisory.lead_teacher_name) : '________________________';
+  pdf.text(leadTeacher, leftX + 30, startY + (lineHeight * 2));
+  pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Sex:', rightX, startY);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); const studentGender = student?.stud_gender || student?.gender || '________________________'; pdf.text(studentGender, rightX + 10, startY);
+  pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Date of Birth:', rightX, startY + lineHeight);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); const studentDOB = formatDateOfBirth(student?.dob || student?.stud_birthdate || student?.user_birthdate) || '________________________'; pdf.text(studentDOB, rightX + 28, startY + lineHeight);
+  pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Assistant Teacher:', rightX, startY + (lineHeight * 2));
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); const assistantTeacher = advisory?.assistant_teacher_name ? formatName(advisory.assistant_teacher_name) : '________________________'; pdf.text(assistantTeacher, rightX + 40, startY + (lineHeight * 2));
+  endWhiteBox(learnerBox.boxEndY);
+
+  // Socio-demographic
+  const socioBox = startWhiteBox(100);
+  pdf.setFontSize(16); pdf.setFont('helvetica', 'bold'); pdf.text('Sociodemographic Profile', 15, socioBox.boxStartY + 15);
+  pdf.setFontSize(12); pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Handedness:', 15, socioBox.boxStartY + 30);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); const handedness = student?.handedness || student?.stud_handedness || '________________________'; pdf.text(handedness, 43, socioBox.boxStartY + 30);
+  const parentStartY = socioBox.boxStartY + 45; const parentLeftX = 15; const parentRightX = 100; const parentLineHeight = 8;
+  pdf.setFontSize(14); pdf.setFont('helvetica', 'bold'); pdf.text("Father's Details", parentLeftX, parentStartY);
+  pdf.setFontSize(12); pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Name:', parentLeftX, parentStartY + 15);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); const fatherName = buildParentName(parentProfile, 'father') || '________________________'; pdf.text(fatherName, parentLeftX + 15, parentStartY + 15);
+  pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Age:', parentLeftX, parentStartY + 25);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); const fatherAge = getParentAge(parentProfile, 'father') || '________________________'; pdf.text(fatherAge, parentLeftX + 15, parentStartY + 25);
+  pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Occupation:', parentLeftX, parentStartY + 35);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); const fatherOccupation = getParentOccupation(parentProfile, 'father') || '________________________'; pdf.text(fatherOccupation, parentLeftX + 27, parentStartY + 35);
+  pdf.setFontSize(14); pdf.setFont('helvetica', 'bold'); pdf.text("Mother's Details", parentRightX, parentStartY);
+  pdf.setFontSize(12); pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Name:', parentRightX, parentStartY + 15);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); const motherName = buildParentName(parentProfile, 'mother') || '________________________'; pdf.text(motherName, parentRightX + 15, parentStartY + 15);
+  pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Age:', parentRightX, parentStartY + 25);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); const motherAge = getParentAge(parentProfile, 'mother') || '________________________'; pdf.text(motherAge, parentRightX + 13, parentStartY + 25);
+  pdf.setTextColor(100, 100, 100); pdf.setFont('helvetica', 'normal'); pdf.text('Occupation:', parentRightX, parentStartY + 35);
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'bold'); const motherOccupation = getParentOccupation(parentProfile, 'mother') || '________________________'; pdf.text(motherOccupation, parentRightX + 27, parentStartY + 35);
+  endWhiteBox(socioBox.boxEndY);
+
+  // Page 2: Attendance
+  addNewPage([234, 247, 241]);
+  currentY = 20;
+  const attendanceBox = startWhiteBox(120);
+  pdf.setFontSize(16); pdf.setFont('helvetica', 'bold'); pdf.text('Record of Attendance', 15, attendanceBox.boxStartY + 15);
+  const getAttendanceSummary = () => {
+    if (!attendanceData) return null;
+    const months = [7,8,9,10,11,0,1,2,3];
+    const monthLabels = ['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr'];
+    const summary = monthLabels.map((label, idx) => {
+      const month = months[idx];
+      const studentMonth = attendanceData.filter(a => new Date(a.attendance_date).getMonth() === month && a.student_id == student.student_id);
+      const uniqueDates = [...new Set(studentMonth.map(a => a.attendance_date))];
+      const dateStatuses = uniqueDates.map(date => {
+        const recordsForDate = studentMonth.filter(a => a.attendance_date === date);
+        const hasPresent = recordsForDate.some(a => a.attendance_status === 'Present');
+        return hasPresent ? 'Present' : 'Absent';
+      });
+      return { label, total: uniqueDates.length, present: dateStatuses.filter(s => s==='Present').length, absent: dateStatuses.filter(s => s==='Absent').length };
+    });
+    const totalSchoolDays = summary.reduce((a,b)=>a+b.total,0);
+    const totalPresent = summary.reduce((a,b)=>a+b.present,0);
+    const totalAbsent = summary.reduce((a,b)=>a+b.absent,0);
+    return { summary, totalSchoolDays, totalPresent, totalAbsent };
+  };
+  const att = getAttendanceSummary();
+  const tableStartY = attendanceBox.boxStartY + 30; const tableWidth = pageWidth - 30; const categoryWidth = tableWidth * 0.30; const monthWidth = tableWidth * 0.07; const rowHeight = 14;
+  const colPositions = [15]; colPositions.push(colPositions[0] + categoryWidth); for (let i = 1; i <= 10; i++) { colPositions.push(colPositions[i] + monthWidth); }
+  pdf.setFillColor(235, 246, 249); pdf.rect(15, tableStartY, tableWidth, rowHeight, 'F'); pdf.setTextColor(0, 0, 0); pdf.setFontSize(10); pdf.setFont('helvetica', 'bold');
+  const headers = ['Category','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','Total'];
+  headers.forEach((header, colIdx) => { const x = colPositions[colIdx]; const width = colIdx === 0 ? categoryWidth : monthWidth; pdf.text(header, x + (width / 2), tableStartY + 6, { align: 'center' }); });
+  // Header grid per cell
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.5);
+  for (let colIndex = 0; colIndex < headers.length; colIndex++) {
+    const xLeft = colPositions[colIndex];
+    const cellWidth = colIndex === 0 ? categoryWidth : monthWidth;
+    pdf.rect(xLeft, tableStartY, cellWidth, rowHeight, 'S');
+  }
+  pdf.setTextColor(0, 0, 0); pdf.setFont('helvetica', 'normal');
+  const attendanceRows = att ? [
+    ['No. of\nSchool Days', ...att.summary.map(m=>String(m.total)), String(att.totalSchoolDays)],
+    ['No. of Days\nPresent', ...att.summary.map(m=>String(m.present)), String(att.totalPresent)],
+    ['No. of Days\nAbsent', ...att.summary.map(m=>String(m.absent)), String(att.totalAbsent)]
+  ] : [
+    ['No. of\nSchool Days', ...Array(10).fill('0')],
+    ['No. of Days\nPresent', ...Array(10).fill('0')],
+    ['No. of Days\nAbsent', ...Array(10).fill('0')]
+  ];
+  for (let rowIndex = 0; rowIndex < attendanceRows.length; rowIndex++) {
+    const y = tableStartY + ((rowIndex + 1) * rowHeight);
+    const row = attendanceRows[rowIndex];
+    row.forEach((cell, colIndex) => {
+      const x = colPositions[colIndex]; const width = colIndex === 0 ? categoryWidth : monthWidth;
+      if (colIndex === 0) { const lines = String(cell).split('\n'); lines.forEach((line, li) => { pdf.text(line, x + 2, y + 6 + (li * 4)); }); }
+      else { pdf.text(String(cell), x + (width / 2), y + 6, { align: 'center' }); }
+    });
+  }
+  // Draw precise cell borders to avoid any missing lines on last row
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.5);
+  for (let rowIndex = 0; rowIndex < attendanceRows.length; rowIndex++) {
+    const yTop = tableStartY + ((rowIndex + 1) * rowHeight);
+    const yBottom = yTop + rowHeight;
+    for (let colIndex = 0; colIndex < headers.length; colIndex++) {
+      const xLeft = colPositions[colIndex];
+      const cellWidth = colIndex === 0 ? categoryWidth : monthWidth;
+      // Stroke rectangle per cell
+      pdf.rect(xLeft, yTop, cellWidth, rowHeight, 'S');
+    }
+  }
+  endWhiteBox(attendanceBox.boxEndY);
+
+  // Parent signatures block (fixed height to reduce render time)
+  const signatureBox = startWhiteBox(120);
+  pdf.setFontSize(16); pdf.setFont('helvetica', 'bold'); pdf.text('Parent/Guardian Signatures', 15, signatureBox.boxStartY + 15);
+  const quarterNames = quarters.filter(q => q.id <= 4).map(q => q.name);
+  const availableHeight = signatureBox.boxEndY - (signatureBox.boxStartY + 40);
+  const quarterSpacing = availableHeight / 4;
+  const getQuarterCommentText = (quarterId) => {
+    if (!Array.isArray(comments) || comments.length === 0) return '';
+    const matches = comments.filter((c) => {
+      const qid = Number(c.quarter_id ?? c.quarterId);
+      if (!isNaN(qid)) return qid === Number(quarterId);
+      if (c.quarter_name && typeof c.quarter_name === 'string') {
+        const suffix = quarterId === 1 ? 'st' : quarterId === 2 ? 'nd' : quarterId === 3 ? 'rd' : 'th';
+        return c.quarter_name.toLowerCase().startsWith(`${quarterId}${suffix} quarter`.toLowerCase());
+      }
+      return false;
+    });
+    if (matches.length === 0) return '';
+    const getTime = (c) => { const t = c.updated_at || c.created_at || c.comment_date; const d = t ? new Date(t) : null; return d && !isNaN(d) ? d.getTime() : 0; };
+    const latest = matches.sort((a, b) => getTime(a) - getTime(b))[matches.length - 1];
+    const text = latest.comment_text || latest.feedback || latest.comment || '';
+    return (typeof text === 'string' ? text.trim() : '') || '';
+  };
+  quarterNames.forEach((quarter, index) => {
+    const startY = signatureBox.boxStartY + 35 + (index * quarterSpacing);
+    pdf.setFontSize(12); pdf.setFont('helvetica', 'bold'); pdf.text(quarter, 15, startY);
+    const qWidth = pdf.getTextWidth(quarter); const underlineStartX = 15 + qWidth + 5; const underlineEndX = underlineStartX + 100;
+    pdf.setDrawColor(0, 0, 0); pdf.setLineWidth(0.5); pdf.line(underlineStartX, startY + 2, underlineEndX, startY + 2);
+    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal'); pdf.text('(Parent/Guardian Signature)', underlineEndX + 5, startY + 2);
+    const commentY = startY + 10; pdf.setFontSize(12); pdf.setFont('helvetica', 'normal'); pdf.text('Teacher Comment:', 15, commentY);
+    const actualComment = getQuarterCommentText(index + 1);
+    if (actualComment && actualComment.trim()) { pdf.setFont('helvetica', 'bold'); pdf.text(actualComment, 60, commentY); }
+    else { pdf.setDrawColor(200, 200, 200); pdf.setLineWidth(0.5); pdf.line(60, commentY + 2, 120, commentY + 2); }
+  });
+  endWhiteBox(signatureBox.boxEndY);
+
+  // Page 3: Quarterly Assessment
+  addNewPage([255, 247, 230]);
+  currentY = 20;
+  const assessmentBox = startWhiteBox(140);
+  pdf.setFontSize(16); pdf.setFont('helvetica', 'bold'); pdf.text('Quarterly Assessment', 15, assessmentBox.boxStartY + 15);
+  if (subjects && subjects.length > 0) {
+    const tableStartX = 15; const tableStartY2 = assessmentBox.boxStartY + 30; const tableWidth2 = pageWidth - 30; const subjectsColWidth = tableWidth2 * 0.35; const quarterColWidth = tableWidth2 * 0.13; const assessmentRowHeight = 12;
+    pdf.setFillColor(235, 246, 249); pdf.rect(tableStartX, tableStartY2, tableWidth2, assessmentRowHeight, 'F'); pdf.setTextColor(0, 0, 0); pdf.setFontSize(10); pdf.setFont('helvetica', 'bold');
+    const colPos = [tableStartX]; colPos.push(colPos[0] + subjectsColWidth); for (let i = 1; i <= 5; i++) { colPos.push(colPos[i] + quarterColWidth); }
+    const headers2 = ['Subjects', '1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter', 'Final'];
+    headers2.forEach((header, colIndex) => { const x = colPos[colIndex]; const width = colIndex === 0 ? subjectsColWidth : quarterColWidth; pdf.text(header, x + (width / 2), tableStartY2 + 6, { align: 'center' }); });
+    [...subjects].sort((a,b)=>a.localeCompare(b)).forEach((subject, i) => {
+      const y = tableStartY2 + assessmentRowHeight + (i * assessmentRowHeight);
+      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(0, 0, 0); pdf.text(subject, tableStartX + 2, y + (assessmentRowHeight / 2) + 2);
+      quarters.forEach((q, colIndex) => {
+        const quarterId = colIndex + 1; const x = colPos[colIndex + 1]; let shape = '';
+        if (quarterId === 5) {
+          const subjProgress = finalSubjectProgress.find(row => row.subject_name === subject);
+          if (subjProgress && subjProgress.finalsubj_visual_feedback_id) { const vf = visualFeedback.find(v => v.visual_feedback_id == subjProgress.finalsubj_visual_feedback_id); shape = vf?.visual_feedback_shape || ''; }
+        } else {
+          const fb = quarterFeedback.find(f => f.subject_name === subject && Number(f.quarter_id) === quarterId);
+          shape = fb?.shape || '';
+        }
+        if (shape) { renderSymbol(shape, x + quarterColWidth / 2, y + (assessmentRowHeight / 2), 10); }
+      });
+    });
+    const quarterResultY = tableStartY2 + assessmentRowHeight + (subjects.length * assessmentRowHeight);
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.text('Quarter Result', tableStartX + 2, quarterResultY + (assessmentRowHeight / 2) + 2);
+    quarters.forEach((q, colIndex) => {
+      const quarterId = colIndex + 1; const x = colPos[colIndex + 1]; let shape = '';
+      if (quarterId === 5) { if (overallProgress && overallProgress.visual_shape) { shape = overallProgress.visual_shape; } }
+      else { const card = progressCards.find(pc => Number(pc.quarter_id) === quarterId); if (card) { const vf = visualFeedback.find(v => v.visual_feedback_id == card.quarter_visual_feedback_id); shape = vf?.visual_feedback_shape || ''; } }
+      if (shape) { renderSymbol(shape, x + quarterColWidth / 2, quarterResultY + (assessmentRowHeight / 2), 10); }
+    });
+    pdf.setDrawColor(0, 0, 0); pdf.setLineWidth(0.5);
+    for (let row = 0; row <= subjects.length + 2; row++) { const y = tableStartY2 + (row * assessmentRowHeight); pdf.line(tableStartX, y, tableStartX + tableWidth2, y); }
+    for (let col = 0; col <= headers2.length; col++) { const x = colPos[col]; pdf.line(x, tableStartY2, x, tableStartY2 + ((subjects.length + 2) * assessmentRowHeight)); }
+  }
+  endWhiteBox(assessmentBox.boxEndY);
+
+  // Legend and Risk boxes
+  const boxHeight = 100; const totalMargin = 30; const gapX = 10; const availableWidth = pageWidth - totalMargin - gapX; const boxWidth = availableWidth / 2; const marginX = 15; const legendStartY = currentY - 5; const legendBoxEndY = legendStartY + boxHeight;
+  pdf.setFillColor(255, 255, 255); pdf.rect(marginX, legendStartY, boxWidth, boxHeight, 'F'); pdf.setDrawColor(200, 200, 200); pdf.rect(marginX, legendStartY, boxWidth, boxHeight, 'S');
+  pdf.setFontSize(16); pdf.setFont('helvetica', 'bold'); pdf.text('Assessment Legend', marginX + 5, legendStartY + 15);
+  const innerPadLeft = 5; const legendTableWidth = boxWidth - 10; const shapesColWidth = legendTableWidth * 0.25; const descriptionColWidth = legendTableWidth * 0.50; const remarksColWidth = legendTableWidth * 0.25; const legendTableStartY = legendStartY + 25; const legendRowHeight = 12;
+  const legendHeaders = ['Shapes','Descriptions','Remarks']; const legendColWidths = [shapesColWidth, descriptionColWidth, remarksColWidth];
+  legendHeaders.forEach((header, index) => { let x = marginX + innerPadLeft; for (let i = 0; i < index; i++) { x += legendColWidths[i]; } const colWidth = legendColWidths[index]; pdf.setFillColor(235, 246, 249); pdf.rect(x, legendTableStartY, colWidth, legendRowHeight, 'F'); pdf.setDrawColor(0,0,0); pdf.rect(x, legendTableStartY, colWidth, legendRowHeight, 'S'); pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(0, 0, 0); pdf.text(header, x + (colWidth / 2), legendTableStartY + 8, { align: 'center' }); });
+  const legendData = (visualFeedback && Array.isArray(visualFeedback) && visualFeedback.length) ? visualFeedback.map(feedback => [feedback.visual_feedback_shape || 'Unknown', feedback.visual_feedback_description || 'Unknown', feedback.visual_feedback_description === 'Not Met' ? 'Failed' : 'Passed']) : [['❤','Excellent','Passed'],['★','Very Good','Passed'],['◆','Good','Passed'],['▲','Need Help','Passed'],['⬤','Not Met','Failed']];
+  legendData.forEach((row, index) => { const y = legendTableStartY + ((index + 1) * legendRowHeight); legendHeaders.forEach((_, colIndex) => { let x = marginX + innerPadLeft; for (let i = 0; i < colIndex; i++) { x += legendColWidths[i]; } const colWidth = legendColWidths[colIndex]; pdf.setFillColor(255,255,255); pdf.rect(x, y, colWidth, legendRowHeight, 'F'); pdf.setDrawColor(0,0,0); pdf.rect(x, y, colWidth, legendRowHeight, 'S'); }); let x = marginX + innerPadLeft; renderSymbol(row[0], x + (shapesColWidth / 2), y + 6, 10); x += shapesColWidth; pdf.setFont('helvetica', 'normal'); pdf.text(row[1], x + (descriptionColWidth / 2), y + 8, { align: 'center' }); x += descriptionColWidth; pdf.setFont('helvetica', 'bold'); pdf.text(row[2], x + (remarksColWidth / 2), y + 8, { align: 'center' }); });
+  const riskBoxStartY = legendStartY; const riskBoxEndY = riskBoxStartY + boxHeight; const riskBoxX = marginX + boxWidth + gapX; pdf.setFillColor(255, 255, 255); pdf.rect(riskBoxX, riskBoxStartY, boxWidth, boxHeight, 'F'); pdf.setDrawColor(200, 200, 200); pdf.rect(riskBoxX, riskBoxStartY, boxWidth, boxHeight, 'S'); pdf.setFontSize(16); pdf.setFont('helvetica', 'bold'); pdf.text('Risk Levels', riskBoxX + 5, riskBoxStartY + 15);
+  const riskTableWidth = boxWidth - 10; const levelColWidth = riskTableWidth * 0.40; const meaningColWidth = riskTableWidth * 0.60; const riskTableStartY = riskBoxStartY + 25; const riskRowHeight = 15; const riskHeaders = ['Level','Meaning']; const riskColWidths = [levelColWidth, meaningColWidth];
+  riskHeaders.forEach((header, index) => { let x = riskBoxX + 5; for (let i = 0; i < index; i++) { x += riskColWidths[i]; } const colWidth = riskColWidths[index]; pdf.setFillColor(235, 246, 249); pdf.rect(x, riskTableStartY, colWidth, riskRowHeight, 'F'); pdf.setDrawColor(0, 0, 0); pdf.rect(x, riskTableStartY, colWidth, riskRowHeight, 'S'); pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(0,0,0); pdf.text(header, x + (colWidth / 2), riskTableStartY + 10, { align: 'center' }); });
+  const riskData = [ { color: [34, 197, 94], label: 'Low', description: 'Meeting Expectations' }, { color: [251, 191, 36], label: 'Moderate', description: 'Needs Some Support' }, { color: [239, 68, 68], label: 'High', description: 'Needs Close Attention' } ];
+  riskData.forEach((risk, index) => { const y = riskTableStartY + ((index + 1) * riskRowHeight); riskHeaders.forEach((_, colIndex) => { let x = riskBoxX + 5; for (let i = 0; i < colIndex; i++) { x += riskColWidths[i]; } const colWidth = riskColWidths[colIndex]; pdf.setFillColor(255, 255, 255); pdf.rect(x, y, colWidth, riskRowHeight, 'F'); pdf.setDrawColor(0, 0, 0); pdf.rect(x, y, colWidth, riskRowHeight, 'S'); }); let x = riskBoxX + 5; pdf.setFillColor(risk.color[0], risk.color[1], risk.color[2]); pdf.circle(x + 6, y + 6, 3.5, 'F'); pdf.setTextColor(0, 0, 0); pdf.setFontSize(10); pdf.setFont('helvetica', 'bold'); pdf.text(risk.label, x + 12, y + 8); x += levelColWidth; pdf.setFont('helvetica', 'normal'); pdf.text(risk.description, x + (meaningColWidth / 2), y + 8, { align: 'center' }); });
+  currentY = Math.max(legendBoxEndY, riskBoxEndY) + 15;
+
+  // Page 4: Trend + Summary (optional if overallProgress exists)
+  if (overallProgress && (overallProgress.visual_shape || overallProgress.risk_id)) {
+    addNewPage([255, 238, 242]);
+    currentY = 20;
+    const trendBox = startWhiteBox(130);
+    pdf.setFontSize(16); pdf.setFont('helvetica', 'bold'); pdf.text('Quarterly Performance Trend', 15, trendBox.boxStartY + 15);
+    // simple grid and labels
+    const chartStartY = trendBox.boxStartY + 30; const chartHeight = 60; pdf.setDrawColor(220,220,220); pdf.setLineWidth(0.3);
+    const gridLeft = 35; const gridRight = pageWidth - 15; const chartWidth = gridRight - gridLeft;
+    for (let i = 0; i <= 4; i++) { const y = chartStartY + (i * (chartHeight / 4)); pdf.line(gridLeft, y, gridLeft + chartWidth, y); }
+    const perfLevels = ['Excellent','Very Good','Good','Need Help','Not Met'];
+    perfLevels.forEach((level, index) => { const y = chartStartY + (index * (chartHeight / 4)); pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(0, 0, 0); pdf.text(level, 15, y + 2.5); });
+    const xLabelOrdinals = ['1st','2nd','3rd','4th']; pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); xLabelOrdinals.forEach((ord, i) => { const x = gridLeft + (i * (chartWidth / 3)); const bottomY = chartStartY + chartHeight + 8; const align = i === 0 ? 'left' : i === 3 ? 'right' : 'center'; pdf.text(ord, x, bottomY, { align }); pdf.text('Quarter', x, bottomY + 5, { align }); });
+    pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.text('Performance Level', 15, chartStartY - 6); pdf.text('Quarter', gridLeft + chartWidth / 2, chartStartY + chartHeight + 18, { align: 'center' });
+    const yMap = { 'Excellent': 0, 'Very Good': 1, 'Good': 2, 'Need Help': 3, 'Not Met': 4 };
+    const xs = (idx) => gridLeft + (idx * (chartWidth / 3)); const ys = (val) => chartStartY + (val * (chartHeight / 4));
+    const dataPoints = [1,2,3,4].map((qid) => { const card = Array.isArray(progressCards) ? progressCards.find(c => Number(c.quarter_id) === qid) : null; const desc = card ? visualFeedback.find(vf => vf.visual_feedback_id == card.quarter_visual_feedback_id)?.visual_feedback_description : null; return desc && yMap.hasOwnProperty(desc) ? yMap[desc] : null; });
+    pdf.setDrawColor(96, 165, 250); pdf.setLineWidth(2); let prev = null; dataPoints.forEach((v, i) => { if (v === null) return; const x = xs(i); const y = ys(v); if (prev) { pdf.line(prev.x, prev.y, x, y); } prev = { x, y }; pdf.setFillColor(96, 165, 250); pdf.circle(x, y, 2.5, 'F'); });
+    endWhiteBox(trendBox.boxEndY);
+
+    const summaryParts = []; if (milestoneSummary && String(milestoneSummary).trim()) summaryParts.push(String(milestoneSummary).trim()); if (milestoneOverallSummary && String(milestoneOverallSummary).trim()) summaryParts.push(String(milestoneOverallSummary).trim());
+    if (summaryParts.length === 0) { const presentVals = dataPoints.filter(v => v !== null); if (presentVals.length > 0) { const descMap = { 0: 'Excellent', 1: 'Very Good', 2: 'Good', 3: 'Need Help', 4: 'Not Met' }; const first = presentVals[0]; const last = presentVals[presentVals.length - 1]; if (last < first) { summaryParts.push(`In Quarter 1, started with ${descMap[first]?.toLowerCase() || 'moderate'} performance. In Quarter 2, showed improvement in performance. In Quarter 3, continued to show good progress. In Quarter 4, maintained ${descMap[last]?.toLowerCase() || 'consistent'} performance.`); } else if (last > first) { summaryParts.push(`In Quarter 1, started with ${descMap[first]?.toLowerCase() || 'strong'} performance. In Quarter 2, showed a decline in performance. In Quarter 3, continued to perform below expectations. In Quarter 4, continued to perform below expectations.`); } else { const consistentDesc = descMap[first]?.toLowerCase() || 'consistent'; summaryParts.push(`In Quarter 1, started with ${consistentDesc} performance. In Quarter 2, remained consistently ${consistentDesc}. In Quarter 3, remained consistently ${consistentDesc}. In Quarter 4, remained consistently ${consistentDesc}.`); } } }
+    const combinedSummary = summaryParts.length ? summaryParts.join('\n\n') : 'No summary available.'; const summaryLines = pdf.splitTextToSize(combinedSummary, pageWidth - 30); const estimatedTextHeight = summaryLines.length * 5; const riskBarAllowance = 22; const basePadding = 40; const dynamicSummaryHeight = Math.min(110, Math.max(60, basePadding + estimatedTextHeight + riskBarAllowance)); const summaryBox = startWhiteBox(dynamicSummaryHeight);
+    pdf.setFontSize(14); pdf.setFont('helvetica', 'bold'); pdf.text('Performance Summary', 15, summaryBox.boxStartY + 15);
+    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal'); const addText = (text, x, y, maxWidth = pageWidth - 30) => { const lines = pdf.splitTextToSize(text, maxWidth); pdf.text(lines, x, y); return y + (lines.length * 5); }; const afterSummaryY = addText(combinedSummary, 15, summaryBox.boxStartY + 30, pageWidth - 30);
+    const finalRiskId = String(overallProgress?.risk_id || ''); let barColor = [96, 165, 250]; let riskLabel = 'No Data'; let riskDesc = 'Risk assessment data is not available.';
+    if (finalRiskId === '1') { barColor = [34, 197, 94]; riskLabel = 'Low'; riskDesc = 'Student is performing well and meeting expectations.'; }
+    else if (finalRiskId === '2') { barColor = [251, 191, 36]; riskLabel = 'Moderate'; riskDesc = 'Student may need additional support in some areas.'; }
+    else if (finalRiskId === '3') { barColor = [239, 68, 68]; riskLabel = 'High'; riskDesc = 'Student requires immediate attention and intervention.'; }
+    const infoBoxHeight = 26; const infoBoxY = Math.min(afterSummaryY + 8, summaryBox.boxStartY + dynamicSummaryHeight - infoBoxHeight - 6);
+    pdf.setFillColor(255, 255, 255); pdf.rect(15, infoBoxY, pageWidth - 30, infoBoxHeight, 'F'); pdf.setDrawColor(220, 220, 220); pdf.rect(15, infoBoxY, pageWidth - 30, infoBoxHeight, 'S');
+    const contentLeft = 15; const contentWidth = pageWidth - 30; const dotX = contentLeft + contentWidth * 0.10; const rowY = infoBoxY + 18; pdf.setFillColor(barColor[0], barColor[1], barColor[2]); pdf.circle(dotX, rowY - 2, 3, 'F'); pdf.setTextColor(0,0,0); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(12); const labelX = dotX + 8; pdf.text(riskLabel, labelX, rowY); const labelWidth = pdf.getTextWidth(riskLabel); const descX = labelX + labelWidth + 8; pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); pdf.setTextColor(60,60,60); pdf.text(riskDesc, descX, rowY);
+    endWhiteBox(summaryBox.boxEndY);
+  }
+
+  // Footer pages
+  const pageCount = pdf.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    pdf.setPage(i); pdf.setFontSize(10); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(0, 0, 0);
+    pdf.text(`Generated on ${new Date().toLocaleDateString()} | School Year ${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
+    pdf.text(`Page ${i} of ${pageCount}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
+  }
+
+  const studentNameForFile = student ? `${student.stud_lastname || student.lastName || ''}_${student.stud_firstname || student.firstName || ''}`.trim() : 'Student';
+  const fileName = `Report_Card_${studentNameForFile}_${new Date().toISOString().split('T')[0]}.pdf`;
+  pdf.save(fileName);
+}
 
 const SharedExport = ({ 
   student = {}, 

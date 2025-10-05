@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { FaEllipsisV, FaSearch, FaChevronDown, FaUser, FaUsers, FaCalendarAlt, FaFilter, FaMars, FaVenus, FaSort, FaSortUp, FaSortDown, FaPrint } from "react-icons/fa";
+import { FaEllipsisV, FaSearch, FaChevronDown, FaUser, FaUsers, FaCalendarAlt, FaFilter, FaMars, FaVenus, FaSort, FaSortUp, FaSortDown, FaPrint, FaDownload } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useUser } from "../../Context/UserContext";
@@ -781,10 +781,10 @@ export default function StudentsPage() {
               <button
                 onClick={() => setTriggerExport(true)}
                 className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#2c2f6f] text-white px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg hover:opacity-90 transition-opacity text-sm sm:text-base whitespace-nowrap"
-                title="Print or Save Assessment as PDF"
+                title="Download Assessment as PDF"
               >
-                <FaPrint className="text-sm sm:text-base" />
-                <span className="font-semibold">Export PDF</span>
+                <FaDownload className="text-sm sm:text-base" />
+                <span className="font-semibold">Download PDF</span>
               </button>
             </div>
           </div>
