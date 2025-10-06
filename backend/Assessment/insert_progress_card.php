@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../connection.php';
+require_once __DIR__ . '/shape_mapping_helper.php';
 header('Content-Type: application/json');
 
 file_put_contents(__DIR__ . '/debug_progress_card.txt', "UNIQUE DEBUG LINE AT TOP\n", FILE_APPEND);
@@ -93,14 +94,9 @@ foreach ($student_ids as $sid) {
         ]);
         exit;
     }
-    // 3. Map each shape to its average score (updated scoring)
-    $shapeAvg = [
-        '❤️' => 4.600,   // Heart (Excellent)
-        '⭐' => 3.7995,   // Star (Very Good)
-        '🔷' => 2.9995,   // Blue Diamond (Good)
-        '▲' => 2.1995,   // Orange Triangle (Need Help)
-        '🟡' => 1.3995,   // Yellow Circle (Not Met)
-    ];
+    // 3. Get dynamic shape-to-score mapping from database
+    $shapeAvg = getDynamicShapeMapping($conn);
+    logShapeMapping("insert_progress_card", $shapeAvg, $conn);
     // 4. Get shape for each feedback
     $shapeScores = [];
     foreach ($feedbacks as $fb) {
@@ -134,14 +130,8 @@ foreach ($student_ids as $sid) {
     }
     $quarter_visual_feedback_id = $row['visual_feedback_id'];
     $shape = $row['visual_feedback_shape'];
-    // 7. Determine risk_id
-    if ($shape === '❤️' || $shape === '⭐') {
-        $risk_id = 1; // Low
-    } elseif ($shape === '🔷' || $shape === '▲') {
-        $risk_id = 2; // Moderate
-    } else {
-        $risk_id = 3; // High
-    }
+    // 7. Determine risk_id dynamically based on shape
+    $risk_id = getRiskLevelForShape($shape, $conn);
     // Use user_id from POST data for finalized_by
     $finalized_by = $data['user_id'] ?? null;
     if (!$finalized_by) {
@@ -168,7 +158,11 @@ foreach ($student_ids as $sid) {
         'finalized_by' => $finalized_by
     ]) . "\n", FILE_APPEND);
     // 8. Insert into tbl_progress_cards with is_finalized=1 and finalized_by
-    $sql4 = "INSERT INTO tbl_progress_cards (student_id, advisory_id, quarter_id, quarter_visual_feedback_id, risk_id, quarter_avg_score, is_finalized, finalized_by, report_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW()) ON DUPLICATE KEY UPDATE quarter_visual_feedback_id=VALUES(quarter_visual_feedback_id), risk_id=VALUES(risk_id), quarter_avg_score=VALUES(quarter_avg_score), is_finalized=1, finalized_by=VALUES(finalized_by), report_date=VALUES(report_date)";
+    $sql4 = "INSERT INTO tbl_progress_cards (student_id, advisory_id, quarter_id, quarter_visual_feedback_id, 
+    risk_id, quarter_avg_score, is_finalized, finalized_by, report_date) VALUES (?, ?, ?, ?, ?, ?, 1, ?, 
+    NOW()) ON DUPLICATE KEY UPDATE quarter_visual_feedback_id=VALUES(quarter_visual_feedback_id), 
+    risk_id=VALUES(risk_id), quarter_avg_score=VALUES(quarter_avg_score), is_finalized=1, 
+    finalized_by=VALUES(finalized_by), report_date=VALUES(report_date)";
     $stmt4 = $conn->prepare($sql4);
     // Debug: Start insert attempt
     file_put_contents(__DIR__ . '/debug_progress_card.txt', "=== INSERT ATTEMPT START ===\n", FILE_APPEND);

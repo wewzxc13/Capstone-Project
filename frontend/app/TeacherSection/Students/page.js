@@ -873,7 +873,7 @@ export default function StudentsPage() {
                   <span className="text-base font-normal">{s.parent ? formatName(s.parent) : <span className="italic">-</span>}</span>
                 </div>
               </div>
-              {/* Third row: Level, Lead Teacher, Assistant Teacher */}
+              {/* Third row: Level, Lead Teacher, Assistant Teacher - Responsive Layout */}
               <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-6 mt-0.5">
                 {/* Level */}
                 <div className="flex flex-row items-center mx-2">

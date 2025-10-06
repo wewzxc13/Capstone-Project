@@ -901,56 +901,41 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                   <tr className="bg-blue-50 border-t-2 border-blue-200">
                     <td className="px-4 py-3 font-semibold text-blue-900">Quarter Result</td>
                     {quarters.map(q => {
+                      let riskId = '';
+                      let shape = '';
                       if (q.id === 5) {
-                        if (overallProgress && overallProgress.visual_shape) {
-                          let riskColor = '';
-                          if (overallProgress.risk_id == 1) riskColor = '#22c55e';
-                          else if (overallProgress.risk_id == 2) riskColor = '#fbbf24';
-                          else if (overallProgress.risk_id == 3) riskColor = '#ef4444';
-                          return (
-                            <td key={q.id} className="px-4 py-3 text-center">
-                              <div className="flex items-center justify-center gap-2">
-                                <span
-                                  className="w-4 h-4 rounded-full shadow-sm"
-                                  style={{ backgroundColor: riskColor || '#f1f5fd' }}
-                                ></span>
-                                <span 
-                                  style={{ color: shapeColorMap[overallProgress.visual_shape] || '#222', fontSize: '1.5em', fontWeight: 'bold' }}
-                                  className="inline-block hover:scale-110 transition-transform"
-                                >
-                                  {overallProgress.visual_shape}
-                                </span>
-                              </div>
-                            </td>
-                          );
-                        } else {
-                          return <td key={q.id} className="px-4 py-3 text-center text-gray-400">-</td>;
+                        // Final column - use overall progress
+                        riskId = overallProgress?.risk_id || '';
+                        shape = overallProgress?.visual_shape || '';
+                      } else {
+                        // For quarters 1-4, get from progress cards
+                        const card = progressCards.find(pc => Number(pc.quarter_id) === q.id);
+                        riskId = card?.risk_id || '';
+                        if (card) {
+                          const vf = visualFeedback.find(v => v.visual_feedback_id == card.quarter_visual_feedback_id);
+                          shape = vf?.visual_feedback_shape || '';
                         }
                       }
-                      const card = progressCards.find(pc => Number(pc.quarter_id) === q.id);
-                      let shape = '';
-                      let riskColor = '';
-                      if (card) {
-                        const vf = visualFeedback.find(v => v.visual_feedback_id == card.quarter_visual_feedback_id);
-                        shape = vf ? vf.visual_feedback_shape : '';
-                        if (card.risk_id == 1) riskColor = '#22c55e';
-                        else if (card.risk_id == 2) riskColor = '#fbbf24';
-                        else if (card.risk_id == 3) riskColor = '#ef4444';
-                      }
+
+                      const riskColor = String(riskId) === '1' ? '#22c55e' : String(riskId) === '2' ? '#fbbf24' : String(riskId) === '3' ? '#ef4444' : '#9ca3af';
                       return (
                         <td key={q.id} className="px-4 py-3 text-center">
-                          {shape ? (
-                            <div className="flex items-center justify-center gap-2">
-                              <span
-                                className="w-4 h-4 rounded-full shadow-sm"
-                                style={{ backgroundColor: riskColor || '#f1f5fd' }}
-                              ></span>
-                              <span 
-                                style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 'bold' }}
-                                className="inline-block hover:scale-110 transition-transform"
-                              >
-                                {shape}
-                              </span>
+                          {(riskId || shape) ? (
+                            <div className="inline-flex items-center justify-center gap-2">
+                              {riskId && (
+                                <span
+                                  className="w-2 h-2 rounded-full shadow-sm"
+                                  style={{ backgroundColor: riskColor }}
+                                ></span>
+                              )}
+                              {shape && (
+                                <span 
+                                  style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 'bold' }}
+                                  className="inline-block"
+                                >
+                                  {shape}
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-gray-400">-</span>
@@ -1119,7 +1104,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
               <div className="space-y-3 sm:space-y-4">
                 <div className="flex items-center gap-2">
                   <textarea
-                    maxLength={100}
+                    maxLength={60}
                     placeholder="Add a comment..."
                     className={`flex-1 border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none caret-[#232c67] ${
                       canComment ? 'border-gray-300 bg-white' : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -1204,7 +1189,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                               className="w-full border border-blue-300 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors caret-[#232c67]"
                               value={editingValue}
                               onChange={e => setEditingValue(e.target.value)}
-                              maxLength={100}
+                              maxLength={60}
                               autoFocus
                               rows={3}
                               resize="none"

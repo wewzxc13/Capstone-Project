@@ -481,3 +481,63 @@ Plain Input Password: Decena@123
 Input: clarsejay@gmail.com
 Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
 Plain Input Password: Chan@123
+Input: decenajessa03@gmail.com
+Hashed DB Password: $2y$10$CPLO02gUKBJlcRYbJePch.NDwz6DZX2ZSueECGhH6aGSBbfyrTU1e
+Plain Input Password: Decena@123
+Input: clydedenzel@gmail.com
+Hashed DB Password: $2y$10$Y6GEluHpmTZTBUbP494YCeXNHw4jEAIZHfnHXsSagx0bb1fycVnY6
+Plain Input Password: Clyde@123
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123
+Input: galarpequennielyn25@gmail.com
+Hashed DB Password: $2y$10$AkyOlHaBUWUY6tA00kbtT.EG0oWIjatJwCQ1kH1z1mj7FGdKA4l9a
+Plain Input Password: Quennielyn@123
+Input: manongdomargareth1335@gmail.com
+Hashed DB Password: $2y$10$em/CoMFNY1tjX8/ON.1x7.zpc2Bu3VbE55C.wM2oL1mrhZY/iTQUe
+Plain Input Password: Marg@123
+Input: clydedenzel@gmail.com
+Hashed DB Password: $2y$10$Y6GEluHpmTZTBUbP494YCeXNHw4jEAIZHfnHXsSagx0bb1fycVnY6
+Plain Input Password: Clyde@123
+Input: dichoskristopher@gmail.com
+Hashed DB Password: $2y$10$ojSwpBdI06wTC14JO9I2fegkCxMb67x28Nb5TYK9f5Kot749aResu
+Plain Input Password: Dichos_1
+Input: Dichoskristopher@gmail.com
+Hashed DB Password: $2y$10$ojSwpBdI06wTC14JO9I2fegkCxMb67x28Nb5TYK9f5Kot749aResu
+Plain Input Password: Dichos_1
+Input: Dichoskristopher@gmail.com
+Hashed DB Password: $2y$10$ojSwpBdI06wTC14JO9I2fegkCxMb67x28Nb5TYK9f5Kot749aResu
+Plain Input Password: Dichos_1
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123
+Input: dichoskristopher@gmail.com
+Hashed DB Password: $2y$10$ojSwpBdI06wTC14JO9I2fegkCxMb67x28Nb5TYK9f5Kot749aResu
+Plain Input Password: Dichos_1
+Input: Dichoskristopher@gmail.com
+Hashed DB Password: $2y$10$ojSwpBdI06wTC14JO9I2fegkCxMb67x28Nb5TYK9f5Kot749aResu
+Plain Input Password: Dichos_1
+Input: paulandrewnerona@gmail.com
+Hashed DB Password: $2y$10$qBYcdXlmymfYWk1GNMaHH.4hJB8K3Ft4G0L0v7gi4Ph0zvXceuCyG
+Plain Input Password: Andrew@123
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123
+Input: decenajessa03@gmail.com
+Hashed DB Password: $2y$10$CPLO02gUKBJlcRYbJePch.NDwz6DZX2ZSueECGhH6aGSBbfyrTU1e
+Plain Input Password: Decena@123
+Input: manongdomargareth1335@gmail.com
+Hashed DB Password: $2y$10$em/CoMFNY1tjX8/ON.1x7.zpc2Bu3VbE55C.wM2oL1mrhZY/iTQUe
+Plain Input Password: Marg@123
+Input: decenajessa03@gmail.com
+Hashed DB Password: $2y$10$CPLO02gUKBJlcRYbJePch.NDwz6DZX2ZSueECGhH6aGSBbfyrTU1e
+Plain Input Password: Decena@123
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123
+Input: clarsejay@gmail.com
+Hashed DB Password: $2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6
+Plain Input Password: Chan@123

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../connection.php';
+require_once __DIR__ . '/shape_mapping_helper.php';
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -260,14 +261,9 @@ try {
             $vfStmt->execute();
             $vfRows = $vfStmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // 4. Shape to score mapping
-            $shapeAvg = [
-                '❤️' => 4.600,
-                '⭐' => 3.7995,
-                '🔷' => 2.9995,
-                '▲' => 2.1995,
-                '🟡' => 1.3995,
-            ];
+            // 4. Get dynamic shape-to-score mapping from database
+            $shapeAvg = getDynamicShapeMapping($conn);
+            logShapeMapping("update_overall_progress", $shapeAvg, $conn);
             
             // 5. Calculate per subject
             $stmtIns = $conn->prepare('INSERT INTO tbl_subject_overall_progress (student_id, subject_id, advisory_id, finalsubj_visual_feedback_id, finalsubj_avg_score) VALUES (?, ?, ?, ?, ?)');

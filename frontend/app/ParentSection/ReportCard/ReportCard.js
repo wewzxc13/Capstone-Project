@@ -2162,10 +2162,18 @@ export default function StudentProgress({ formData: initialFormData }) {
       }
 
       // Download the PDF
-      const studentNameForFile = selectedStudent ? 
-        `${selectedStudent.lastName || selectedStudent.stud_lastname || ''}_${selectedStudent.firstName || selectedStudent.stud_firstname || ''}`.trim() : 
-        'Student';
-      const fileName = `Report_Card_${studentNameForFile}_${new Date().toISOString().split('T')[0]}.pdf`;
+      // Consistent filename: Report_Card_{Last}_{First}_{Middle}_{YYYY-MM-DD}{HH-mm-ss-SSSZ}
+      const last = (selectedStudent?.lastName || selectedStudent?.stud_lastname || '').toString().replace(/\s+/g, '');
+      const first = (selectedStudent?.firstName || selectedStudent?.stud_firstname || '').toString().replace(/\s+/g, '');
+      const middleRaw = (selectedStudent?.middleName || selectedStudent?.stud_middlename || '').toString().replace(/\s+/g, '');
+      const parts = [last, first].filter(Boolean);
+      if (middleRaw) parts.push(middleRaw);
+      const namePart = (parts.length ? parts.join('_') : 'Student');
+      const iso = new Date().toISOString();
+      const [dPart, tPart] = iso.split('T');
+      const [hhmmss, msZ] = tPart.split('.');
+      const timePart = `${hhmmss.replace(/:/g, '-')}-${msZ}`;
+      const fileName = `Report_Card_${namePart}_${dPart}${timePart}.pdf`;
       pdf.save(fileName);
       
       toast.success("PDF downloaded successfully!");

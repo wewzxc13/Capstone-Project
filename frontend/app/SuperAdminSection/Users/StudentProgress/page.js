@@ -1865,13 +1865,18 @@ export default function StudentProgress({ formData: initialFormData }) {
         pdf.text(`Page ${i} of ${pageCount}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
       }
 
-      // Generate filename
-      const studentNameForFile = selectedStudent ? 
-        `${selectedStudent.stud_firstname || ''}_${selectedStudent.stud_lastname || ''}`.replace(/\s+/g, '_') : 
-        'Student';
-      const timestamp = new Date().toISOString().split('T')[0];
-      const timeStr = new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].split('.')[0];
-      const filename = `Report_Card_${studentNameForFile}_${timestamp}_${timeStr}.pdf`;
+      // Generate filename (consistent): Report_Card_{Last}_{First}_{Middle}_{YYYY-MM-DD}{HH-mm-ss-SSSZ}
+      const last = (selectedStudent?.stud_lastname || selectedStudent?.lastName || '').toString().replace(/\s+/g, '');
+      const first = (selectedStudent?.stud_firstname || selectedStudent?.firstName || '').toString().replace(/\s+/g, '');
+      const middleRaw = (selectedStudent?.stud_middlename || selectedStudent?.middleName || '').toString().replace(/\s+/g, '');
+      const parts = [last, first].filter(Boolean);
+      if (middleRaw) parts.push(middleRaw);
+      const namePart = (parts.length ? parts.join('_') : 'Student');
+      const iso = new Date().toISOString();
+      const [dPart, tPart] = iso.split('T');
+      const [hhmmss, msZ] = tPart.split('.');
+      const timePart = `${hhmmss.replace(/:/g, '-')}-${msZ}`;
+      const filename = `Report_Card_${namePart}_${dPart}${timePart}.pdf`;
 
       // Save the PDF
       pdf.save(filename);

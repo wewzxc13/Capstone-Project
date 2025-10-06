@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../connection.php';
+require_once __DIR__ . '/shape_mapping_helper.php';
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -80,14 +81,9 @@ $stmt2 = $conn->prepare($sql);
 $stmt2->execute($params);
 $feedbacks = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
-// 5. Get shape mapping
-$shapeAvg = [
-    '❤️' => 4.600,
-    '⭐' => 3.7995,
-    '🔷' => 2.9995,
-    '▲' => 2.1995,
-    '🟡' => 1.3995,
-];
+// 5. Get dynamic shape-to-score mapping from database
+$shapeAvg = getDynamicShapeMapping($conn);
+logShapeMapping("insert_subject_overall_progress", $shapeAvg, $conn);
 
 // 6. Get visual_feedback_id to shape
 $vfStmt = $conn->prepare('SELECT visual_feedback_id, visual_feedback_shape, min_score, max_score FROM tbl_visual_feedback');

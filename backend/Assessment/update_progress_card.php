@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../connection.php';
+require_once __DIR__ . '/shape_mapping_helper.php';
 header('Content-Type: application/json');
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -78,14 +79,9 @@ if (empty($feedbacks)) {
     exit;
 }
 
-// Map each shape to its average score
-$shapeAvg = [
-    '❤️' => 4.600,
-    '⭐' => 3.7995,
-    '🔷' => 2.9995,
-    '▲' => 2.1995,
-    '🟡' => 1.3995,
-];
+// Get dynamic shape-to-score mapping from database
+$shapeAvg = getDynamicShapeMapping($conn);
+logShapeMapping("update_progress_card", $shapeAvg, $conn);
 $shapeScores = [];
 foreach ($feedbacks as $fb) {
     $vf_id = $fb['visual_feedback_id'];
@@ -118,14 +114,8 @@ if (!$row) {
 $quarter_visual_feedback_id = $row['visual_feedback_id'];
 $shape = $row['visual_feedback_shape'];
 
-// Determine risk_id
-if ($shape === '❤️' || $shape === '⭐') {
-    $risk_id = 1;
-} elseif ($shape === '🔷' || $shape === '▲') {
-    $risk_id = 2;
-} else {
-    $risk_id = 3;
-}
+// Determine risk_id dynamically based on shape
+$risk_id = getRiskLevelForShape($shape, $conn);
 
 // Update the progress card
 $sql4 = "UPDATE tbl_progress_cards SET quarter_visual_feedback_id=?, risk_id=?, quarter_avg_score=?, is_finalized=1, finalized_by=?, report_date=NOW() WHERE student_id=? AND advisory_id=? AND quarter_id=?";

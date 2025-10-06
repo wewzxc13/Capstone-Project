@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../connection.php';
 require_once __DIR__ . '/tracking_helper.php';
+require_once __DIR__ . '/shape_mapping_helper.php';
 header('Content-Type: application/json');
 
 // Accept JSON input
@@ -49,14 +50,9 @@ if (count($feedbacks) === 0) {
     exit;
 }
 
-// 2. Custom shape-to-score mapping
-$shapeScore = [
-    1 => 4.600, // ❤️
-    2 => 3.799, // ⭐
-    3 => 2.999, // 🔷
-    4 => 2.199, // ▲
-    5 => 1.399, // 🟡
-];
+// 2. Get dynamic shape-to-score mapping from database
+$shapeScore = getDynamicShapeMappingById($conn);
+logShapeMapping("update_quarter_feedback", $shapeScore, $conn);
 
 // 3. Calculate average
 $total = 0;

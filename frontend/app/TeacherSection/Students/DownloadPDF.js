@@ -399,10 +399,37 @@ export async function generateAssessmentPDF({
     const quarterResultY = tableStartY2 + assessmentRowHeight + (subjects.length * assessmentRowHeight);
     pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.text('Quarter Result', tableStartX + 2, quarterResultY + (assessmentRowHeight / 2) + 2);
     quarters.forEach((q, colIndex) => {
-      const quarterId = colIndex + 1; const x = colPos[colIndex + 1]; let shape = '';
-      if (quarterId === 5) { if (overallProgress && overallProgress.visual_shape) { shape = overallProgress.visual_shape; } }
-      else { const card = progressCards.find(pc => Number(pc.quarter_id) === quarterId); if (card) { const vf = visualFeedback.find(v => v.visual_feedback_id == card.quarter_visual_feedback_id); shape = vf?.visual_feedback_shape || ''; } }
-      if (shape) { renderSymbol(shape, x + quarterColWidth / 2, quarterResultY + (assessmentRowHeight / 2), 10); }
+      const quarterId = colIndex + 1; const x = colPos[colIndex + 1];
+      let riskId = '';
+      let shape = '';
+      if (quarterId === 5) {
+        // Final column - use overall progress
+        riskId = overallProgress?.risk_id || '';
+        if (overallProgress && overallProgress.visual_shape) {
+          shape = overallProgress.visual_shape;
+        }
+      } else {
+        // For quarters 1-4, get data from progress cards
+        const card = progressCards.find(pc => Number(pc.quarter_id) === quarterId);
+        riskId = card?.risk_id || '';
+        if (card) {
+          const vf = visualFeedback.find(v => v.visual_feedback_id == card.quarter_visual_feedback_id);
+          shape = vf?.visual_feedback_shape || '';
+        }
+      }
+
+      // Render risk level circle (left) and assessment shape (right)
+      const centerX = x + quarterColWidth / 2;
+      const centerY = quarterResultY + (assessmentRowHeight / 2);
+      if (riskId) {
+        const riskColor = String(riskId) === '1' ? [34, 197, 94] : String(riskId) === '2' ? [251, 191, 36] : String(riskId) === '3' ? [239, 68, 68] : [156, 163, 175];
+        const radius = 2; // Much smaller circle to match the image proportions
+        pdf.setFillColor(riskColor[0], riskColor[1], riskColor[2]);
+        pdf.circle(centerX - 8, centerY, radius, 'F');
+      }
+      if (shape) {
+        renderSymbol(shape, centerX + 4, centerY, 10);
+      }
     });
     pdf.setDrawColor(0, 0, 0); pdf.setLineWidth(0.5);
     for (let row = 0; row <= subjects.length + 2; row++) { const y = tableStartY2 + (row * assessmentRowHeight); pdf.line(tableStartX, y, tableStartX + tableWidth2, y); }
@@ -469,8 +496,18 @@ export async function generateAssessmentPDF({
     pdf.text(`Page ${i} of ${pageCount}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
   }
 
-  const studentNameForFile = student ? `${student.stud_lastname || student.lastName || ''}_${student.stud_firstname || student.firstName || ''}`.trim() : 'Student';
-  const fileName = `Report_Card_${studentNameForFile}_${new Date().toISOString().split('T')[0]}.pdf`;
+  // Build consistent filename: Report_Card_{Last}_{First}_{Middle}_{YYYY-MM-DD}{HH-mm-ss-SSSZ}
+  const last = (student?.stud_lastname || student?.lastName || '').toString().replace(/\s+/g, '');
+  const first = (student?.stud_firstname || student?.firstName || '').toString().replace(/\s+/g, '');
+  const middleRaw = (student?.stud_middlename || student?.middleName || '').toString().replace(/\s+/g, '');
+  const parts = [last, first].filter(Boolean);
+  if (middleRaw) parts.push(middleRaw);
+  const namePart = (parts.length ? parts.join('_') : 'Student');
+  const iso = new Date().toISOString(); // e.g., 2025-10-06T06:48:53.469Z
+  const [dPart, tPart] = iso.split('T');
+  const [hhmmss, msZ] = tPart.split('.'); // '06:48:53', '469Z'
+  const timePart = `${hhmmss.replace(/:/g, '-')}-${msZ}`; // '06-48-53-469Z'
+  const fileName = `Report_Card_${namePart}_${dPart}${timePart}.pdf`;
   pdf.save(fileName);
 }
 
@@ -954,43 +991,47 @@ const SharedExport = ({
                 <tr className="bg-white">
                   <td className="px-4 py-1 font-semibold border-soft">Quarter Result</td>
                   {quarters.map(q => {
+                    let riskId = '';
                     if (q.id === 5) {
-                      // Final column - show overall progress if available
-                      const allQuartersFinalized = [1,2,3,4].every(quarterId => progressCards.some(pc => Number(pc.quarter_id) === quarterId));
-                      const shape = overallProgress && overallProgress.visual_shape && allQuartersFinalized ? overallProgress.visual_shape : '';
-                      const riskId = overallProgress?.risk_id;
-                      const riskColor = String(riskId) === '1' ? '#22c55e' : String(riskId) === '2' ? '#fbbf24' : String(riskId) === '3' ? '#ef4444' : '';
-                      return (
-                        <td key={q.id} className="px-3 py-1 text-center border-soft">
-                          {shape ? (
-                            <div className="inline-flex items-center gap-2">
-                              {riskColor && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor }}></span>}
-                              <span style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 700 }}>{shape}</span>
-                            </div>
-                          ) : ''}
-                        </td>
-                      );
+                      // Final column - use overall progress risk_id
+                      riskId = overallProgress?.risk_id || '';
+                    } else {
+                      // For quarters 1-4, get risk_id from progress cards
+                      const card = progressCards.find(pc => Number(pc.quarter_id) === q.id);
+                      riskId = card?.risk_id || '';
                     }
                     
-                    // For quarters 1-4, show progress card shapes
-                    const card = progressCards.find(pc => Number(pc.quarter_id) === q.id);
-                    if (card) {
-                      const vf = visualFeedback.find(v => v.visual_feedback_id == card.quarter_visual_feedback_id);
-                      const shape = vf?.visual_feedback_shape || '';
-                      const riskId = card?.risk_id;
-                      const riskColor = String(riskId) === '1' ? '#22c55e' : String(riskId) === '2' ? '#fbbf24' : String(riskId) === '3' ? '#ef4444' : '';
-                      return (
-                        <td key={q.id} className="px-3 py-1 text-center border-soft">
-                          {shape ? (
-                            <div className="inline-flex items-center gap-2">
-                              {riskColor && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor }}></span>}
-                              <span style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 700 }}>{shape}</span>
-                            </div>
-                          ) : ''}
-                        </td>
-                      );
+                    // Show risk level circle and assessment shape
+                    const riskColor = String(riskId) === '1' ? '#22c55e' : String(riskId) === '2' ? '#fbbf24' : String(riskId) === '3' ? '#ef4444' : '#9ca3af';
+                    let shape = '';
+                    if (q.id === 5) {
+                      // Final column - use overall progress
+                      shape = overallProgress?.visual_shape || '';
+                    } else {
+                      // For quarters 1-4, get from progress cards
+                      const card = progressCards.find(pc => Number(pc.quarter_id) === q.id);
+                      if (card) {
+                        const vf = visualFeedback.find(v => v.visual_feedback_id == card.quarter_visual_feedback_id);
+                        shape = vf?.visual_feedback_shape || '';
+                      }
                     }
-                    return <td key={q.id} className="px-3 py-1 text-center border-soft"></td>;
+                    
+                    return (
+                      <td key={q.id} className="px-3 py-1 text-center border-soft">
+                        {(riskId || shape) ? (
+                          <div className="inline-flex items-center justify-center gap-2">
+                            {riskId && (
+                              <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: riskColor }}></span>
+                            )}
+                            {shape && (
+                              <span style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 'bold' }}>
+                                {shape}
+                              </span>
+                            )}
+                          </div>
+                        ) : ''}
+                      </td>
+                    );
                   })}
                 </tr>
               </tbody>
