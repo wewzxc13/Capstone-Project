@@ -36,3 +36,41 @@ Check Params: ["5","5",12,1]
 Existing notification found: YES
 Updating existing notification ID: 44
 Updated existing notification message to: [QUARTERLY PROGRESS] Updated a Quarterly Progress
+=== UPDATE NOTIFICATION CREATION START ===
+Student ID: 6, Quarter ID: 3, Teacher ID: 5
+Student name: Richard Montizor Gamon
+Check Query: 
+            SELECT n.notification_id 
+            FROM tbl_notifications n
+            INNER JOIN tbl_notification_recipients nr ON n.notification_id = nr.notification_id
+            INNER JOIN tbl_progress_notification pn ON n.notification_id = pn.notification_id
+            WHERE n.created_by = ? 
+            AND nr.recipient_type = 'Teacher' 
+            AND nr.user_id = ?
+            AND pn.student_id = ?
+            AND pn.quarter_id = ?
+            AND n.notif_message LIKE '%[QUARTERLY PROGRESS]%'
+        
+Check Params: ["5","5",6,3]
+Existing notification found: YES
+Updating existing notification ID: 29
+Updated existing notification message to: [QUARTERLY PROGRESS] Updated a Quarterly Progress
+=== UPDATE NOTIFICATION CREATION START ===
+Student ID: 6, Quarter ID: 4, Teacher ID: 5
+Student name: Richard Montizor Gamon
+Check Query: 
+            SELECT n.notification_id 
+            FROM tbl_notifications n
+            INNER JOIN tbl_notification_recipients nr ON n.notification_id = nr.notification_id
+            INNER JOIN tbl_progress_notification pn ON n.notification_id = pn.notification_id
+            WHERE n.created_by = ? 
+            AND nr.recipient_type = 'Teacher' 
+            AND nr.user_id = ?
+            AND pn.student_id = ?
+            AND pn.quarter_id = ?
+            AND n.notif_message LIKE '%[QUARTERLY PROGRESS]%'
+        
+Check Params: ["5","5",6,4]
+Existing notification found: YES
+Updating existing notification ID: 30
+Updated existing notification message to: [QUARTERLY PROGRESS] Updated a Quarterly Progress

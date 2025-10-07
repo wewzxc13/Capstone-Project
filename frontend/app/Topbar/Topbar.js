@@ -689,6 +689,19 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
 
 
 
+  // --- LIGHTWEIGHT CLIENT TRIGGER FOR BACKEND REMINDER GENERATION ---
+  // On app open, ping the reminder endpoint once (throttled) so the server creates reminders.
+  const triggerMeetingReminders = useCallback(async () => {
+    try {
+      const resp = await fetch('/php/Meeting/send_meeting_reminders.php', { method: 'GET', cache: 'no-store' });
+      const txt = await resp.text();
+      console.log('Reminder trigger response:', resp.status, txt);
+    } catch (e) {
+      // Silent fail – UI should not be blocked by reminder generation
+      console.error('Reminder trigger failed:', e);
+    }
+  }, []);
+
 
   // --- FETCH MEETING NOTIFICATIONS FOR ADMIN, SUPER ADMIN, TEACHER, AND PARENT ---
   useEffect(() => {
@@ -909,6 +922,11 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         const dateStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         const reschedStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()} from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         
+        // Special-case minimal reminder message -> expand with meeting details
+        if (message === "[REMINDER] Upcoming meeting") {
+          return `[REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+        }
+
         // Replace basic messages with detailed ones based on exact format requirements
         // For [MEETING] notifications (admin/super admin created)
         if (message === "[MEETING] Created the Meeting") {
@@ -1078,6 +1096,11 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         const dateStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         const reschedStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()} from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         
+        // Minimal reminder -> expand
+        if (message === "[REMINDER] Upcoming meeting") {
+          return `[REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+        }
+
         // Replace basic messages with detailed ones based on exact format requirements
         // For [MEETING] notifications (admin/super admin created)
         if (message === "[MEETING] Created the Meeting") {
@@ -1185,6 +1208,11 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         const dateStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         const reschedStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()} from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         
+        // Minimal reminder -> expand
+        if (message === "[REMINDER] Upcoming meeting") {
+          return `[REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+        }
+
         // Replace basic messages with detailed ones based on exact format requirements
         if (message === "[ONE ON ONE MEETING] Created the Meeting") {
           if (isOwn) {
@@ -1329,6 +1357,11 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         const dateStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         const reschedStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()} from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         
+        // Minimal reminder -> expand for parent wording
+        if (message === "[REMINDER] Upcoming meeting") {
+          return `[REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+        }
+
         // Replace basic messages with detailed ones based on exact format requirements
         // For [MEETING] notifications (admin/super admin created)
         if (message === "[MEETING] Created the Meeting") {
@@ -1771,6 +1804,9 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
       return; // Don't fetch until user data is fully loaded
     }
     
+    // Fire a one-shot backend reminder generation when opening the app
+    triggerMeetingReminders();
+
     // Only fetch meeting notifications for non-admin roles
     if (userData.role !== "Admin" && userData.role !== "SuperAdmin" && userData.role !== "Super Admin") {
       if (userData.role === "Teacher") {
@@ -1816,7 +1852,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
       // Admin/Super Admin will get progress notifications from fetchAdminNotifications()
     }, 30000); // 30 seconds
     return () => clearInterval(interval);
-  }, [userData.role, userData.userId, userData.fullName, fetchMeetingNotifications, fetchAdminNotifications, fetchProgressCardNotifications, fetchOverallProgressNotifications, fetchParentProgressNotifications, fetchParentOverallProgressNotifications]); // Add function dependencies
+  }, [userData.role, userData.userId]);
 
   // Handle notification bell click - automatically mark all as seen for Admin/Super Admin and Teacher
   // This makes it hassle-free: just open the bell dropdown and all notifications are marked as seen

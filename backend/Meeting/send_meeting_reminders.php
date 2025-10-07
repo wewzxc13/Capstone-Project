@@ -48,7 +48,7 @@ try {
             ) AS creator_id
         FROM tbl_meetings m
         WHERE m.meeting_status IN ('Scheduled','Rescheduled')
-          AND TIMESTAMPDIFF(HOUR, NOW(), m.meeting_start) BETWEEN 47 AND 48
+          AND DATE(m.meeting_start) = CURDATE() + INTERVAL 2 DAY
           AND NOT EXISTS (
                 SELECT 1 
                 FROM tbl_notifications n1 
@@ -60,6 +60,10 @@ try {
     $stmt = $conn->prepare($sql);
     $stmt->execute();
     $meetings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Debug log
+    $debugPath = __DIR__ . '/../SystemLogs/debug_log.txt';
+    @file_put_contents($debugPath, date('Y-m-d H:i:s') . ' - reminders: found ' . count($meetings) . " meetings for CURDATE()+2\n", FILE_APPEND);
 
     if (empty($meetings)) {
         echo json_encode(['status' => 'success', 'processed' => 0, 'details' => []]);
@@ -109,7 +113,8 @@ try {
             $dateStr = $start->format('F j');
             $timeStr = $start->format('g:i A') . ' to ' . $end->format('g:i A');
             $title = $m['meeting_title'];
-            $message = "[REMINDER] Upcoming meeting '" . $title . "' on " . $dateStr . ", from " . $timeStr . ".";
+            // Store a minimal, type-only message; frontend will format the full sentence
+            $message = "[REMINDER] Upcoming meeting";
 
             // 3) Insert reminder notification
             $creatorId = $m['creator_id'] ?? 0; // 0 == system
@@ -124,6 +129,7 @@ try {
             }
 
             $conn->commit();
+            @file_put_contents($debugPath, date('Y-m-d H:i:s') . " - reminder created for meeting #$meetingId notif #$notificationId with " . count($recipients) . " recipients\n", FILE_APPEND);
             $processed++;
             $details[] = [
                 'meeting_id' => (int)$meetingId,
@@ -133,6 +139,7 @@ try {
         } catch (Throwable $txe) {
             $conn->rollBack();
             // Continue with others, but record the failure
+            @file_put_contents($debugPath, date('Y-m-d H:i:s') . " - reminder error meeting #" . $m['meeting_id'] . ': ' . $txe->getMessage() . "\n", FILE_APPEND);
             $details[] = [
                 'meeting_id' => (int)$m['meeting_id'],
                 'error' => $txe->getMessage()
