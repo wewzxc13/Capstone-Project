@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Aug 30, 2025 at 07:42 PM
+-- Generation Time: Oct 06, 2025 at 07:00 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -270,7 +270,8 @@ INSERT INTO `tbl_add_info` (`add_info_id`, `user_id`, `barangay`, `city_municipa
 (16, 23, 'Tigna', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines', '202987564564646', '', ''),
 (17, 27, 'Barangay 8', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines', '343-335-645-565', '34-3737747-5', '6743-4664-7642'),
 (18, 35, 'Barangay 4', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines', '111-111-111-221', '22-2222222-2', '2222-2222-2222'),
-(19, 36, 'Barangay 4', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines', '', '', '');
+(19, 36, 'Barangay 4', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines', '', '', ''),
+(20, 38, 'Barangay 4', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines', '', '', '');
 
 -- --------------------------------------------------------
 
@@ -293,9 +294,9 @@ CREATE TABLE `tbl_advisory` (
 --
 
 INSERT INTO `tbl_advisory` (`advisory_id`, `level_id`, `lead_teacher_id`, `assistant_teacher_id`, `total_male`, `total_female`) VALUES
-(1, 1, 27, 9, 4, 2),
+(1, 1, 27, 9, 4, 3),
 (2, 2, 5, 10, 2, 5),
-(3, 3, 19, 22, 4, 0);
+(3, 3, 19, 22, 3, 0);
 
 -- --------------------------------------------------------
 
@@ -453,12 +454,12 @@ INSERT INTO `tbl_attendance` (`attendance_id`, `student_id`, `recorded_by`, `att
 (141, 12, 5, '2026-02-11', 'Present', '2025-08-10 12:45:20'),
 (142, 7, 5, '2025-10-08', 'Absent', '2025-08-10 12:45:25'),
 (143, 12, 5, '2025-10-08', 'Absent', '2025-08-10 12:45:25'),
-(144, 7, 5, '2026-02-12', 'Present', '2025-08-27 10:48:45'),
-(145, 11, 5, '2026-02-12', 'Present', '2025-08-27 10:48:45'),
-(146, 12, 5, '2026-02-12', 'Present', '2025-08-27 10:48:45'),
-(147, 3, 5, '2026-02-12', 'Present', '2025-08-27 10:48:45'),
-(148, 8, 5, '2026-02-12', 'Absent', '2025-08-27 10:48:45'),
-(149, 13, 5, '2026-02-12', 'Absent', '2025-08-27 10:48:45'),
+(144, 7, 5, '2026-02-12', 'Present', '2025-09-04 13:03:52'),
+(145, 11, 5, '2026-02-12', 'Present', '2025-09-04 13:03:52'),
+(146, 12, 5, '2026-02-12', 'Present', '2025-09-04 13:03:52'),
+(147, 3, 5, '2026-02-12', 'Present', '2025-09-04 13:03:52'),
+(148, 8, 5, '2026-02-12', 'Absent', '2025-09-04 13:03:52'),
+(149, 13, 5, '2026-02-12', 'Absent', '2025-09-04 13:03:52'),
 (150, 1, 27, '2025-08-06', 'Present', '2025-08-30 17:37:19'),
 (151, 2, 27, '2025-08-06', 'Present', '2025-08-30 17:37:19'),
 (152, 14, 27, '2025-08-06', 'Present', '2025-08-30 17:37:19'),
@@ -494,7 +495,8 @@ INSERT INTO `tbl_attendance` (`attendance_id`, `student_id`, `recorded_by`, `att
 (182, 14, 27, '2026-02-14', 'Present', '2025-08-30 17:40:46'),
 (183, 15, 27, '2026-02-14', 'Present', '2025-08-30 17:40:46'),
 (184, 16, 27, '2026-02-14', 'Present', '2025-08-30 17:40:46'),
-(185, 17, 27, '2026-02-14', 'Absent', '2025-08-30 17:40:46');
+(185, 17, 27, '2026-02-14', 'Absent', '2025-08-30 17:40:46'),
+(186, 6, 5, '2026-02-12', 'Absent', '2025-09-04 13:03:52');
 
 -- --------------------------------------------------------
 
@@ -530,30 +532,41 @@ INSERT INTO `tbl_communication` (`message_id`, `sender_id`, `receiver_id`, `mess
 (9, 1, 4, 'new message', 0, '2025-08-17 16:00:50', 0, 1, 1),
 (10, 1, 4, 'nbew', 0, '2025-08-17 16:01:22', 0, 0, 1),
 (11, 1, 4, 'sddsds', 0, '2025-08-17 16:04:55', 0, 1, 1),
-(12, 1, 23, 'wow', 0, '2025-08-17 16:05:44', 0, 0, 0),
+(12, 1, 23, 'wow', 1, '2025-08-17 16:05:44', 0, 0, 0),
 (13, 1, 15, 'Let\'s review reports tomorrow.', 0, '2025-08-17 16:19:59', 0, 0, 0),
-(14, 5, 23, 'We noticed great improvement this week!', 0, '2025-08-17 17:06:52', 0, 0, 0),
+(14, 5, 23, 'We noticed great improvement this week!', 1, '2025-08-17 17:06:52', 0, 0, 0),
 (15, 1, 22, 'Thanks for your hard work!', 0, '2025-08-17 17:07:02', 0, 1, 0),
 (16, 1, 15, 'Schedule the system backup.', 0, '2025-08-17 17:07:15', 0, 0, 0),
-(17, 1, 23, 'Edited Please sign the consent form sent today.', 0, '2025-08-17 17:07:18', 1, 0, 0),
+(17, 1, 23, 'Edited Please sign the consent form sent today.', 1, '2025-08-17 17:07:18', 1, 0, 0),
 (18, 1, 15, 'k df', 0, '2025-08-17 17:26:35', 1, 0, 0),
-(19, 5, 23, 'l', 0, '2025-08-17 17:30:22', 0, 1, 0),
-(20, 5, 23, 'dfdffd', 0, '2025-08-17 17:33:10', 0, 1, 0),
-(21, 1, 23, 'hgghg', 0, '2025-08-17 17:33:46', 0, 1, 0),
-(22, 1, 23, 'Thank you for reaching out.', 0, '2025-08-17 17:36:04', 0, 1, 0),
-(23, 5, 23, 'lllll', 0, '2025-08-17 17:36:25', 0, 1, 0),
-(24, 1, 23, 'Here\'s your child\'s progress update.', 0, '2025-08-17 17:44:11', 0, 1, 0),
-(25, 1, 23, 'llssssl', 0, '2025-08-17 17:44:25', 1, 1, 0),
-(26, 1, 23, 'We noticed great improvement this week!', 0, '2025-08-17 17:48:55', 0, 1, 0),
-(27, 5, 23, 'Attendance update has been posted.', 0, '2025-08-17 17:49:19', 0, 1, 0),
-(28, 1, 23, 'Thank you for reaching out.', 0, '2025-08-17 17:53:25', 0, 1, 0),
-(29, 5, 23, 'Attendance update has been posted.', 0, '2025-08-17 17:53:33', 0, 1, 0),
+(19, 5, 23, 'l', 1, '2025-08-17 17:30:22', 0, 1, 0),
+(20, 5, 23, 'dfdffd', 1, '2025-08-17 17:33:10', 0, 1, 0),
+(21, 1, 23, 'hgghg', 1, '2025-08-17 17:33:46', 0, 1, 0),
+(22, 1, 23, 'Thank you for reaching out.', 1, '2025-08-17 17:36:04', 0, 1, 0),
+(23, 5, 23, 'lllll', 1, '2025-08-17 17:36:25', 0, 1, 0),
+(24, 1, 23, 'Here\'s your child\'s progress update.', 1, '2025-08-17 17:44:11', 0, 1, 0),
+(25, 1, 23, 'llssssl', 1, '2025-08-17 17:44:25', 1, 1, 0),
+(26, 1, 23, 'We noticed great improvement this week!', 1, '2025-08-17 17:48:55', 0, 1, 0),
+(27, 5, 23, 'Attendance update has been posted.', 1, '2025-08-17 17:49:19', 0, 1, 0),
+(28, 1, 23, 'Thank you for reaching out.', 1, '2025-08-17 17:53:25', 0, 1, 0),
+(29, 5, 23, 'Attendance update has been posted.', 1, '2025-08-17 17:53:33', 0, 1, 0),
 (30, 1, 22, 'Thanks for your hard work!', 0, '2025-08-17 17:53:47', 0, 1, 0),
-(31, 5, 23, 'Attendance update has been posted. We noticed great improvement this week!', 0, '2025-08-17 17:54:02', 0, 1, 0),
-(32, 5, 23, 'Here\'s your child\'s progress update.', 0, '2025-08-17 17:59:34', 0, 1, 0),
+(31, 5, 23, 'Attendance update has been posted. We noticed great improvement this week!', 1, '2025-08-17 17:54:02', 0, 1, 0),
+(32, 5, 23, 'Here\'s your child\'s progress update.', 1, '2025-08-17 17:59:34', 0, 1, 0),
 (33, 1, 15, 'edited new', 0, '2025-08-17 18:01:28', 1, 0, 0),
 (34, 1, 25, 'Please sign the consent form sent today.', 1, '2025-08-19 18:31:07', 0, 0, 0),
-(35, 1, 5, 'Please upload lesson plans by Friday.', 0, '2025-08-22 15:14:37', 0, 0, 0);
+(35, 1, 5, 'Please upload lesson plans by Friday.', 1, '2025-08-22 15:14:37', 0, 0, 0),
+(36, 2, 5, 'Submit lesson plans by Friday.', 1, '2025-08-31 13:10:10', 0, 0, 0),
+(37, 2, 1, 'Review system reports today.', 1, '2025-08-31 13:10:14', 0, 0, 0),
+(38, 2, 3, 'I\'ll review your reports.', 0, '2025-08-31 13:10:20', 0, 0, 0),
+(39, 27, 1, 'How can teachers help?', 0, '2025-08-31 17:51:41', 0, 0, 0),
+(40, 10, 23, 'Your child is doing well.', 1, '2025-08-31 18:40:52', 0, 0, 0),
+(41, 10, 1, 'Explain new policies?', 1, '2025-08-31 18:43:58', 0, 0, 0),
+(42, 23, 5, 'How is my child doing?', 1, '2025-08-31 19:00:07', 0, 0, 0),
+(43, 19, 1, 'Concerned about curriculum.', 0, '2025-09-18 13:21:04', 0, 0, 0),
+(44, 19, 30, 'Here\'s this month\'s actvities.', 0, '2025-09-18 13:21:17', 0, 0, 0),
+(45, 5, 3, 'When is the next meeting?', 0, '2025-09-18 13:31:52', 0, 0, 0),
+(46, 23, 1, 'k', 0, '2025-09-18 13:57:22', 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -614,7 +627,15 @@ INSERT INTO `tbl_comm_group_message` (`group_message_id`, `group_id`, `sender_id
 (12, 3, 1, 'Parent–teacher conference schedule is posted.', '2025-08-20 13:13:24', 0, 0),
 (13, 4, 1, 'Parent–teacher conference schedule is posted.', '2025-08-20 13:13:27', 0, 0),
 (14, 5, 1, 'Parent–teacher conference schedule is posted.', '2025-08-20 13:13:30', 0, 0),
-(15, 1, 1, 'Emergency drill tomorrow at 10 AM.', '2025-08-22 13:21:15', 0, 0);
+(15, 1, 1, 'Emergency drill tomorrow at 10 AM.', '2025-08-22 13:21:15', 0, 0),
+(16, 1, 2, 'Share meeting details.', '2025-08-31 13:10:36', 0, 0),
+(17, 4, 1, 'k', '2025-08-31 17:43:44', 0, 0),
+(18, 2, 2, 'Thank you, team!', '2025-08-31 17:48:07', 0, 0),
+(19, 3, 27, 'Any schedule updates?', '2025-08-31 17:49:59', 0, 0),
+(20, 1, 2, 'Reminder: School fair this Friday!', '2025-08-31 17:56:33', 0, 0),
+(21, 4, 10, 'When are field trips?', '2025-08-31 18:40:27', 0, 0),
+(22, 4, 25, 'When are the upcoming field trip?', '2025-08-31 18:44:43', 1, 0),
+(23, 1, 28, 'ok', '2025-09-04 12:51:01', 0, 0);
 
 -- --------------------------------------------------------
 
@@ -634,29 +655,110 @@ CREATE TABLE `tbl_comm_group_read` (
 
 INSERT INTO `tbl_comm_group_read` (`group_message_id`, `user_id`, `read_at`) VALUES
 (1, 1, '2025-08-17 22:44:14'),
+(1, 2, '2025-08-31 19:36:57'),
 (1, 5, '2025-08-18 00:55:37'),
+(1, 10, '2025-09-01 02:40:17'),
+(1, 23, '2025-09-01 01:57:05'),
+(1, 25, '2025-09-01 02:44:34'),
+(1, 27, '2025-09-01 01:49:55'),
 (1, 28, '2025-08-20 20:48:51'),
 (2, 1, '2025-08-17 22:44:21'),
+(2, 2, '2025-09-01 01:48:03'),
 (2, 5, '2025-08-18 00:54:49'),
+(2, 10, '2025-09-01 02:40:19'),
+(2, 27, '2025-09-01 01:55:10'),
 (3, 1, '2025-08-17 22:44:20'),
+(3, 2, '2025-09-01 02:20:57'),
+(3, 27, '2025-09-01 01:49:39'),
 (4, 1, '2025-08-17 22:44:19'),
+(4, 2, '2025-09-01 02:20:59'),
 (4, 5, '2025-08-18 00:50:44'),
+(4, 10, '2025-09-01 02:40:22'),
+(4, 25, '2025-09-01 02:44:29'),
 (4, 28, '2025-08-20 20:48:55'),
 (5, 1, '2025-08-17 22:44:17'),
+(5, 2, '2025-09-01 02:21:05'),
 (6, 1, '2025-08-17 22:59:52'),
+(6, 2, '2025-08-31 19:36:57'),
 (6, 5, '2025-08-18 00:55:37'),
+(6, 10, '2025-09-01 02:40:17'),
+(6, 23, '2025-09-01 01:57:05'),
+(6, 25, '2025-09-01 02:44:34'),
+(6, 27, '2025-09-01 01:49:55'),
 (6, 28, '2025-08-20 20:48:51'),
 (7, 1, '2025-08-18 00:18:14'),
+(7, 2, '2025-09-01 01:48:03'),
 (7, 5, '2025-08-18 00:54:49'),
+(7, 10, '2025-09-01 02:40:19'),
+(7, 27, '2025-09-01 01:55:10'),
 (8, 1, '2025-08-18 00:18:14'),
+(8, 2, '2025-09-01 01:48:03'),
 (8, 5, '2025-08-18 00:54:49'),
+(8, 10, '2025-09-01 02:40:19'),
+(8, 27, '2025-09-01 01:55:10'),
 (9, 1, '2025-08-18 00:51:26'),
+(9, 2, '2025-09-01 02:20:59'),
 (9, 5, '2025-08-18 00:58:31'),
+(9, 10, '2025-09-01 02:40:22'),
+(9, 25, '2025-09-01 02:44:29'),
 (9, 28, '2025-08-20 20:48:55'),
 (10, 1, '2025-08-18 02:14:00'),
+(10, 2, '2025-09-01 01:48:03'),
 (10, 5, '2025-08-18 02:16:57'),
+(10, 10, '2025-09-01 02:40:19'),
+(10, 27, '2025-09-01 01:55:10'),
 (11, 1, '2025-08-22 21:21:03'),
-(12, 1, '2025-08-20 21:13:40');
+(11, 2, '2025-08-31 19:36:57'),
+(11, 10, '2025-09-01 02:40:17'),
+(11, 23, '2025-09-01 01:57:05'),
+(11, 25, '2025-09-01 02:44:34'),
+(11, 27, '2025-09-01 01:49:55'),
+(11, 28, '2025-09-04 20:50:57'),
+(12, 1, '2025-08-20 21:13:40'),
+(12, 2, '2025-09-01 02:20:57'),
+(12, 27, '2025-09-01 01:49:39'),
+(13, 1, '2025-09-01 01:34:17'),
+(13, 2, '2025-09-01 02:20:59'),
+(13, 10, '2025-09-01 02:40:22'),
+(13, 25, '2025-09-01 02:44:29'),
+(14, 1, '2025-09-01 01:34:20'),
+(14, 2, '2025-09-01 02:21:05'),
+(15, 1, '2025-08-31 21:14:00'),
+(15, 2, '2025-08-31 19:36:57'),
+(15, 10, '2025-09-01 02:40:17'),
+(15, 23, '2025-09-01 01:57:05'),
+(15, 25, '2025-09-01 02:44:34'),
+(15, 27, '2025-09-01 01:49:55'),
+(15, 28, '2025-09-04 20:50:57'),
+(16, 1, '2025-08-31 21:14:00'),
+(16, 2, '2025-09-01 01:47:58'),
+(16, 10, '2025-09-01 02:40:17'),
+(16, 23, '2025-09-01 01:57:06'),
+(16, 25, '2025-09-01 02:44:34'),
+(16, 27, '2025-09-01 01:49:55'),
+(16, 28, '2025-09-04 20:50:57'),
+(17, 1, '2025-09-01 01:57:52'),
+(17, 2, '2025-09-01 02:20:59'),
+(17, 10, '2025-09-01 02:40:22'),
+(17, 25, '2025-09-01 02:44:29'),
+(18, 1, '2025-09-01 01:58:04'),
+(18, 2, '2025-09-01 01:48:26'),
+(18, 10, '2025-09-01 02:40:19'),
+(18, 27, '2025-09-01 01:55:10'),
+(19, 1, '2025-09-01 01:58:12'),
+(19, 2, '2025-09-01 02:20:57'),
+(19, 27, '2025-09-01 01:50:06'),
+(20, 1, '2025-09-01 01:57:54'),
+(20, 2, '2025-09-01 02:20:51'),
+(20, 10, '2025-09-01 02:40:17'),
+(20, 23, '2025-09-01 01:57:06'),
+(20, 25, '2025-09-01 02:44:34'),
+(20, 28, '2025-09-04 20:50:57'),
+(21, 2, '2025-09-01 02:59:30'),
+(21, 25, '2025-09-01 02:44:29'),
+(22, 2, '2025-09-01 02:59:30'),
+(22, 25, '2025-09-01 02:44:55'),
+(23, 23, '2025-09-18 21:43:51');
 
 -- --------------------------------------------------------
 
@@ -717,15 +819,25 @@ INSERT INTO `tbl_meetings` (`meeting_id`, `meeting_title`, `parent_id`, `student
 (29, 'Halo Thisd Edited', NULL, NULL, NULL, '2025-08-20 09:00:00', '2025-08-20 10:00:00', 'Sddsdsgfgfg', 'Completed', 0, NULL, 0, NULL, 0, NULL),
 (31, 'Another Nasad', 20, 8, 2, '2025-08-30 09:00:00', '2025-08-30 10:00:00', 'Dssdsdssdsddsdsdds', 'Completed', 0, NULL, 1, '2025-08-20 16:49:24', 1, '2025-08-20 16:55:18'),
 (32, 'New One On One ', 23, 5, 3, '2025-08-15 09:00:00', '2025-08-15 10:00:00', 'Dssdsdsdffgdd', 'Completed', 1, '2025-08-20 17:00:03', 0, NULL, 0, NULL),
-(33, 'Sept Meeting', NULL, NULL, NULL, '2025-09-02 09:00:00', '2025-09-02 10:00:00', 'This is meeting', 'Scheduled', 0, NULL, 0, NULL, 0, NULL),
-(34, 'New Meeting Edited', NULL, NULL, NULL, '2025-09-03 09:00:00', '2025-09-03 10:00:00', 'Sdsdsdsdsd', 'Scheduled', 0, NULL, 0, NULL, 0, NULL),
-(35, 'New Meet', NULL, NULL, NULL, '2025-09-04 09:00:00', '2025-09-04 10:00:00', 'Hjjhhjffdddfdf', 'Scheduled', 0, NULL, 0, NULL, 0, NULL),
-(36, 'Hjghjghjg', NULL, NULL, NULL, '2025-09-12 09:00:00', '2025-09-12 10:00:00', 'Hjhjgjhghjghjg', 'Rescheduled', 0, NULL, 0, NULL, 0, NULL),
-(37, 'Hfhghfh', NULL, NULL, NULL, '2025-09-19 09:00:00', '2025-09-19 10:00:00', 'Hffhhfyryryrfff', 'Cancelled', 0, NULL, 0, NULL, 0, NULL),
+(33, 'Sept Meeting', NULL, NULL, NULL, '2025-09-02 09:00:00', '2025-09-02 10:00:00', 'This is meeting', 'Completed', 0, NULL, 0, NULL, 0, NULL),
+(34, 'New Meeting Edited', NULL, NULL, NULL, '2025-09-03 09:00:00', '2025-09-03 10:00:00', 'Sdsdsdsdsd', 'Completed', 0, NULL, 0, NULL, 0, NULL),
+(35, 'New Meet', NULL, NULL, NULL, '2025-09-04 09:00:00', '2025-09-04 10:00:00', 'Hjjhhjffdddfdf', 'Completed', 0, NULL, 0, NULL, 0, NULL),
+(36, 'Hjghjghjg', NULL, NULL, NULL, '2025-09-12 09:00:00', '2025-09-12 10:00:00', 'Hjhjgjhghjghjg', 'Completed', 0, NULL, 0, NULL, 0, NULL),
+(37, 'Hfhghfh', NULL, NULL, NULL, '2025-09-19 09:00:00', '2025-09-19 10:00:00', 'Hffhhfyryryrfff', 'Completed', 0, NULL, 0, NULL, 0, NULL),
 (38, 'E One On One ', 7, 3, 2, '2025-08-18 14:00:00', '2025-08-18 15:00:00', 'Sdsdsgdddddddd', 'Completed', 0, NULL, 1, '2025-08-20 16:49:24', 1, '2025-08-20 16:55:18'),
-(39, 'Tine One On One', 23, 7, 2, '2025-09-03 09:00:00', '2025-09-03 10:00:00', 'Dvcvdgfdgfddg', 'Scheduled', 1, '2025-08-20 17:00:03', 1, '2025-08-20 16:49:24', 1, '2025-08-20 16:55:18'),
+(39, 'Tine One On One', 23, 7, 2, '2025-09-03 09:00:00', '2025-09-03 10:00:00', 'Dvcvdgfdgfddg', 'Completed', 1, '2025-08-20 17:00:03', 1, '2025-08-20 16:49:24', 1, '2025-08-20 16:55:18'),
 (40, 'Hihi Hahay Jud', 28, 11, 2, '2025-08-30 09:00:00', '2025-08-30 10:00:00', 'Fhffhhfhfhhf', 'Completed', 0, NULL, 1, '2025-08-20 16:49:24', 1, '2025-08-20 16:55:18'),
-(41, 'New Meeting One On One', 23, 7, 2, '2025-08-31 09:00:00', '2025-08-31 10:00:00', 'Hgghhghghgh', 'Cancelled', 1, '2025-08-20 17:00:03', 1, '2025-08-20 16:49:24', 1, '2025-08-20 16:55:18');
+(41, 'New Meeting One On One', 23, 7, 2, '2025-08-31 09:00:00', '2025-08-31 10:00:00', 'Hgghhghghgh', 'Completed', 1, '2025-08-20 17:00:03', 1, '2025-08-20 16:49:24', 1, '2025-08-20 16:55:18'),
+(42, '13th Meet', NULL, NULL, NULL, '2025-09-13 09:00:00', '2025-09-13 10:00:00', 'Hahaysd', 'Completed', 0, NULL, 0, NULL, 0, NULL),
+(43, 'Cancel Nassad', NULL, NULL, NULL, '2025-09-07 09:00:00', '2025-09-07 10:00:00', 'Sfdfddfdf', 'Completed', 0, NULL, 0, NULL, 0, NULL),
+(44, 'Again Cancel Ssss', NULL, NULL, NULL, '2025-09-14 09:00:00', '2025-09-14 10:00:00', 'Hahay', 'Completed', 0, NULL, 0, NULL, 0, NULL),
+(45, '15 Meet', NULL, NULL, NULL, '2025-09-15 09:00:00', '2025-09-15 10:00:00', 'Kjhhjghghhfghhg', 'Completed', 0, NULL, 0, NULL, 0, NULL),
+(46, 'New Activity For Parent', NULL, NULL, NULL, '2025-10-01 09:00:00', '2025-10-01 10:00:00', 'Dhhdhsjbc', 'Completed', 0, NULL, 0, NULL, 0, NULL),
+(47, 'Dfdfdf', NULL, NULL, NULL, '2025-10-16 09:00:00', '2025-10-16 10:00:00', 'Dfdfdf', 'Scheduled', 0, NULL, 0, NULL, 0, NULL),
+(48, 'Dfdfdf', NULL, NULL, NULL, '2025-10-09 09:00:00', '2025-10-09 10:00:00', 'Hhhkkkh', 'Scheduled', 0, NULL, 0, NULL, 0, NULL),
+(49, 'Khkhk', NULL, NULL, NULL, '2025-10-09 09:00:00', '2025-10-09 10:00:00', 'Hkhkkh', 'Scheduled', 0, NULL, 0, NULL, 0, NULL),
+(50, 'Oiiouiuoi', NULL, NULL, NULL, '2025-10-15 09:00:00', '2025-10-15 10:00:00', 'Hjhjhjhj', 'Scheduled', 0, NULL, 0, NULL, 0, NULL),
+(51, 'Sample ', NULL, NULL, NULL, '2025-10-10 09:00:00', '2025-10-10 10:00:00', 'FDDFDFDF', 'Scheduled', 0, NULL, 0, NULL, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -850,9 +962,39 @@ INSERT INTO `tbl_notifications` (`notification_id`, `meeting_id`, `notif_message
 (106, 36, '[MEETING] Rescheduled the meeting', 1, '2025-08-09 14:23:14'),
 (107, 37, '[MEETING] Cancelled the meeting', 1, '2025-08-09 14:29:04'),
 (108, 38, '[ONE ON ONE MEETING] Rescheduled the meeting', 5, '2025-08-09 18:39:01'),
-(109, 39, '[ONE ON ONE MEETING] Updated the meeting', 5, '2025-08-09 18:56:38'),
+(109, 39, '[MEETING] Cancelled the meeting', 3, '2025-08-31 11:32:09'),
 (110, 40, '[ONE ON ONE MEETING] Cancelled the meeting', 5, '2025-08-09 19:24:10'),
-(111, 41, '[MEETING] Cancelled the meeting', 1, '2025-08-09 19:24:53');
+(111, 41, '[MEETING] Cancelled the meeting', 1, '2025-08-09 19:24:53'),
+(112, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-08-30 18:59:14'),
+(113, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-08-30 18:59:23'),
+(114, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-08-30 18:59:29'),
+(115, NULL, '[QUARTERLY PROGRESS] Updated a Quarterly Progress', 27, '2025-08-30 19:30:04'),
+(116, NULL, '[OVERALL PROGRESS] Finalized an Overall progress', 27, '2025-08-30 19:33:10'),
+(117, 42, '[MEETING] Created the Meeting', 2, '2025-08-31 09:43:53'),
+(118, 43, '[MEETING] Cancelled the meeting', 2, '2025-08-31 11:16:43'),
+(119, 44, '[MEETING] Cancelled the meeting', 1, '2025-08-31 11:15:35'),
+(120, 45, '[MEETING] Created the Meeting', 3, '2025-08-31 11:28:15'),
+(121, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-08-31 16:58:46'),
+(122, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-08-31 16:58:50'),
+(123, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-08-31 16:58:51'),
+(124, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-08-31 16:58:52'),
+(125, NULL, '[OVERALL PROGRESS] Finalized an Overall progress', 27, '2025-08-31 16:58:55'),
+(126, 46, '[MEETING] Created the Meeting', 3, '2025-09-04 11:52:49'),
+(127, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-09-04 12:42:27'),
+(128, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-09-04 12:42:29'),
+(129, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-09-04 12:42:30'),
+(130, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-09-04 12:42:31'),
+(131, NULL, '[OVERALL PROGRESS] Finalized an Overall progress', 27, '2025-09-04 12:42:34'),
+(132, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-09-04 12:43:03'),
+(133, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-09-04 12:43:08'),
+(134, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-09-04 12:43:09'),
+(135, NULL, '[QUARTERLY PROGRESS] Finalized a Quarterly Progress', 27, '2025-09-04 12:43:10'),
+(136, NULL, '[OVERALL PROGRESS] Finalized an Overall progress', 27, '2025-09-04 12:43:11'),
+(137, 47, '[MEETING] Created the Meeting', 1, '2025-10-06 16:46:56'),
+(138, 48, '[MEETING] Created the Meeting', 1, '2025-10-06 16:47:09'),
+(139, 49, '[MEETING] Created the Meeting', 1, '2025-10-06 16:47:20'),
+(140, 50, '[MEETING] Created the Meeting', 1, '2025-10-06 16:47:32'),
+(141, 51, '[MEETING] Created the Meeting', 1, '2025-10-06 16:55:12');
 
 -- --------------------------------------------------------
 
@@ -978,6 +1120,36 @@ INSERT INTO `tbl_notification_admin_views` (`user_id`, `notification_id`, `viewe
 (1, 109, '2025-08-19 19:56:30'),
 (1, 110, '2025-08-19 19:56:30'),
 (1, 111, '2025-08-19 19:56:30'),
+(1, 112, '2025-08-31 16:57:31'),
+(1, 113, '2025-08-31 16:57:31'),
+(1, 114, '2025-08-31 16:57:31'),
+(1, 115, '2025-08-31 16:57:31'),
+(1, 116, '2025-08-31 16:57:31'),
+(1, 117, '2025-08-31 16:57:31'),
+(1, 118, '2025-08-31 16:57:31'),
+(1, 119, '2025-08-31 16:57:31'),
+(1, 120, '2025-08-31 16:57:31'),
+(1, 121, '2025-10-06 16:46:30'),
+(1, 122, '2025-10-06 16:46:30'),
+(1, 123, '2025-10-06 16:46:30'),
+(1, 124, '2025-10-06 16:46:30'),
+(1, 125, '2025-10-06 16:46:30'),
+(1, 126, '2025-10-06 16:46:30'),
+(1, 127, '2025-10-06 16:46:30'),
+(1, 128, '2025-10-06 16:46:30'),
+(1, 129, '2025-10-06 16:46:30'),
+(1, 130, '2025-10-06 16:46:30'),
+(1, 131, '2025-10-06 16:46:30'),
+(1, 132, '2025-10-06 16:46:30'),
+(1, 133, '2025-10-06 16:46:30'),
+(1, 134, '2025-10-06 16:46:30'),
+(1, 135, '2025-10-06 16:46:30'),
+(1, 136, '2025-10-06 16:46:30'),
+(1, 137, '2025-10-06 16:49:07'),
+(1, 138, '2025-10-06 16:49:07'),
+(1, 139, '2025-10-06 16:49:07'),
+(1, 140, '2025-10-06 16:49:07'),
+(1, 141, '2025-10-06 16:57:38'),
 (2, 1, '2025-08-19 19:56:45'),
 (2, 2, '2025-08-19 19:56:45'),
 (2, 3, '2025-08-19 19:56:45'),
@@ -1599,7 +1771,148 @@ INSERT INTO `tbl_notification_recipients` (`recipient_id`, `notification_id`, `u
 (571, 109, 10, 'Teacher', 0, NULL),
 (575, 111, 23, 'Parent', 0, NULL),
 (576, 111, 5, 'Teacher', 0, NULL),
-(577, 111, 10, 'Teacher', 0, NULL);
+(577, 111, 10, 'Teacher', 0, NULL),
+(578, 112, 6, 'Parent', 0, NULL),
+(579, 112, 27, 'Teacher', 0, NULL),
+(580, 113, 6, 'Parent', 0, NULL),
+(581, 113, 27, 'Teacher', 0, NULL),
+(582, 114, 6, 'Parent', 0, NULL),
+(583, 114, 27, 'Teacher', 0, NULL),
+(586, 115, 6, 'Parent', 0, NULL),
+(587, 115, 27, 'Teacher', 0, NULL),
+(588, 116, 6, 'Parent', 0, NULL),
+(589, 116, 27, 'Teacher', 0, NULL),
+(590, 117, 22, 'Teacher', 0, NULL),
+(591, 117, 19, 'Teacher', 0, NULL),
+(592, 117, 34, 'Parent', 0, NULL),
+(593, 117, 23, 'Parent', 1, '2025-09-01 01:07:45'),
+(594, 117, 8, 'Parent', 0, NULL),
+(595, 117, 18, 'Parent', 0, NULL),
+(596, 118, 5, 'Teacher', 1, '2025-09-18 19:38:43'),
+(597, 118, 10, 'Teacher', 0, NULL),
+(598, 118, 25, 'Parent', 1, '2025-09-01 00:56:43'),
+(599, 118, 7, 'Parent', 0, NULL),
+(600, 118, 29, 'Parent', 0, NULL),
+(601, 118, 23, 'Parent', 1, '2025-09-01 01:07:45'),
+(602, 118, 28, 'Parent', 0, NULL),
+(603, 118, 24, 'Parent', 0, NULL),
+(604, 118, 20, 'Parent', 0, NULL),
+(605, 119, 22, 'Teacher', 0, NULL),
+(606, 119, 19, 'Teacher', 0, NULL),
+(607, 119, 34, 'Parent', 0, NULL),
+(608, 119, 23, 'Parent', 1, '2025-09-01 01:07:45'),
+(609, 119, 8, 'Parent', 0, NULL),
+(610, 119, 18, 'Parent', 0, NULL),
+(611, 120, 4, 'Teacher', 0, NULL),
+(612, 120, 36, 'Teacher', 0, NULL),
+(613, 120, 12, 'Teacher', 0, NULL),
+(614, 121, 33, 'Parent', 0, NULL),
+(615, 121, 27, 'Teacher', 0, NULL),
+(616, 122, 33, 'Parent', 0, NULL),
+(617, 122, 27, 'Teacher', 0, NULL),
+(618, 123, 33, 'Parent', 0, NULL),
+(619, 123, 27, 'Teacher', 0, NULL),
+(620, 124, 33, 'Parent', 0, NULL),
+(621, 124, 27, 'Teacher', 0, NULL),
+(622, 125, 33, 'Parent', 0, NULL),
+(623, 125, 27, 'Teacher', 0, NULL),
+(624, 126, 30, 'Parent', 0, NULL),
+(625, 126, 25, 'Parent', 0, NULL),
+(626, 126, 34, 'Parent', 0, NULL),
+(627, 126, 21, 'Parent', 0, NULL),
+(628, 126, 7, 'Parent', 0, NULL),
+(629, 126, 29, 'Parent', 0, NULL),
+(630, 126, 23, 'Parent', 0, NULL),
+(631, 126, 8, 'Parent', 0, NULL),
+(632, 126, 28, 'Parent', 0, NULL),
+(633, 126, 24, 'Parent', 0, NULL),
+(634, 126, 20, 'Parent', 0, NULL),
+(635, 126, 32, 'Parent', 0, NULL),
+(636, 126, 33, 'Parent', 0, NULL),
+(637, 126, 6, 'Parent', 0, NULL),
+(638, 126, 18, 'Parent', 0, NULL),
+(639, 127, 6, 'Parent', 0, NULL),
+(640, 127, 27, 'Teacher', 0, NULL),
+(641, 128, 6, 'Parent', 0, NULL),
+(642, 128, 27, 'Teacher', 0, NULL),
+(643, 129, 6, 'Parent', 0, NULL),
+(644, 129, 27, 'Teacher', 0, NULL),
+(645, 130, 6, 'Parent', 0, NULL),
+(646, 130, 27, 'Teacher', 0, NULL),
+(647, 131, 6, 'Parent', 0, NULL),
+(648, 131, 27, 'Teacher', 0, NULL),
+(649, 132, 30, 'Parent', 0, NULL),
+(650, 132, 27, 'Teacher', 0, NULL),
+(651, 133, 30, 'Parent', 0, NULL),
+(652, 133, 27, 'Teacher', 0, NULL),
+(653, 134, 30, 'Parent', 0, NULL),
+(654, 134, 27, 'Teacher', 0, NULL),
+(655, 135, 30, 'Parent', 0, NULL),
+(656, 135, 27, 'Teacher', 0, NULL),
+(657, 136, 30, 'Parent', 0, NULL),
+(658, 136, 27, 'Teacher', 0, NULL),
+(659, 137, 4, 'Teacher', 0, NULL),
+(660, 137, 22, 'Teacher', 0, NULL),
+(661, 137, 5, 'Teacher', 0, NULL),
+(662, 137, 38, 'Teacher', 0, NULL),
+(663, 137, 10, 'Teacher', 0, NULL),
+(664, 137, 27, 'Teacher', 0, NULL),
+(665, 137, 9, 'Teacher', 0, NULL),
+(666, 137, 19, 'Teacher', 0, NULL),
+(667, 137, 12, 'Teacher', 0, NULL),
+(668, 137, 36, 'Teacher', 0, NULL),
+(669, 137, 30, 'Parent', 0, NULL),
+(670, 137, 25, 'Parent', 0, NULL),
+(671, 137, 34, 'Parent', 0, NULL),
+(672, 137, 21, 'Parent', 0, NULL),
+(673, 137, 7, 'Parent', 0, NULL),
+(674, 137, 29, 'Parent', 0, NULL),
+(675, 137, 23, 'Parent', 0, NULL),
+(676, 137, 8, 'Parent', 0, NULL),
+(677, 137, 28, 'Parent', 0, NULL),
+(678, 137, 24, 'Parent', 0, NULL),
+(679, 137, 20, 'Parent', 0, NULL),
+(680, 137, 32, 'Parent', 0, NULL),
+(681, 137, 33, 'Parent', 0, NULL),
+(682, 137, 6, 'Parent', 0, NULL),
+(683, 137, 18, 'Parent', 0, NULL),
+(684, 138, 30, 'Parent', 0, NULL),
+(685, 138, 25, 'Parent', 0, NULL),
+(686, 138, 34, 'Parent', 0, NULL),
+(687, 138, 21, 'Parent', 0, NULL),
+(688, 138, 7, 'Parent', 0, NULL),
+(689, 138, 29, 'Parent', 0, NULL),
+(690, 138, 23, 'Parent', 0, NULL),
+(691, 138, 8, 'Parent', 0, NULL),
+(692, 138, 28, 'Parent', 0, NULL),
+(693, 138, 24, 'Parent', 0, NULL),
+(694, 138, 20, 'Parent', 0, NULL),
+(695, 138, 32, 'Parent', 0, NULL),
+(696, 138, 33, 'Parent', 0, NULL),
+(697, 138, 6, 'Parent', 0, NULL),
+(698, 138, 18, 'Parent', 0, NULL),
+(699, 139, 5, 'Teacher', 0, NULL),
+(700, 139, 10, 'Teacher', 0, NULL),
+(701, 139, 25, 'Parent', 0, NULL),
+(702, 139, 7, 'Parent', 0, NULL),
+(703, 139, 29, 'Parent', 0, NULL),
+(704, 139, 23, 'Parent', 0, NULL),
+(705, 139, 28, 'Parent', 0, NULL),
+(706, 139, 24, 'Parent', 0, NULL),
+(707, 139, 20, 'Parent', 0, NULL),
+(708, 140, 22, 'Teacher', 0, NULL),
+(709, 140, 19, 'Teacher', 0, NULL),
+(710, 140, 34, 'Parent', 0, NULL),
+(711, 140, 23, 'Parent', 0, NULL),
+(712, 140, 8, 'Parent', 0, NULL),
+(713, 141, 5, 'Teacher', 0, NULL),
+(714, 141, 27, 'Teacher', 0, NULL),
+(715, 141, 9, 'Teacher', 0, NULL),
+(716, 141, 19, 'Teacher', 0, NULL),
+(717, 141, 25, 'Parent', 0, NULL),
+(718, 141, 23, 'Parent', 0, NULL),
+(719, 141, 28, 'Parent', 0, NULL),
+(720, 141, 24, 'Parent', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -1698,7 +2011,11 @@ INSERT INTO `tbl_overall_progress` (`overall_progress_id`, `student_id`, `adviso
 (3, 8, 2, 3, 2, 57.962, '2025-07-30 07:20:44'),
 (4, 5, 3, 1, 1, 98.141, '2025-08-05 16:13:06'),
 (5, 9, 3, 5, 3, 32.913, '2025-08-05 17:33:43'),
-(6, 4, 3, 2, 1, 90.060, '2025-08-05 17:34:32');
+(6, 4, 3, 2, 1, 90.060, '2025-08-05 17:34:32'),
+(7, 1, 1, 5, 3, 38.044, '2025-08-30 19:33:10'),
+(8, 17, 1, 2, 2, 75.000, '2025-08-31 16:58:55'),
+(9, 2, 1, 2, 1, 76.087, '2025-09-04 12:42:34'),
+(10, 15, 1, 1, 1, 93.478, '2025-09-04 12:43:11');
 
 -- --------------------------------------------------------
 
@@ -1740,7 +2057,23 @@ INSERT INTO `tbl_overall_progress_links` (`link_id`, `card_id`, `overall_progres
 (21, 24, 6),
 (22, 25, 6),
 (23, 26, 6),
-(24, 27, 6);
+(24, 27, 6),
+(25, 28, 7),
+(26, 29, 7),
+(27, 30, 7),
+(28, 31, 7),
+(29, 32, 8),
+(30, 33, 8),
+(31, 34, 8),
+(32, 35, 8),
+(33, 36, 9),
+(34, 37, 9),
+(35, 38, 9),
+(36, 39, 9),
+(37, 40, 10),
+(38, 41, 10),
+(39, 42, 10),
+(40, 43, 10);
 
 -- --------------------------------------------------------
 
@@ -1806,7 +2139,8 @@ INSERT INTO `tbl_parents_profile` (`parent_profile_id`, `user_id`, `father_name`
 (15, 32, NULL, NULL, NULL, NULL, NULL, NULL, 'Tignapoloan', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines'),
 (16, 33, NULL, NULL, NULL, NULL, NULL, NULL, 'Carmen', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines'),
 (17, 34, NULL, NULL, NULL, NULL, NULL, NULL, 'Tignapoloan', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines'),
-(18, 37, NULL, NULL, NULL, NULL, NULL, NULL, 'Barangay 4', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines');
+(18, 37, NULL, NULL, NULL, NULL, NULL, NULL, 'Barangay 4', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines'),
+(19, 39, NULL, NULL, NULL, NULL, NULL, NULL, 'Macanhan', 'Cagayan de Oro City', 'Misamis Oriental', 'Philippines');
 
 -- --------------------------------------------------------
 
@@ -1858,7 +2192,23 @@ INSERT INTO `tbl_progress_cards` (`card_id`, `student_id`, `advisory_id`, `quart
 (24, 4, 3, 1, 1, 1, 19, 1, 97.522, '2025-08-05 17:34:28'),
 (25, 4, 3, 2, 1, 1, 19, 1, 92.543, '2025-08-05 17:34:28'),
 (26, 4, 3, 3, 2, 1, 19, 1, 85.087, '2025-08-05 17:34:29'),
-(27, 4, 3, 4, 2, 1, 19, 1, 85.087, '2025-08-05 17:34:30');
+(27, 4, 3, 4, 2, 1, 19, 1, 85.087, '2025-08-05 17:34:30'),
+(28, 1, 1, 1, 5, 3, 27, 1, 30.435, '2025-08-30 18:59:14'),
+(29, 1, 1, 2, 4, 2, 27, 1, 52.174, '2025-08-30 18:59:23'),
+(30, 1, 1, 3, 4, 2, 27, 1, 39.130, '2025-08-30 18:59:29'),
+(31, 1, 1, 4, 5, 3, 27, 1, 30.435, '2025-08-30 19:30:04'),
+(32, 17, 1, 1, 3, 2, 27, 1, 60.870, '2025-08-31 16:58:46'),
+(33, 17, 1, 2, 1, 1, 27, 1, 95.652, '2025-08-31 16:58:50'),
+(34, 17, 1, 3, 2, 1, 27, 1, 78.261, '2025-08-31 16:58:51'),
+(35, 17, 1, 4, 3, 2, 27, 1, 65.217, '2025-08-31 16:58:52'),
+(36, 2, 1, 1, 2, 1, 27, 1, 78.261, '2025-09-04 12:42:27'),
+(37, 2, 1, 2, 2, 1, 27, 1, 73.913, '2025-09-04 12:42:29'),
+(38, 2, 1, 3, 2, 1, 27, 1, 82.609, '2025-09-04 12:42:30'),
+(39, 2, 1, 4, 3, 2, 27, 1, 69.565, '2025-09-04 12:42:31'),
+(40, 15, 1, 1, 1, 1, 27, 1, 95.652, '2025-09-04 12:43:03'),
+(41, 15, 1, 2, 1, 1, 27, 1, 91.304, '2025-09-04 12:43:08'),
+(42, 15, 1, 3, 1, 1, 27, 1, 99.999, '2025-09-04 12:43:09'),
+(43, 15, 1, 4, 2, 1, 27, 1, 86.957, '2025-09-04 12:43:10');
 
 -- --------------------------------------------------------
 
@@ -1943,7 +2293,27 @@ INSERT INTO `tbl_progress_notification` (`progress_notif_id`, `notification_id`,
 (31, 90, 2, 4, 0, NULL, 0, NULL, 0, NULL),
 (32, 91, 3, 4, 0, NULL, 0, NULL, 0, NULL),
 (33, 92, 4, 4, 0, NULL, 0, NULL, 0, NULL),
-(34, 93, NULL, 4, 0, NULL, 0, NULL, 0, NULL);
+(34, 93, NULL, 4, 0, NULL, 0, NULL, 0, NULL),
+(35, 112, 1, 1, 0, NULL, 0, NULL, 0, NULL),
+(36, 113, 2, 1, 0, NULL, 0, NULL, 0, NULL),
+(37, 114, 3, 1, 0, NULL, 0, NULL, 0, NULL),
+(38, 115, 4, 1, 0, NULL, 0, NULL, 0, NULL),
+(39, 116, NULL, 1, 0, NULL, 0, NULL, 0, NULL),
+(40, 121, 1, 17, 0, NULL, 0, NULL, 0, NULL),
+(41, 122, 2, 17, 0, NULL, 0, NULL, 0, NULL),
+(42, 123, 3, 17, 0, NULL, 0, NULL, 0, NULL),
+(43, 124, 4, 17, 0, NULL, 0, NULL, 0, NULL),
+(44, 125, NULL, 17, 0, NULL, 0, NULL, 0, NULL),
+(45, 127, 1, 2, 0, NULL, 0, NULL, 0, NULL),
+(46, 128, 2, 2, 0, NULL, 0, NULL, 0, NULL),
+(47, 129, 3, 2, 0, NULL, 0, NULL, 0, NULL),
+(48, 130, 4, 2, 0, NULL, 0, NULL, 0, NULL),
+(49, 131, NULL, 2, 0, NULL, 0, NULL, 0, NULL),
+(50, 132, 1, 15, 0, NULL, 0, NULL, 0, NULL),
+(51, 133, 2, 15, 0, NULL, 0, NULL, 0, NULL),
+(52, 134, 3, 15, 0, NULL, 0, NULL, 0, NULL),
+(53, 135, 4, 15, 0, NULL, 0, NULL, 0, NULL),
+(54, 136, NULL, 15, 0, NULL, 0, NULL, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -2085,7 +2455,7 @@ INSERT INTO `tbl_quarter_feedback` (`quarter_feedback_id`, `student_id`, `quarte
 (329, 5, 1, 7, 1),
 (330, 4, 1, 7, 1),
 (331, 9, 1, 7, 4),
-(334, 1, 1, 7, 2),
+(334, 1, 1, 7, 5),
 (339, 5, 1, 4, 1),
 (341, 5, 1, 3, 1),
 (343, 5, 1, 6, 1),
@@ -2165,7 +2535,151 @@ INSERT INTO `tbl_quarter_feedback` (`quarter_feedback_id`, `student_id`, `quarte
 (495, 9, 2, 5, 5),
 (500, 4, 1, 5, 1),
 (502, 9, 1, 5, 5),
-(511, 3, 2, 2, 1);
+(511, 3, 2, 2, 1),
+(543, 15, 1, 2, 1),
+(545, 16, 1, 2, 1),
+(547, 14, 1, 2, 4),
+(549, 17, 1, 2, 3),
+(551, 1, 1, 2, 5),
+(553, 2, 1, 2, 1),
+(555, 15, 1, 7, 1),
+(557, 16, 1, 7, 3),
+(559, 14, 1, 7, 3),
+(561, 17, 1, 7, 4),
+(563, 2, 1, 7, 1),
+(566, 15, 1, 4, 1),
+(568, 16, 1, 4, 4),
+(570, 14, 1, 4, 2),
+(572, 17, 1, 4, 4),
+(574, 1, 1, 4, 5),
+(576, 2, 1, 4, 2),
+(580, 15, 1, 6, 1),
+(582, 16, 1, 6, 3),
+(584, 14, 1, 6, 4),
+(586, 17, 1, 6, 2),
+(588, 1, 1, 6, 5),
+(590, 2, 1, 6, 3),
+(592, 15, 1, 1, 2),
+(594, 16, 1, 1, 2),
+(596, 14, 1, 1, 1),
+(598, 17, 1, 1, 4),
+(600, 1, 1, 1, 5),
+(603, 2, 1, 1, 3),
+(605, 15, 1, 5, 1),
+(607, 16, 1, 5, 1),
+(609, 14, 1, 5, 3),
+(611, 17, 1, 5, 3),
+(613, 1, 1, 5, 1),
+(615, 2, 1, 5, 1),
+(617, 15, 2, 5, 1),
+(619, 16, 2, 5, 1),
+(621, 14, 2, 5, 1),
+(623, 17, 2, 5, 1),
+(625, 1, 2, 5, 4),
+(627, 2, 2, 5, 4),
+(629, 15, 2, 1, 1),
+(631, 16, 2, 1, 1),
+(633, 14, 2, 1, 1),
+(635, 17, 2, 1, 1),
+(637, 1, 2, 1, 4),
+(639, 2, 2, 1, 4),
+(641, 15, 2, 6, 2),
+(643, 16, 2, 6, 3),
+(645, 14, 2, 6, 3),
+(647, 17, 2, 6, 2),
+(649, 1, 2, 6, 2),
+(651, 2, 2, 6, 1),
+(653, 15, 2, 4, 1),
+(655, 16, 2, 4, 1),
+(657, 14, 2, 4, 2),
+(659, 17, 2, 4, 1),
+(661, 1, 2, 4, 4),
+(664, 2, 2, 4, 4),
+(666, 15, 2, 7, 1),
+(668, 16, 2, 7, 2),
+(670, 14, 2, 7, 3),
+(672, 17, 2, 7, 4),
+(674, 1, 2, 7, 5),
+(676, 2, 2, 7, 1),
+(678, 15, 2, 2, 2),
+(680, 16, 2, 2, 4),
+(682, 14, 2, 2, 3),
+(684, 17, 2, 2, 1),
+(685, 1, 2, 2, 5),
+(688, 2, 2, 2, 1),
+(690, 15, 3, 2, 1),
+(692, 16, 3, 2, 1),
+(694, 14, 3, 2, 3),
+(696, 17, 3, 2, 1),
+(698, 1, 3, 2, 4),
+(700, 2, 3, 2, 1),
+(702, 15, 3, 7, 1),
+(704, 16, 3, 7, 1),
+(706, 14, 3, 7, 2),
+(708, 17, 3, 7, 3),
+(710, 1, 3, 7, 4),
+(712, 2, 3, 7, 2),
+(714, 15, 3, 4, 1),
+(716, 16, 3, 4, 3),
+(718, 14, 3, 4, 1),
+(720, 17, 3, 4, 4),
+(722, 1, 3, 4, 5),
+(724, 2, 3, 4, 3),
+(726, 15, 3, 6, 1),
+(728, 16, 3, 6, 1),
+(730, 14, 3, 6, 2),
+(732, 17, 3, 6, 1),
+(734, 1, 3, 6, 4),
+(736, 2, 3, 6, 3),
+(738, 15, 3, 1, 1),
+(740, 16, 3, 1, 1),
+(742, 14, 3, 1, 3),
+(744, 17, 3, 1, 3),
+(746, 1, 3, 1, 5),
+(748, 2, 3, 1, 1),
+(750, 15, 3, 5, 2),
+(752, 16, 3, 5, 2),
+(754, 14, 3, 5, 3),
+(756, 17, 3, 5, 3),
+(758, 1, 3, 5, 5),
+(761, 2, 3, 5, 1),
+(763, 15, 4, 5, 2),
+(766, 16, 4, 5, 2),
+(768, 14, 4, 5, 3),
+(770, 17, 4, 5, 3),
+(772, 1, 4, 5, 4),
+(774, 2, 4, 5, 5),
+(776, 15, 4, 1, 3),
+(778, 16, 4, 1, 2),
+(780, 14, 4, 1, 3),
+(782, 17, 4, 1, 1),
+(784, 1, 4, 1, 5),
+(786, 2, 4, 1, 4),
+(788, 15, 4, 6, 2),
+(790, 16, 4, 6, 1),
+(793, 14, 4, 6, 4),
+(795, 17, 4, 6, 4),
+(797, 1, 4, 6, 5),
+(799, 2, 4, 6, 2),
+(801, 15, 4, 4, 1),
+(803, 16, 4, 4, 1),
+(805, 2, 4, 4, 1),
+(807, 14, 4, 4, 2),
+(809, 17, 4, 4, 3),
+(811, 1, 4, 4, 5),
+(813, 15, 4, 7, 2),
+(815, 16, 4, 7, 3),
+(817, 14, 4, 7, 2),
+(819, 17, 4, 7, 4),
+(821, 1, 4, 7, 3),
+(824, 2, 4, 7, 3),
+(826, 15, 4, 2, 1),
+(828, 16, 4, 2, 2),
+(830, 14, 4, 2, 3),
+(832, 17, 4, 2, 4),
+(834, 1, 4, 2, 5),
+(836, 2, 4, 2, 4),
+(838, 13, 1, 2, 1);
 
 -- --------------------------------------------------------
 
@@ -2504,13 +3018,13 @@ CREATE TABLE `tbl_shapes` (
 --
 
 INSERT INTO `tbl_shapes` (`shape_id`, `shape_form`, `shape_name`) VALUES
-(1, '❤️', 'Heart'),
-(2, '⭐', 'Star'),
-(3, '🔷', 'Diamond'),
+(1, '♥', 'Heart'),
+(2, '★', 'Star'),
+(3, '◆', 'Diamond'),
 (4, '▲', 'Triangle'),
-(5, '🟡', 'Circle'),
-(6, '🟦', 'Square'),
-(7, '🛑', 'Octagon');
+(5, '⬤', 'Circle'),
+(6, '■', 'Square'),
+(7, '⬢', 'Hexagon');
 
 -- --------------------------------------------------------
 
@@ -2548,9 +3062,9 @@ INSERT INTO `tbl_students` (`student_id`, `parent_id`, `parent_profile_id`, `lev
 (6, 25, 8, 2, 'Richard', 'Montizor', 'Gamon', '2022-07-02', '2025-06-29', 'Right', 'Male', 'Morning', 'default_boy_student.png', 'Active'),
 (7, 23, 9, 2, 'Tine Grace', 'Israel', 'Bacsarsa', '2021-02-07', '2025-06-28', 'Right', 'Female', 'Morning', 'default_girl_student.png', 'Active'),
 (8, 20, 5, 2, 'Junabel', 'Paca', 'Bali', '2021-08-08', '2025-06-29', 'Not Yet Established', 'Male', 'Morning', 'default_boy_student.png', 'Active'),
-(9, 18, 4, 3, 'Kenzo', 'Adrylle', 'Domanon', '2021-08-04', '2025-06-29', 'Left', 'Male', 'Afternoon', 'default_boy_student.png', 'Active'),
+(9, NULL, NULL, 3, 'Kenzo', 'Adrylle', 'Domanon', '2021-08-04', '2025-06-29', 'Left', 'Male', 'Afternoon', 'default_boy_student.png', 'Active'),
 (10, 20, 5, 3, 'Arian', '', 'Undalay', '2021-08-04', '2025-06-30', 'Right', 'Male', 'Afternoon', 'default_boy_student.png', 'Inactive'),
-(11, 28, 11, 2, 'Jamica', '', 'Placido', '2022-02-22', '2025-07-16', 'Right', 'Female', 'Morning', 'default_girl_student.png', 'Active'),
+(11, 28, 11, 2, 'Jamica', 'Mica', 'Placido', '2022-02-22', '2025-07-16', 'Right', 'Female', 'Morning', 'default_girl_student.png', 'Active'),
 (12, 24, 7, 2, 'Che', '', 'Quedit', '2022-03-31', '2025-07-16', 'Right', 'Female', 'Morning', 'default_girl_student.png', 'Active'),
 (13, 29, 12, 2, 'Gleiah', 'Jimenez', 'Madrenos', '2022-02-22', '2025-08-07', 'Right', 'Female', 'Morning', 'default_girl_student.png', 'Active'),
 (14, 32, 15, 1, 'Jan', 'Cocc', 'Paca', '2023-02-27', '2025-08-07', 'Left', 'Male', 'Morning', 'default_boy_student.png', 'Active'),
@@ -2560,8 +3074,9 @@ INSERT INTO `tbl_students` (`student_id`, `parent_id`, `parent_profile_id`, `lev
 (18, NULL, NULL, 3, 'Bea', '', 'Lachica', '2021-02-22', '2025-08-22', 'Right', 'Female', 'Morning', 'default_girl_student.png', 'Active'),
 (19, NULL, NULL, 2, 'Raz', '', 'Baldoza', '2022-02-22', '2025-08-22', 'Right', 'Female', 'Afternoon', 'default_girl_student.png', 'Active'),
 (20, 34, 17, 3, 'C Jay', '', 'Macuse', '2021-02-22', '2025-08-22', 'Left', 'Male', 'Morning', 'default_boy_student.png', 'Active'),
-(21, NULL, NULL, 1, 'Pia', '', 'Bali', '2023-02-22', '2025-08-22', 'Right', 'Female', 'Afternoon', 'default_girl_student.png', 'Active'),
-(22, NULL, NULL, 3, 'New Stud', 'Sdsdsd', 'Sdsdsdsd', '2021-04-22', '2025-08-30', 'Left', 'Male', 'Morning', 'default_boy_student.png', 'Active');
+(21, 18, 4, 1, 'Pia', '', 'Bali', '2023-02-22', '2025-08-22', 'Right', 'Female', 'Morning', 'default_girl_student.png', 'Active'),
+(22, NULL, NULL, 3, 'New Stud', 'Sdsdsd', 'Sdsdsdsd', '2021-04-22', '2025-08-30', 'Left', 'Male', 'Morning', 'default_boy_student.png', 'Active'),
+(23, NULL, NULL, 1, 'Miracle', 'Obe', 'Tas', '2023-02-22', '2025-08-31', 'Left', 'Male', 'Morning', 'default_boy_student.png', 'Active');
 
 -- --------------------------------------------------------
 
@@ -2592,11 +3107,11 @@ INSERT INTO `tbl_student_assigned` (`assigned_id`, `advisory_id`, `student_id`) 
 (10, 2, 13),
 (11, 3, 4),
 (12, 3, 5),
-(13, 3, 9),
 (14, 1, 16),
 (16, 1, 17),
 (17, 1, 14),
-(18, 3, 20);
+(18, 3, 20),
+(20, 1, 21);
 
 -- --------------------------------------------------------
 
@@ -2643,7 +3158,11 @@ INSERT INTO `tbl_student_milestone_interpretation` (`milestone_id`, `student_id`
 (3, 8, 3, 'In Quarter 1, started with moderate performance In Quarter 2, maintained moderate performance In Quarter 3, maintained moderate performance In Quarter 4, maintained moderate performance', 'Overall, the learner is classified as Moderate Risk, suggesting the learner requires some assistance.', '2025-07-30 07:20:44'),
 (4, 5, 4, 'In Quarter 1, started strong with outstanding performance In Quarter 2, remained consistently strong In Quarter 3, remained consistently strong In Quarter 4, remained consistently strong', 'Overall, the learner is classified as Low Risk, indicating that the learner is progressing very well.', '2025-08-05 16:13:06'),
 (5, 9, 5, 'In Quarter 1, started with challenges in performance In Quarter 2, continued to perform below expectations In Quarter 3, continued to perform below expectations In Quarter 4, continued to perform below expectations', 'Overall, the learner is classified as High Risk, indicating that learner needs significant support.', '2025-08-05 17:33:43'),
-(6, 4, 6, 'In Quarter 1, started strong with outstanding performance In Quarter 2, remained consistently strong In Quarter 3, remained consistently strong In Quarter 4, remained consistently strong', 'Overall, the learner is classified as Low Risk, indicating that the learner is progressing very well.', '2025-08-05 17:34:32');
+(6, 4, 6, 'In Quarter 1, started strong with outstanding performance In Quarter 2, remained consistently strong In Quarter 3, remained consistently strong In Quarter 4, remained consistently strong', 'Overall, the learner is classified as Low Risk, indicating that the learner is progressing very well.', '2025-08-05 17:34:32'),
+(7, 1, 7, 'In Quarter 1, started with challenges in performance In Quarter 2, showed improvement in performance In Quarter 3, maintained moderate performance In Quarter 4, showed a decline in performance', 'Overall, the learner is classified as High Risk, indicating that learner needs significant support.', '2025-08-30 19:33:10'),
+(8, 17, 8, 'In Quarter 1, started with moderate performance In Quarter 2, showed improvement in performance In Quarter 3, remained consistently strong In Quarter 4, showed a decline in performance', 'Overall, the learner is classified as Moderate Risk, suggesting the learner requires some assistance.', '2025-08-31 16:58:55'),
+(9, 2, 9, 'In Quarter 1, started strong with outstanding performance In Quarter 2, remained consistently strong In Quarter 3, remained consistently strong In Quarter 4, showed a decline in performance', 'Overall, the learner is classified as Low Risk, indicating that the learner is progressing very well.', '2025-09-04 12:42:34'),
+(10, 15, 10, 'In Quarter 1, started strong with outstanding performance In Quarter 2, remained consistently strong In Quarter 3, remained consistently strong In Quarter 4, remained consistently strong', 'Overall, the learner is classified as Low Risk, indicating that the learner is progressing very well.', '2025-09-04 12:43:11');
 
 -- --------------------------------------------------------
 
@@ -2731,7 +3250,31 @@ INSERT INTO `tbl_subject_overall_progress` (`subject_overall_id`, `student_id`, 
 (36, 4, 4, 3, 1, 95.652, '2025-08-05 17:34:30'),
 (37, 4, 5, 3, 1, 95.652, '2025-08-05 17:34:30'),
 (38, 4, 6, 3, 2, 82.609, '2025-08-05 17:34:30'),
-(39, 4, 7, 3, 2, 82.609, '2025-08-05 17:34:30');
+(39, 4, 7, 3, 2, 82.609, '2025-08-05 17:34:30'),
+(40, 1, 1, 1, 5, 34.783, '2025-08-30 19:30:04'),
+(41, 1, 2, 1, 5, 34.783, '2025-08-30 19:30:04'),
+(42, 1, 4, 1, 5, 34.783, '2025-08-30 19:30:04'),
+(43, 1, 5, 1, 3, 56.522, '2025-08-30 19:30:04'),
+(44, 1, 6, 1, 4, 47.826, '2025-08-30 19:30:04'),
+(45, 1, 7, 1, 4, 43.478, '2025-08-30 19:30:04'),
+(46, 17, 1, 1, 2, 78.261, '2025-08-31 16:58:53'),
+(47, 17, 2, 1, 2, 78.261, '2025-08-31 16:58:53'),
+(48, 17, 4, 1, 3, 65.217, '2025-08-31 16:58:53'),
+(49, 17, 5, 1, 2, 73.913, '2025-08-31 16:58:53'),
+(50, 17, 6, 1, 2, 78.261, '2025-08-31 16:58:53'),
+(51, 17, 7, 1, 4, 52.174, '2025-08-31 16:58:53'),
+(52, 2, 1, 1, 3, 65.217, '2025-09-04 12:42:31'),
+(53, 2, 2, 1, 2, 86.957, '2025-09-04 12:42:31'),
+(54, 2, 4, 1, 2, 73.913, '2025-09-04 12:42:31'),
+(55, 2, 5, 1, 3, 69.565, '2025-09-04 12:42:31'),
+(56, 2, 6, 1, 2, 78.261, '2025-09-04 12:42:31'),
+(57, 2, 7, 1, 2, 86.957, '2025-09-04 12:42:31'),
+(58, 15, 1, 1, 2, 86.957, '2025-09-04 12:43:10'),
+(59, 15, 2, 1, 1, 95.652, '2025-09-04 12:43:10'),
+(60, 15, 4, 1, 1, 99.999, '2025-09-04 12:43:10'),
+(61, 15, 5, 1, 1, 91.304, '2025-09-04 12:43:10'),
+(62, 15, 6, 1, 1, 91.304, '2025-09-04 12:43:10'),
+(63, 15, 7, 1, 1, 95.652, '2025-09-04 12:43:10');
 
 -- --------------------------------------------------------
 
@@ -2928,7 +3471,143 @@ INSERT INTO `tbl_system_logs` (`log_id`, `user_id`, `target_user_id`, `target_st
 (174, 1, NULL, NULL, 'Logout', '2025-08-30 17:26:02'),
 (175, 27, NULL, NULL, 'Login', '2025-08-30 17:26:19'),
 (176, 5, NULL, NULL, 'Logout', '2025-08-30 17:41:03'),
-(177, 1, NULL, NULL, 'Login', '2025-08-30 17:41:08');
+(177, 1, NULL, NULL, 'Login', '2025-08-30 17:41:08'),
+(178, 1, NULL, NULL, 'Login', '2025-08-31 09:25:35'),
+(179, 2, NULL, NULL, 'Login', '2025-08-31 09:26:43'),
+(180, 2, NULL, NULL, 'Login', '2025-08-31 09:27:26'),
+(181, 2, NULL, NULL, 'Logout', '2025-08-31 09:31:14'),
+(182, 1, NULL, NULL, 'Login', '2025-08-31 09:31:27'),
+(183, 1, NULL, NULL, 'Logout', '2025-08-31 09:31:43'),
+(184, 2, NULL, NULL, 'Login', '2025-08-31 09:31:52'),
+(185, 2, NULL, NULL, 'Login', '2025-08-31 09:34:28'),
+(186, 2, NULL, NULL, 'Login', '2025-08-31 10:54:45'),
+(187, 2, NULL, NULL, 'Logout', '2025-08-31 11:27:25'),
+(188, 3, NULL, NULL, 'Login', '2025-08-31 11:27:31'),
+(189, 3, NULL, NULL, 'Logout', '2025-08-31 11:33:05'),
+(190, 2, NULL, NULL, 'Login', '2025-08-31 11:33:12'),
+(191, 1, NULL, NULL, 'Login', '2025-08-31 16:11:57'),
+(192, 1, NULL, NULL, 'Login', '2025-08-31 16:13:34'),
+(193, 2, 38, NULL, 'Created a new teacher account.', '2025-08-31 16:25:28'),
+(194, 2, 39, NULL, 'Created a new parent account.', '2025-08-31 16:26:08'),
+(195, 2, NULL, 23, 'Created a new student profile.', '2025-08-31 16:26:36'),
+(196, 2, 36, NULL, 'Edited the details of a teacher account.', '2025-08-31 16:28:16'),
+(197, 2, NULL, 23, 'Edited the details of a student profile.', '2025-08-31 16:28:58'),
+(198, 2, NULL, NULL, 'Logout', '2025-08-31 16:39:56'),
+(199, 19, NULL, NULL, 'Login', '2025-08-31 16:40:04'),
+(200, 19, NULL, NULL, 'Logout', '2025-08-31 16:52:58'),
+(201, 5, NULL, NULL, 'Login', '2025-08-31 16:53:08'),
+(202, 5, NULL, NULL, 'Logout', '2025-08-31 16:53:20'),
+(203, 19, NULL, NULL, 'Login', '2025-08-31 16:53:32'),
+(204, 19, NULL, NULL, 'Logout', '2025-08-31 16:55:16'),
+(205, 23, NULL, NULL, 'Login', '2025-08-31 16:55:22'),
+(206, 23, NULL, NULL, 'Logout', '2025-08-31 16:55:41'),
+(207, 28, NULL, NULL, 'Login', '2025-08-31 16:55:50'),
+(208, 28, NULL, NULL, 'Logout', '2025-08-31 16:56:30'),
+(209, 25, NULL, NULL, 'Login', '2025-08-31 16:56:35'),
+(210, 25, NULL, NULL, 'Logout', '2025-08-31 16:57:16'),
+(211, 27, NULL, NULL, 'Login', '2025-08-31 16:57:22'),
+(212, 27, NULL, NULL, 'Logout', '2025-08-31 17:05:04'),
+(213, 23, NULL, NULL, 'Login', '2025-08-31 17:05:18'),
+(214, 23, NULL, NULL, 'Logout', '2025-08-31 17:07:59'),
+(215, 19, NULL, NULL, 'Login', '2025-08-31 17:08:19'),
+(216, 19, NULL, NULL, 'Logout', '2025-08-31 17:08:36'),
+(217, 5, NULL, NULL, 'Login', '2025-08-31 17:09:03'),
+(218, 5, NULL, NULL, 'Logout', '2025-08-31 17:09:30'),
+(219, 27, NULL, NULL, 'Login', '2025-08-31 17:09:40'),
+(220, 27, NULL, NULL, 'Logout', '2025-08-31 17:10:35'),
+(221, 5, NULL, NULL, 'Login', '2025-08-31 17:10:41'),
+(222, 5, NULL, NULL, 'Logout', '2025-08-31 17:15:02'),
+(223, 27, NULL, NULL, 'Login', '2025-08-31 17:15:11'),
+(224, 27, NULL, NULL, 'Logout', '2025-08-31 17:17:50'),
+(225, 5, NULL, NULL, 'Login', '2025-08-31 17:17:59'),
+(226, 5, NULL, NULL, 'Logout', '2025-08-31 17:20:46'),
+(227, 1, NULL, NULL, 'Logout', '2025-08-31 17:30:30'),
+(228, 1, NULL, NULL, 'Login', '2025-08-31 17:30:48'),
+(229, 1, NULL, NULL, 'Login', '2025-08-31 17:32:40'),
+(230, 1, NULL, NULL, 'Logout', '2025-08-31 17:32:56'),
+(231, 1, NULL, NULL, 'Logout', '2025-08-31 17:37:12'),
+(232, 1, NULL, NULL, 'Login', '2025-08-31 17:37:44'),
+(233, 2, NULL, NULL, 'Login', '2025-08-31 17:47:44'),
+(234, 2, NULL, NULL, 'Logout', '2025-08-31 17:48:56'),
+(235, 27, NULL, NULL, 'Login', '2025-08-31 17:49:12'),
+(236, 27, NULL, NULL, 'Logout', '2025-08-31 17:55:27'),
+(237, 2, NULL, NULL, 'Login', '2025-08-31 17:55:34'),
+(238, 2, NULL, NULL, 'Logout', '2025-08-31 17:56:45'),
+(239, 23, NULL, NULL, 'Login', '2025-08-31 17:56:51'),
+(240, 23, NULL, NULL, 'Logout', '2025-08-31 17:57:22'),
+(241, 27, NULL, NULL, 'Login', '2025-08-31 17:57:29'),
+(242, 1, NULL, NULL, 'Logout', '2025-08-31 18:17:45'),
+(243, 1, NULL, NULL, 'Login', '2025-08-31 18:17:51'),
+(244, 27, NULL, NULL, 'Logout', '2025-08-31 18:18:11'),
+(245, 2, NULL, NULL, 'Login', '2025-08-31 18:18:23'),
+(246, 2, 2, NULL, 'Edited their own details.', '2025-08-31 18:19:31'),
+(247, 2, NULL, NULL, 'Logout', '2025-08-31 18:39:58'),
+(248, 10, NULL, NULL, 'Login', '2025-08-31 18:40:06'),
+(249, 10, NULL, NULL, 'Logout', '2025-08-31 18:40:56'),
+(250, 10, NULL, NULL, 'Login', '2025-08-31 18:41:03'),
+(251, 10, NULL, NULL, 'Logout', '2025-08-31 18:44:02'),
+(252, 25, NULL, NULL, 'Login', '2025-08-31 18:44:09'),
+(253, 25, NULL, NULL, 'Logout', '2025-08-31 18:45:49'),
+(254, 2, NULL, NULL, 'Login', '2025-08-31 18:46:11'),
+(255, 2, NULL, NULL, 'Logout', '2025-08-31 18:59:37'),
+(256, 23, NULL, NULL, 'Login', '2025-08-31 18:59:44'),
+(257, 23, NULL, NULL, 'Logout', '2025-08-31 19:00:27'),
+(258, 1, NULL, NULL, 'Login', '2025-09-01 08:20:54'),
+(259, 1, NULL, NULL, 'Logout', '2025-09-01 09:54:16'),
+(260, 3, NULL, NULL, 'Login', '2025-09-02 05:28:01'),
+(261, 1, NULL, NULL, 'Login', '2025-09-02 05:29:31'),
+(262, 3, NULL, NULL, 'Logout', '2025-09-02 05:31:19'),
+(263, 27, NULL, NULL, 'Login', '2025-09-02 05:31:56'),
+(264, 27, NULL, NULL, 'Logout', '2025-09-02 05:32:24'),
+(265, 23, NULL, NULL, 'Login', '2025-09-02 05:32:32'),
+(266, 23, NULL, NULL, 'Logout', '2025-09-02 05:33:10'),
+(267, 1, NULL, NULL, 'Login', '2025-09-03 10:29:41'),
+(268, 1, NULL, NULL, 'Logout', '2025-09-03 10:40:58'),
+(269, 1, NULL, NULL, 'Login', '2025-09-03 10:41:05'),
+(270, 10, NULL, NULL, 'Login', '2025-09-03 10:51:01'),
+(271, 10, NULL, NULL, 'Logout', '2025-09-03 11:43:11'),
+(272, 1, NULL, NULL, 'Logout', '2025-09-03 11:52:47'),
+(273, 10, NULL, NULL, 'Login', '2025-09-03 16:51:34'),
+(274, 1, NULL, NULL, 'Login', '2025-09-03 16:56:30'),
+(275, 1, 1, NULL, 'Edited their own details.', '2025-09-03 16:57:35'),
+(276, 1, NULL, NULL, 'Logout', '2025-09-03 16:59:52'),
+(277, 1, NULL, NULL, 'Login', '2025-09-03 17:00:46'),
+(278, 3, NULL, NULL, 'Login', '2025-09-04 11:47:07'),
+(279, 1, NULL, NULL, 'Login', '2025-09-04 11:49:14'),
+(280, 3, 3, NULL, 'Edited their own details.', '2025-09-04 11:50:29'),
+(281, 1, NULL, NULL, 'Logout', '2025-09-04 12:38:12'),
+(282, 27, NULL, NULL, 'Login', '2025-09-04 12:40:22'),
+(283, 27, NULL, NULL, 'Logout', '2025-09-04 12:43:26'),
+(284, 28, NULL, NULL, 'Login', '2025-09-04 12:43:45'),
+(285, 28, NULL, NULL, 'Login', '2025-09-04 12:44:56'),
+(286, 28, NULL, NULL, 'Logout', '2025-09-04 12:48:46'),
+(287, 28, NULL, 11, 'Edited the details of their child profile.', '2025-09-04 12:49:43'),
+(288, 28, 28, NULL, 'Edited their own details.', '2025-09-04 12:50:44'),
+(289, 1, NULL, NULL, 'Login', '2025-09-04 12:52:25'),
+(290, 1, NULL, NULL, 'Logout', '2025-09-04 13:03:18'),
+(291, 5, NULL, NULL, 'Login', '2025-09-04 13:03:29'),
+(292, 5, NULL, NULL, 'Logout', '2025-09-04 13:04:56'),
+(293, 28, NULL, NULL, 'Logout', '2025-09-04 13:04:59'),
+(294, NULL, NULL, NULL, 'Unauthorized login attempt detected from IP Unknown', '2025-09-04 13:06:55'),
+(295, NULL, NULL, NULL, 'Unauthorized login attempt detected from IP 158.62.62.81', '2025-09-04 13:16:30'),
+(296, 1, NULL, NULL, 'Login', '2025-09-18 10:44:25'),
+(297, 5, NULL, NULL, 'Login', '2025-09-18 11:05:10'),
+(298, 1, NULL, NULL, 'Logout', '2025-09-18 11:05:40'),
+(299, 3, NULL, NULL, 'Login', '2025-09-18 11:05:52'),
+(300, 1, NULL, NULL, 'Login', '2025-09-18 11:20:07'),
+(301, 3, NULL, NULL, 'Logout', '2025-09-18 11:25:52'),
+(302, 23, NULL, NULL, 'Login', '2025-09-18 11:26:02'),
+(303, 23, NULL, NULL, 'Logout', '2025-09-18 11:38:13'),
+(304, 23, NULL, NULL, 'Login', '2025-09-18 11:55:51'),
+(305, 23, NULL, NULL, 'Logout', '2025-09-18 13:20:29'),
+(306, 19, NULL, NULL, 'Login', '2025-09-18 13:20:44'),
+(307, 19, NULL, NULL, 'Logout', '2025-09-18 13:42:44'),
+(308, 5, NULL, NULL, 'Logout', '2025-09-18 13:42:49'),
+(309, 23, NULL, NULL, 'Login', '2025-09-18 13:43:23'),
+(310, 22, NULL, NULL, 'Login', '2025-09-18 14:59:28'),
+(311, 22, NULL, NULL, 'Logout', '2025-09-18 15:33:32'),
+(312, 5, NULL, NULL, 'Login', '2025-09-18 15:33:40'),
+(313, 1, NULL, NULL, 'Login', '2025-10-06 16:44:24');
 
 -- --------------------------------------------------------
 
@@ -3140,54 +3819,294 @@ CREATE TABLE `tbl_tracking_discoverer` (
 --
 
 INSERT INTO `tbl_tracking_discoverer` (`tracking_id`, `student_id`, `activity_id`, `visual_feedback_id`, `recorded_at`) VALUES
-(1, 1, 133, NULL, '2025-08-05 16:00:00'),
-(2, 1, 134, NULL, '2025-08-06 16:00:00'),
-(3, 1, 135, NULL, '2025-08-07 16:00:00'),
-(4, 1, 136, NULL, '2025-08-08 16:00:00'),
-(5, 1, 137, NULL, '2025-08-11 16:00:00'),
-(6, 1, 138, NULL, '2025-08-12 16:00:00'),
-(7, 1, 139, NULL, '2025-08-13 16:00:00'),
-(8, 1, 140, NULL, '2025-08-14 16:00:00'),
-(9, 1, 141, NULL, '2025-08-15 16:00:00'),
-(10, 1, 142, NULL, '2025-08-16 16:00:00'),
-(11, 1, 143, 1, '2025-08-17 16:00:00'),
+(1, 1, 133, 5, '2025-08-05 16:00:00'),
+(2, 1, 134, 5, '2025-08-06 16:00:00'),
+(3, 1, 135, 5, '2025-08-07 16:00:00'),
+(4, 1, 136, 5, '2025-08-08 16:00:00'),
+(5, 1, 137, 5, '2025-08-11 16:00:00'),
+(6, 1, 138, 5, '2025-08-12 16:00:00'),
+(7, 1, 139, 1, '2025-08-13 16:00:00'),
+(8, 1, 140, 2, '2025-08-14 16:00:00'),
+(9, 1, 141, 5, '2025-08-15 16:00:00'),
+(10, 1, 142, 5, '2025-08-16 16:00:00'),
+(11, 1, 143, 5, '2025-08-17 16:00:00'),
 (12, 1, 144, 4, '2025-08-18 16:00:00'),
-(13, 1, 145, NULL, '2025-10-07 16:00:00'),
-(14, 1, 146, NULL, '2025-10-08 16:00:00'),
-(15, 1, 147, NULL, '2025-10-09 16:00:00'),
-(16, 1, 148, NULL, '2025-10-10 16:00:00'),
-(17, 1, 149, NULL, '2025-10-13 16:00:00'),
-(18, 1, 150, NULL, '2025-10-14 16:00:00'),
-(19, 1, 151, NULL, '2025-10-15 16:00:00'),
-(20, 1, 152, NULL, '2025-10-16 16:00:00'),
-(21, 1, 153, NULL, '2025-10-17 16:00:00'),
-(22, 1, 154, NULL, '2025-10-18 16:00:00'),
-(23, 1, 155, NULL, '2025-10-19 16:00:00'),
-(24, 1, 156, NULL, '2025-10-20 16:00:00'),
-(25, 1, 157, NULL, '2025-12-09 16:00:00'),
-(26, 1, 158, NULL, '2025-12-10 16:00:00'),
-(27, 1, 159, NULL, '2025-12-11 16:00:00'),
-(28, 1, 160, NULL, '2025-12-12 16:00:00'),
-(29, 1, 161, NULL, '2025-12-15 16:00:00'),
-(30, 1, 162, NULL, '2025-12-16 16:00:00'),
-(31, 1, 163, NULL, '2025-12-17 16:00:00'),
-(32, 1, 164, NULL, '2025-12-18 16:00:00'),
-(33, 1, 165, NULL, '2025-12-19 16:00:00'),
-(34, 1, 166, NULL, '2025-12-20 16:00:00'),
-(35, 1, 167, NULL, '2025-12-21 16:00:00'),
-(36, 1, 168, NULL, '2025-12-22 16:00:00'),
-(37, 1, 169, NULL, '2026-02-10 16:00:00'),
-(38, 1, 170, NULL, '2026-02-11 16:00:00'),
-(39, 1, 171, NULL, '2026-02-12 16:00:00'),
-(40, 1, 172, NULL, '2026-02-13 16:00:00'),
-(41, 1, 173, NULL, '2026-02-16 16:00:00'),
-(42, 1, 174, NULL, '2026-02-17 16:00:00'),
-(43, 1, 175, NULL, '2026-02-18 16:00:00'),
-(44, 1, 176, NULL, '2026-02-19 16:00:00'),
-(45, 1, 177, NULL, '2026-02-20 16:00:00'),
-(46, 1, 178, NULL, '2026-02-21 16:00:00'),
-(47, 1, 179, NULL, '2026-02-22 16:00:00'),
-(48, 1, 180, NULL, '2026-02-23 16:00:00');
+(13, 1, 145, 2, '2025-10-07 16:00:00'),
+(14, 1, 146, 5, '2025-10-08 16:00:00'),
+(15, 1, 147, 5, '2025-10-09 16:00:00'),
+(16, 1, 148, 5, '2025-10-10 16:00:00'),
+(17, 1, 149, 3, '2025-10-13 16:00:00'),
+(18, 1, 150, 5, '2025-10-14 16:00:00'),
+(19, 1, 151, 3, '2025-10-15 16:00:00'),
+(20, 1, 152, 5, '2025-10-16 16:00:00'),
+(21, 1, 153, 2, '2025-10-17 16:00:00'),
+(22, 1, 154, 2, '2025-10-18 16:00:00'),
+(23, 1, 155, 5, '2025-10-19 16:00:00'),
+(24, 1, 156, 5, '2025-10-20 16:00:00'),
+(25, 1, 157, 5, '2025-12-09 16:00:00'),
+(26, 1, 158, 5, '2025-12-10 16:00:00'),
+(27, 1, 159, 5, '2025-12-11 16:00:00'),
+(28, 1, 160, 2, '2025-12-12 16:00:00'),
+(29, 1, 161, 4, '2025-12-15 16:00:00'),
+(30, 1, 162, 5, '2025-12-16 16:00:00'),
+(31, 1, 163, 5, '2025-12-17 16:00:00'),
+(32, 1, 164, 5, '2025-12-18 16:00:00'),
+(33, 1, 165, 4, '2025-12-19 16:00:00'),
+(34, 1, 166, 4, '2025-12-20 16:00:00'),
+(35, 1, 167, 3, '2025-12-21 16:00:00'),
+(36, 1, 168, 5, '2025-12-22 16:00:00'),
+(37, 1, 169, 4, '2026-02-10 16:00:00'),
+(38, 1, 170, 5, '2026-02-11 16:00:00'),
+(39, 1, 171, 5, '2026-02-12 16:00:00'),
+(40, 1, 172, 5, '2026-02-13 16:00:00'),
+(41, 1, 173, 4, '2026-02-16 16:00:00'),
+(42, 1, 174, 5, '2026-02-17 16:00:00'),
+(43, 1, 175, 4, '2026-02-18 16:00:00'),
+(44, 1, 176, 4, '2026-02-19 16:00:00'),
+(45, 1, 177, 5, '2026-02-20 16:00:00'),
+(46, 1, 178, 5, '2026-02-21 16:00:00'),
+(47, 1, 179, 3, '2026-02-22 16:00:00'),
+(48, 1, 180, 3, '2026-02-23 16:00:00'),
+(49, 15, 135, 1, '2025-08-30 17:58:43'),
+(50, 15, 136, 2, '2025-08-30 17:58:44'),
+(51, 16, 135, 1, '2025-08-30 17:58:45'),
+(52, 16, 136, 2, '2025-08-30 17:58:47'),
+(53, 14, 135, 3, '2025-08-30 17:58:48'),
+(54, 14, 136, 4, '2025-08-30 17:58:50'),
+(55, 17, 135, 3, '2025-08-30 17:58:51'),
+(56, 17, 136, 3, '2025-08-30 17:58:53'),
+(57, 2, 135, 1, '2025-08-30 17:58:59'),
+(58, 2, 136, 1, '2025-08-30 17:59:00'),
+(59, 15, 143, 1, '2025-08-30 17:59:09'),
+(60, 15, 144, 2, '2025-08-30 17:59:11'),
+(61, 16, 143, 4, '2025-08-30 17:59:13'),
+(62, 16, 144, 2, '2025-08-30 17:59:14'),
+(63, 14, 143, 3, '2025-08-30 17:59:16'),
+(64, 14, 144, 3, '2025-08-30 17:59:17'),
+(65, 17, 143, 4, '2025-08-30 17:59:19'),
+(66, 17, 144, 3, '2025-08-30 17:59:20'),
+(67, 2, 143, 1, '2025-08-30 17:59:21'),
+(68, 2, 144, 2, '2025-08-30 17:59:23'),
+(69, 15, 137, 1, '2025-08-30 17:59:29'),
+(70, 15, 138, 2, '2025-08-30 17:59:31'),
+(71, 16, 137, 3, '2025-08-30 17:59:32'),
+(72, 16, 138, 4, '2025-08-30 17:59:33'),
+(73, 14, 137, 2, '2025-08-30 17:59:35'),
+(74, 14, 138, 2, '2025-08-30 17:59:36'),
+(75, 17, 137, 4, '2025-08-30 17:59:38'),
+(76, 17, 138, 4, '2025-08-30 17:59:40'),
+(77, 2, 137, 1, '2025-08-30 17:59:44'),
+(78, 2, 138, 3, '2025-08-30 17:59:47'),
+(79, 15, 141, 1, '2025-08-30 17:59:54'),
+(80, 15, 142, 1, '2025-08-30 17:59:55'),
+(81, 16, 141, 3, '2025-08-30 17:59:59'),
+(82, 16, 142, 3, '2025-08-30 18:00:00'),
+(83, 14, 141, 4, '2025-08-30 18:00:04'),
+(84, 14, 142, 3, '2025-08-30 18:00:05'),
+(85, 17, 141, 2, '2025-08-30 18:00:07'),
+(86, 17, 142, 2, '2025-08-30 18:00:09'),
+(87, 2, 141, 3, '2025-08-30 18:00:13'),
+(88, 2, 142, 2, '2025-08-30 18:00:14'),
+(89, 15, 133, 1, '2025-08-30 18:00:18'),
+(90, 15, 134, 3, '2025-08-30 18:00:20'),
+(91, 16, 133, 2, '2025-08-30 18:00:21'),
+(92, 16, 134, 2, '2025-08-30 18:00:23'),
+(93, 14, 133, 1, '2025-08-30 18:00:25'),
+(94, 14, 134, 2, '2025-08-30 18:00:27'),
+(95, 17, 133, 4, '2025-08-30 18:00:28'),
+(96, 17, 134, 3, '2025-08-30 18:00:30'),
+(97, 2, 133, 4, '2025-08-30 18:00:36'),
+(98, 2, 134, 2, '2025-08-30 18:00:37'),
+(99, 15, 139, 1, '2025-08-30 18:00:41'),
+(100, 15, 140, 2, '2025-08-30 18:00:43'),
+(101, 16, 140, 1, '2025-08-30 18:00:45'),
+(102, 16, 139, 2, '2025-08-30 18:00:47'),
+(103, 14, 139, 3, '2025-08-30 18:00:48'),
+(104, 14, 140, 3, '2025-08-30 18:00:50'),
+(105, 17, 139, 3, '2025-08-30 18:00:52'),
+(106, 17, 140, 2, '2025-08-30 18:00:53'),
+(107, 2, 139, 1, '2025-08-30 18:00:58'),
+(108, 2, 140, 2, '2025-08-30 18:01:00'),
+(109, 15, 151, 1, '2025-08-30 18:01:06'),
+(110, 15, 152, 2, '2025-08-30 18:01:07'),
+(111, 16, 151, 1, '2025-08-30 18:01:09'),
+(112, 16, 152, 2, '2025-08-30 18:01:10'),
+(113, 14, 151, 1, '2025-08-30 18:01:12'),
+(114, 14, 152, 2, '2025-08-30 18:01:13'),
+(115, 17, 151, 1, '2025-08-30 18:01:14'),
+(116, 17, 152, 2, '2025-08-30 18:01:16'),
+(117, 2, 151, 3, '2025-08-30 18:01:23'),
+(118, 2, 152, 5, '2025-08-30 18:01:25'),
+(119, 15, 145, 1, '2025-08-30 18:01:30'),
+(120, 15, 146, 2, '2025-08-30 18:01:32'),
+(121, 16, 145, 2, '2025-08-30 18:01:33'),
+(122, 16, 146, 1, '2025-08-30 18:01:35'),
+(123, 14, 145, 1, '2025-08-30 18:01:37'),
+(124, 14, 146, 2, '2025-08-30 18:01:38'),
+(125, 17, 145, 1, '2025-08-30 18:01:39'),
+(126, 17, 146, 1, '2025-08-30 18:01:41'),
+(127, 2, 145, 5, '2025-08-30 18:01:46'),
+(128, 2, 146, 2, '2025-08-30 18:01:48'),
+(129, 15, 153, 1, '2025-08-30 18:01:54'),
+(130, 15, 154, 3, '2025-08-30 18:01:56'),
+(131, 16, 153, 2, '2025-08-30 18:01:57'),
+(132, 16, 154, 3, '2025-08-30 18:01:59'),
+(133, 14, 153, 4, '2025-08-30 18:02:00'),
+(134, 14, 154, 2, '2025-08-30 18:02:02'),
+(135, 17, 153, 2, '2025-08-30 18:02:03'),
+(136, 17, 154, 2, '2025-08-30 18:02:05'),
+(137, 2, 153, 1, '2025-08-30 18:02:10'),
+(138, 2, 154, 2, '2025-08-30 18:02:11'),
+(139, 15, 149, 1, '2025-08-30 18:02:14'),
+(140, 15, 150, 2, '2025-08-30 18:02:16'),
+(141, 16, 149, 1, '2025-08-30 18:02:17'),
+(142, 16, 150, 2, '2025-08-30 18:02:19'),
+(143, 14, 149, 2, '2025-08-30 18:02:21'),
+(144, 14, 150, 2, '2025-08-30 18:02:22'),
+(145, 17, 149, 1, '2025-08-30 18:02:24'),
+(146, 17, 150, 2, '2025-08-30 18:02:25'),
+(147, 2, 149, 5, '2025-08-30 18:02:34'),
+(148, 2, 150, 2, '2025-08-30 18:02:35'),
+(149, 15, 155, 1, '2025-08-30 18:02:39'),
+(150, 15, 156, 2, '2025-08-30 18:02:40'),
+(151, 16, 155, 2, '2025-08-30 18:02:42'),
+(152, 16, 156, 2, '2025-08-30 18:02:43'),
+(153, 14, 155, 3, '2025-08-30 18:02:45'),
+(154, 14, 156, 3, '2025-08-30 18:02:46'),
+(155, 17, 155, 4, '2025-08-30 18:02:47'),
+(156, 17, 156, 4, '2025-08-30 18:02:49'),
+(157, 2, 155, 2, '2025-08-30 18:02:54'),
+(158, 2, 156, 1, '2025-08-30 18:02:55'),
+(159, 15, 147, 2, '2025-08-30 18:02:59'),
+(160, 15, 148, 2, '2025-08-30 18:03:01'),
+(161, 16, 147, 4, '2025-08-30 18:03:02'),
+(162, 16, 148, 4, '2025-08-30 18:03:04'),
+(163, 14, 147, 2, '2025-08-30 18:03:06'),
+(164, 14, 148, 3, '2025-08-30 18:03:07'),
+(165, 17, 147, 1, '2025-08-30 18:03:08'),
+(166, 17, 148, 2, '2025-08-30 18:03:13'),
+(167, 2, 147, 1, '2025-08-30 18:03:14'),
+(168, 2, 148, 2, '2025-08-30 18:03:16'),
+(169, 15, 159, 1, '2025-08-30 18:03:26'),
+(170, 15, 160, 2, '2025-08-30 18:03:28'),
+(171, 16, 159, 1, '2025-08-30 18:03:30'),
+(172, 16, 160, 2, '2025-08-30 18:03:31'),
+(173, 14, 159, 4, '2025-08-30 18:03:34'),
+(174, 14, 160, 2, '2025-08-30 18:03:35'),
+(175, 17, 159, 1, '2025-08-30 18:03:37'),
+(176, 17, 160, 1, '2025-08-30 18:03:39'),
+(177, 2, 159, 1, '2025-08-30 18:03:44'),
+(178, 2, 160, 1, '2025-08-30 18:03:45'),
+(179, 15, 167, 1, '2025-08-30 18:03:51'),
+(180, 15, 168, 2, '2025-08-30 18:03:53'),
+(181, 16, 167, 1, '2025-08-30 18:03:54'),
+(182, 16, 168, 2, '2025-08-30 18:03:56'),
+(183, 14, 167, 2, '2025-08-30 18:03:57'),
+(184, 14, 168, 2, '2025-08-30 18:03:59'),
+(185, 17, 167, 3, '2025-08-30 18:04:00'),
+(186, 17, 168, 3, '2025-08-30 18:04:02'),
+(187, 2, 167, 2, '2025-08-30 18:04:06'),
+(188, 2, 168, 2, '2025-08-30 18:04:07'),
+(189, 15, 161, 2, '2025-08-30 18:10:41'),
+(190, 15, 162, 1, '2025-08-30 18:10:42'),
+(191, 16, 161, 4, '2025-08-30 18:10:44'),
+(192, 16, 162, 2, '2025-08-30 18:10:45'),
+(193, 14, 161, 1, '2025-08-30 18:10:46'),
+(194, 14, 162, 2, '2025-08-30 18:10:48'),
+(195, 17, 161, 4, '2025-08-30 18:10:50'),
+(196, 17, 162, 3, '2025-08-30 18:10:51'),
+(197, 2, 161, 4, '2025-08-30 18:10:56'),
+(198, 2, 162, 2, '2025-08-30 18:10:57'),
+(199, 15, 165, 1, '2025-08-30 18:11:00'),
+(200, 15, 166, 2, '2025-08-30 18:11:02'),
+(201, 16, 165, 1, '2025-08-30 18:11:03'),
+(202, 16, 166, 1, '2025-08-30 18:11:04'),
+(203, 14, 165, 2, '2025-08-30 18:11:06'),
+(204, 14, 166, 2, '2025-08-30 18:11:08'),
+(205, 17, 165, 1, '2025-08-30 18:11:09'),
+(206, 17, 166, 2, '2025-08-30 18:11:11'),
+(207, 2, 165, 3, '2025-08-30 18:11:22'),
+(208, 2, 166, 2, '2025-08-30 18:11:23'),
+(209, 15, 157, 1, '2025-08-30 18:11:26'),
+(210, 15, 158, 2, '2025-08-30 18:11:28'),
+(211, 16, 157, 1, '2025-08-30 18:11:29'),
+(212, 16, 158, 2, '2025-08-30 18:11:30'),
+(213, 14, 157, 3, '2025-08-30 18:11:33'),
+(214, 14, 158, 3, '2025-08-30 18:11:35'),
+(215, 17, 157, 4, '2025-08-30 18:11:36'),
+(216, 17, 158, 2, '2025-08-30 18:11:38'),
+(217, 2, 157, 1, '2025-08-30 18:11:43'),
+(218, 2, 158, 2, '2025-08-30 18:11:44'),
+(219, 15, 163, 1, '2025-08-30 18:11:47'),
+(220, 15, 164, 3, '2025-08-30 18:11:49'),
+(221, 16, 163, 2, '2025-08-30 18:11:50'),
+(222, 16, 164, 2, '2025-08-30 18:11:52'),
+(223, 14, 163, 4, '2025-08-30 18:11:54'),
+(224, 14, 164, 2, '2025-08-30 18:11:55'),
+(225, 17, 163, 2, '2025-08-30 18:11:57'),
+(226, 17, 164, 3, '2025-08-30 18:11:58'),
+(227, 2, 163, 1, '2025-08-30 18:12:05'),
+(228, 2, 164, 2, '2025-08-30 18:12:08'),
+(229, 15, 175, 2, '2025-08-30 18:12:14'),
+(230, 15, 176, 2, '2025-08-30 18:12:15'),
+(231, 16, 175, 3, '2025-08-30 18:12:19'),
+(232, 16, 176, 1, '2025-08-30 18:12:20'),
+(233, 14, 175, 4, '2025-08-30 18:12:22'),
+(234, 14, 176, 2, '2025-08-30 18:12:24'),
+(235, 17, 175, 2, '2025-08-30 18:12:26'),
+(236, 17, 176, 4, '2025-08-30 18:12:27'),
+(237, 2, 175, 5, '2025-08-30 18:12:32'),
+(238, 2, 176, 5, '2025-08-30 18:12:33'),
+(239, 15, 169, 2, '2025-08-30 18:12:37'),
+(240, 15, 170, 3, '2025-08-30 18:12:40'),
+(241, 16, 169, 2, '2025-08-30 18:12:41'),
+(242, 16, 170, 2, '2025-08-30 18:12:44'),
+(243, 14, 169, 3, '2025-08-30 18:12:45'),
+(244, 14, 170, 3, '2025-08-30 18:12:47'),
+(245, 17, 169, 1, '2025-08-30 18:12:48'),
+(246, 17, 170, 2, '2025-08-30 18:12:50'),
+(247, 2, 169, 5, '2025-08-30 18:12:56'),
+(248, 2, 170, 2, '2025-08-30 18:12:59'),
+(249, 15, 177, 2, '2025-08-30 18:13:36'),
+(250, 15, 178, 2, '2025-08-30 18:13:37'),
+(251, 16, 177, 1, '2025-08-30 18:13:39'),
+(252, 16, 178, 2, '2025-08-30 18:13:41'),
+(253, 14, 177, 4, '2025-08-30 18:13:44'),
+(254, 14, 178, 4, '2025-08-30 18:13:45'),
+(255, 17, 177, 4, '2025-08-30 18:13:46'),
+(256, 17, 178, 4, '2025-08-30 18:13:48'),
+(257, 2, 177, 2, '2025-08-30 18:13:53'),
+(258, 2, 178, 2, '2025-08-30 18:13:54'),
+(259, 15, 173, 1, '2025-08-30 18:13:58'),
+(260, 15, 174, 1, '2025-08-30 18:13:59'),
+(261, 16, 173, 1, '2025-08-30 18:14:00'),
+(262, 16, 174, 1, '2025-08-30 18:14:02'),
+(263, 2, 173, 1, '2025-08-30 18:14:03'),
+(264, 2, 174, 1, '2025-08-30 18:14:05'),
+(265, 14, 173, 2, '2025-08-30 18:14:06'),
+(266, 14, 174, 2, '2025-08-30 18:14:07'),
+(267, 17, 173, 3, '2025-08-30 18:14:08'),
+(268, 17, 174, 3, '2025-08-30 18:14:10'),
+(269, 15, 179, 1, '2025-08-30 18:14:17'),
+(270, 15, 180, 3, '2025-08-30 18:14:18'),
+(271, 16, 179, 3, '2025-08-30 18:14:20'),
+(272, 16, 180, 3, '2025-08-30 18:14:21'),
+(273, 14, 179, 2, '2025-08-30 18:14:22'),
+(274, 14, 180, 2, '2025-08-30 18:14:24'),
+(275, 17, 179, 4, '2025-08-30 18:14:25'),
+(276, 17, 180, 3, '2025-08-30 18:14:27'),
+(277, 2, 179, 5, '2025-08-30 18:14:34'),
+(278, 2, 180, 1, '2025-08-30 18:14:36'),
+(279, 15, 171, 1, '2025-08-30 18:14:39'),
+(280, 15, 172, 2, '2025-08-30 18:14:40'),
+(281, 16, 171, 2, '2025-08-30 18:14:41'),
+(282, 16, 172, 2, '2025-08-30 18:14:43'),
+(283, 14, 171, 3, '2025-08-30 18:14:44'),
+(284, 14, 172, 3, '2025-08-30 18:14:46'),
+(285, 17, 171, 4, '2025-08-30 18:14:48'),
+(286, 17, 172, 4, '2025-08-30 18:14:49'),
+(287, 2, 171, 5, '2025-08-30 18:14:53'),
+(288, 2, 172, 3, '2025-08-30 18:14:56');
 
 -- --------------------------------------------------------
 
@@ -3555,7 +4474,7 @@ INSERT INTO `tbl_tracking_explorer` (`tracking_id`, `student_id`, `activity_id`,
 (345, 12, 67, 5, '2025-07-21 14:34:11'),
 (346, 3, 68, 2, '2025-07-21 14:34:15'),
 (347, 7, 68, 4, '2025-07-21 14:34:20'),
-(348, 7, 17, 3, '2025-07-21 14:34:22'),
+(348, 7, 17, 1, '2025-07-21 14:34:22'),
 (349, 12, 68, 5, '2025-07-21 14:34:24'),
 (350, 12, 17, 5, '2025-07-21 14:34:27'),
 (351, 7, 19, 4, '2025-07-21 14:52:11'),
@@ -3623,15 +4542,21 @@ INSERT INTO `tbl_tracking_explorer` (`tracking_id`, `student_id`, `activity_id`,
 (413, 13, 183, NULL, '2025-08-10 14:42:25'),
 (414, 3, 184, 2, '2025-08-10 14:43:21'),
 (415, 6, 184, 2, '2025-08-10 14:43:21'),
-(416, 8, 184, 1, '2025-08-10 14:43:21'),
-(417, 13, 184, NULL, '2025-08-10 14:43:21'),
+(416, 8, 184, 2, '2025-08-10 14:43:21'),
+(417, 13, 184, 2, '2025-08-10 14:43:21'),
 (418, 3, 185, NULL, '2025-08-10 15:03:06'),
 (419, 6, 185, NULL, '2025-08-10 15:03:06'),
 (420, 8, 185, NULL, '2025-08-10 15:03:06'),
 (421, 13, 185, NULL, '2025-08-10 15:03:06'),
 (422, 7, 184, 1, '2025-08-10 16:20:18'),
 (423, 11, 184, 2, '2025-08-10 16:20:20'),
-(424, 12, 184, 5, '2025-08-27 11:28:43');
+(424, 12, 184, 5, '2025-08-27 11:28:43'),
+(432, 13, 17, 1, '2025-09-04 13:04:10'),
+(433, 13, 68, 1, '2025-09-04 13:04:14'),
+(434, 13, 67, 2, '2025-09-04 13:04:17'),
+(435, 13, 66, 1, '2025-09-04 13:04:20'),
+(436, 13, 65, 1, '2025-09-04 13:04:23'),
+(437, 13, 72, 1, '2025-09-04 13:04:26');
 
 -- --------------------------------------------------------
 
@@ -3660,9 +4585,9 @@ CREATE TABLE `tbl_users` (
 --
 
 INSERT INTO `tbl_users` (`user_id`, `user_role`, `user_pass`, `user_firstname`, `user_middlename`, `user_lastname`, `user_birthdate`, `user_email`, `user_contact_no`, `user_photo`, `user_status`, `is_new`, `created_at`) VALUES
-(1, 1, '$2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6', 'Chansss', 'Ejay', 'Clarino', '1980-01-01', 'clarsejay@gmail.com', '09999928374', 'default_owner.png', 'Active', 'No', '2025-06-24 14:32:19'),
-(2, 2, '$2y$10$ojSwpBdI06wTC14JO9I2fegkCxMb67x28Nb5TYK9f5Kot749aResu', 'Kristopher', 'Chos', 'Dichos', '1990-01-01', 'dichoskristopher@gmail.com', '09181233333', 'default_admin.png', 'Active', 'No', '2025-06-24 14:32:19'),
-(3, 2, '$2y$10$qBYcdXlmymfYWk1GNMaHH.4hJB8K3Ft4G0L0v7gi4Ph0zvXceuCyG', 'Andrew', 'Lara', 'Nerona', '1985-03-10', 'paulandrewnerona@gmail.com', '09192234567', 'img_57lx1_Discord_icon.jpg', 'Active', 'No', '2025-06-24 14:32:19'),
+(1, 1, '$2y$10$pVynsgaWbXCbXlzT8eBJmuMMYlbbTv9BWSbIrcvg6sqpG3bvQx9/6', 'Chansss', 'Ejay', 'Clarino', '1980-01-01', 'clarsejay@gmail.com', '09999992837', 'img_6ciqp_Ellipse_5.png', 'Active', 'No', '2025-06-24 14:32:19'),
+(2, 2, '$2y$10$ojSwpBdI06wTC14JO9I2fegkCxMb67x28Nb5TYK9f5Kot749aResu', 'Kristopher', 'Chos', 'Dichos', '1990-01-01', 'dichoskristopher@gmail.com', '09918123333', 'img_lv38z_2.png', 'Active', 'No', '2025-06-24 14:32:19'),
+(3, 2, '$2y$10$qBYcdXlmymfYWk1GNMaHH.4hJB8K3Ft4G0L0v7gi4Ph0zvXceuCyG', 'Andrew', 'Lara', 'Nerona', '1985-03-10', 'paulandrewnerona@gmail.com', '09919223456', 'img_zvtri_received_934613141795603.jpeg', 'Active', 'No', '2025-06-24 14:32:19'),
 (4, 3, '$2y$10$HLEVSDz7.DDhXR4AXeCUK.PFXSurB0BpWMyQ.Y09NeTuIglsP6H62', 'Angela', 'Teresa', 'Borres', '1990-01-01', 'angelaborres@gmail.com', '09201234567', 'default_teacher.png', 'Active', 'No', '2025-06-24 14:32:19'),
 (5, 3, '$2y$10$CPLO02gUKBJlcRYbJePch.NDwz6DZX2ZSueECGhH6aGSBbfyrTU1e', 'Jessa', 'Hambora', 'Decena', '1990-03-13', 'decenajessa03@gmail.com', '09999920384', 'img_noeib_Discord_blue_icon.jpg', 'Active', 'No', '2025-06-24 14:32:19'),
 (6, 4, '$2b$12$AaP/nnlUHKVkLi.z3LhT0..8L3Cbv0N3gEJJgzPRgf4hujYEM7Kg.', 'Carla', 'Sankwago', 'Tan', '1990-01-01', 'carla@gmail.com', '09221234567', 'default_parent.png', 'Active', 'No', '2025-06-24 14:32:19'),
@@ -3682,12 +4607,12 @@ INSERT INTO `tbl_users` (`user_id`, `user_role`, `user_pass`, `user_firstname`, 
 (20, 4, '$2y$10$r1xQvfQfW9xnoTGXZDAs0eeQReDGLzRJs.WW5zG7ecQF00H0qxc9C', 'Carme', '', 'Sam', '1994-06-04', 'kdgjdd@gmail.com', '', 'default_parent.png', 'Active', 'Yes', '2025-06-29 13:03:30'),
 (21, 4, '$2y$10$f5Uqv18epIXWNe75NvN6SOSmX2C0A5q4qdZoD/5idkyRXFCeFgVde', 'Grazel', 'Mae', 'Eve', '1995-06-10', 'kghjfj@gmail.com', '', 'default_parent.png', 'Active', 'Yes', '2025-06-30 11:12:27'),
 (22, 3, '$2y$10$rexKryM4Ep.h0HUCfmpl1.KoSNg7lqQexeJsETFAxjH2i55yFXxcy', 'Janneth', '', 'Caamino', '1994-06-04', 'jannethcaamino@gmail.com', '09171234654', 'default_teacher.png', 'Active', 'No', '2025-06-30 11:15:13'),
-(23, 4, '$2y$10$em/CoMFNY1tjX8/ON.1x7.zpc2Bu3VbE55C.wM2oL1mrhZY/iTQUe', 'Margareths', 'Pabunan', 'Manongdo', '2004-01-01', 'manongdomargareth1335@gmail.com', '09999999999', 'img_kmj3q_DSC02412.jpg', 'Active', 'No', '2025-06-30 11:31:59'),
+(23, 4, '$2y$10$em/CoMFNY1tjX8/ON.1x7.zpc2Bu3VbE55C.wM2oL1mrhZY/iTQUe', 'Margareths', 'Pabunan', 'Manongdo', '2004-01-01', 'manongdomargareth1335@gmail.com', '09999999999', 'default_parent.png', 'Active', 'No', '2025-06-30 11:31:59'),
 (24, 4, '$2y$10$Er31M3a2.g45SpZSbbCC.eLiCdamUR0D3pg5EBFI8XS2YjDYD2QQa', 'Andrea', 'Marie', 'Plamos', '1999-06-02', 'andrea@gmail.com', '', 'default_parent.png', 'Active', 'Yes', '2025-06-30 11:49:53'),
 (25, 4, '$2y$10$VPrm1.Dr5ebqABAqJopH7OvYEKH3o5IolrTaV01SBLZcAwanrlpGy', 'Layca', 'Round', 'Cantilado', '1996-06-10', 'laycs12@gmail.com', '09283746374', 'default_parent.png', 'Active', 'No', '2025-06-30 12:23:31'),
 (26, 4, '$2y$10$ZXE1du/.2lRveEbMeuUQy.qRvhinigJBan/7LBHD5U9oCrAWNUW0G', 'Edited Daw', 'Dffdfd', 'Hahay', '1984-02-22', 'suiiud@gmail.com', '', 'default_parent.png', 'Inactive', 'Yes', '2025-07-13 10:08:32'),
 (27, 3, '$2y$10$AkyOlHaBUWUY6tA00kbtT.EG0oWIjatJwCQ1kH1z1mj7FGdKA4l9a', 'Quennilyn', '', 'Galarpe', '1997-06-04', 'galarpequennielyn25@gmail.com', '09171234123', 'default_teacher.png', 'Active', 'No', '2025-07-15 06:17:58'),
-(28, 4, '$2y$10$cgYa2YXBjNok6vsTEacAw.iTtHec8qCjZd7t.XoKRXEAIUzl.ou2G', 'James', 'Anthony', 'Placido', '1984-01-02', 'james@gmail.com', '09171234565', 'default_parent.png', 'Active', 'No', '2025-07-16 10:09:00'),
+(28, 4, '$2y$10$cgYa2YXBjNok6vsTEacAw.iTtHec8qCjZd7t.XoKRXEAIUzl.ou2G', 'James', 'Anthony', 'Placido', '1989-01-02', 'james@gmail.com', '09917123456', 'default_parent.png', 'Active', 'No', '2025-07-16 10:09:00'),
 (29, 4, '$2y$10$B0Jz.CJ91hbQGVWr2vulVOhc9bYBNblqMnqaMy2gxN4s53CRTzx9K', 'Glecie', '', 'Madrenos', '1985-02-22', 'glecie@gmail.com', '09283624523', 'default_parent.png', 'Active', 'Yes', '2025-08-07 11:55:05'),
 (30, 4, '$2y$10$vWjxgJQ/qJY2mg32eWDyR.E22/937WgMHU4rIZAAX9dD8bqY8RK/a', 'Jennevive', '', 'Cabug', '1998-02-22', 'jen@gmail.com', '09283658324', 'default_parent.png', 'Active', 'Yes', '2025-08-08 16:36:10'),
 (31, 4, '$2y$10$mktIApIDvIS6cUqQuuWm8uq4AgdTWmB2dw1lOZ3RAzKfHONdV8YXC', 'Shai', '', 'Tabs', '2000-02-26', 'shairatabs@gmail.com', '09344736244', 'default_parent.png', 'Active', 'No', '2025-08-10 09:26:03'),
@@ -3695,8 +4620,10 @@ INSERT INTO `tbl_users` (`user_id`, `user_role`, `user_pass`, `user_firstname`, 
 (33, 4, '$2y$10$3rBeiWG6YmXA8DGYmTIEi.OgFUbuBSITpQvqzqek.UStAO.ec9XPy', 'Raniel', 'Santan', 'Tacal', '1989-07-05', 'raniel@gmail.com', '09856738573', 'default_parent.png', 'Active', 'Yes', '2025-08-20 17:28:37'),
 (34, 4, '$2y$10$s3JVWoM26o1bHrROw.7zOOT5X7qdExWr0Ynih1MBzu5GsRgzH/rtC', 'Jonathan', '', 'Cartagena', '1920-02-22', 'thanthan@gmail.com', '09430585738', 'default_parent.png', 'Active', 'Yes', '2025-08-22 14:45:55'),
 (35, 2, '$2y$10$4TYq3QAzwfmqOz2GXereaOqxIuoxkUjuNduxNhohUgkxBYdIuVQWO', 'New Admin', 'Sdsdds', 'Sdsddssd', '2000-02-22', 'samdsple@gmail.com', '09476736363', 'default_admin.png', 'Active', 'Yes', '2025-08-30 17:01:36'),
-(36, 3, '$2y$10$8hfB444WruLW.8/qvaWxKOPnjpeJwA.U9drvDugYJMcR5Bd4sqpWC', 'New Teacher', 'Sdsddsj', 'Lkflkkfjjf', '2000-02-22', 'dssdsd@gmail.com', '09375673846', 'default_teacher.png', 'Active', 'Yes', '2025-08-30 17:05:04'),
-(37, 4, '$2y$10$iiDRB2CIcSjzGdCVJHeWTeDiVnyfHx.2mGeyf3L/Ss6ec2TSRJ97S', 'New Parent', 'Kjjsdsdhjsdh', 'Kdshdsh', '2000-02-22', 'sdjsdj@gmail.com', '09373467646', 'default_parent.png', 'Active', 'Yes', '2025-08-30 17:06:14');
+(36, 3, '$2y$10$8hfB444WruLW.8/qvaWxKOPnjpeJwA.U9drvDugYJMcR5Bd4sqpWC', 'May', 'La', 'San', '2000-02-22', 'mayla@gmail.com', '09375673846', 'default_teacher.png', 'Active', 'Yes', '2025-08-30 17:05:04'),
+(37, 4, '$2y$10$iiDRB2CIcSjzGdCVJHeWTeDiVnyfHx.2mGeyf3L/Ss6ec2TSRJ97S', 'New Parent', 'Kjjsdsdhjsdh', 'Kdshdsh', '2000-02-22', 'sdjsdj@gmail.com', '09373467646', 'default_parent.png', 'Active', 'Yes', '2025-08-30 17:06:14'),
+(38, 3, '$2y$10$B1Q7s4dh0VlSpvwjz9X2.eJXdtSTkYNdFzz73EOfG/DGrnJhvMDsi', 'New Djsdsjkds', 'Dgdggd', 'Dggddg', '1999-02-22', 'gsdgsd@gmail.com', '09383734673', 'default_teacher.png', 'Active', 'Yes', '2025-08-31 16:25:28'),
+(39, 4, '$2y$10$tLI1CwcZXq.QOUyMRYt7sOQeLQtUg0v1cT/MhwYoY5E1J..deRJxu', 'Sddssdsd Paewnr', '', 'Sdsdsdsdsd', '1980-02-22', 'ssdsddsdsdsd@gmail.com', '09282373673', 'default_parent.png', 'Active', 'Yes', '2025-08-31 16:26:08');
 
 -- --------------------------------------------------------
 
@@ -3718,11 +4645,11 @@ CREATE TABLE `tbl_visual_feedback` (
 --
 
 INSERT INTO `tbl_visual_feedback` (`visual_feedback_id`, `visual_feedback_shape`, `visual_feedback_name`, `visual_feedback_description`, `min_score`, `max_score`) VALUES
-(1, '❤️', 'Heart', 'Excellent', 4.200, 5.000),
-(2, '⭐', 'Star', 'Very Good', 3.400, 4.199),
-(3, '🔷', 'Diamond', 'Good', 2.600, 3.399),
+(1, '♥', 'Heart', 'Excellent', 4.200, 5.000),
+(2, '★', 'Star', 'Very Good', 3.400, 4.199),
+(3, '◆', 'Diamond', 'Good', 2.600, 3.399),
 (4, '▲', 'Triangle', 'Need Help', 1.800, 2.599),
-(5, '🟡', 'Circle', 'Not Met', 1.000, 1.799);
+(5, '⬤', 'Circle', 'Not Met', 1.000, 1.799);
 
 --
 -- Indexes for dumped tables
@@ -4074,7 +5001,7 @@ ALTER TABLE `tbl_activities`
 -- AUTO_INCREMENT for table `tbl_add_info`
 --
 ALTER TABLE `tbl_add_info`
-  MODIFY `add_info_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `add_info_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `tbl_advisory`
@@ -4086,13 +5013,13 @@ ALTER TABLE `tbl_advisory`
 -- AUTO_INCREMENT for table `tbl_attendance`
 --
 ALTER TABLE `tbl_attendance`
-  MODIFY `attendance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=186;
+  MODIFY `attendance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=187;
 
 --
 -- AUTO_INCREMENT for table `tbl_communication`
 --
 ALTER TABLE `tbl_communication`
-  MODIFY `message_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `message_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
 
 --
 -- AUTO_INCREMENT for table `tbl_comm_group`
@@ -4104,25 +5031,25 @@ ALTER TABLE `tbl_comm_group`
 -- AUTO_INCREMENT for table `tbl_comm_group_message`
 --
 ALTER TABLE `tbl_comm_group_message`
-  MODIFY `group_message_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `group_message_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `tbl_meetings`
 --
 ALTER TABLE `tbl_meetings`
-  MODIFY `meeting_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `meeting_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
 
 --
 -- AUTO_INCREMENT for table `tbl_notifications`
 --
 ALTER TABLE `tbl_notifications`
-  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=112;
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=142;
 
 --
 -- AUTO_INCREMENT for table `tbl_notification_recipients`
 --
 ALTER TABLE `tbl_notification_recipients`
-  MODIFY `recipient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=578;
+  MODIFY `recipient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=721;
 
 --
 -- AUTO_INCREMENT for table `tbl_otp_verification`
@@ -4134,13 +5061,13 @@ ALTER TABLE `tbl_otp_verification`
 -- AUTO_INCREMENT for table `tbl_overall_progress`
 --
 ALTER TABLE `tbl_overall_progress`
-  MODIFY `overall_progress_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `overall_progress_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `tbl_overall_progress_links`
 --
 ALTER TABLE `tbl_overall_progress_links`
-  MODIFY `link_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `link_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
 -- AUTO_INCREMENT for table `tbl_overall_summaries`
@@ -4152,13 +5079,13 @@ ALTER TABLE `tbl_overall_summaries`
 -- AUTO_INCREMENT for table `tbl_parents_profile`
 --
 ALTER TABLE `tbl_parents_profile`
-  MODIFY `parent_profile_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `parent_profile_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `tbl_progress_cards`
 --
 ALTER TABLE `tbl_progress_cards`
-  MODIFY `card_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `card_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT for table `tbl_progress_comments`
@@ -4170,7 +5097,7 @@ ALTER TABLE `tbl_progress_comments`
 -- AUTO_INCREMENT for table `tbl_progress_notification`
 --
 ALTER TABLE `tbl_progress_notification`
-  MODIFY `progress_notif_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
+  MODIFY `progress_notif_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- AUTO_INCREMENT for table `tbl_quarters`
@@ -4182,7 +5109,7 @@ ALTER TABLE `tbl_quarters`
 -- AUTO_INCREMENT for table `tbl_quarter_feedback`
 --
 ALTER TABLE `tbl_quarter_feedback`
-  MODIFY `quarter_feedback_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=543;
+  MODIFY `quarter_feedback_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=847;
 
 --
 -- AUTO_INCREMENT for table `tbl_risk_levels`
@@ -4230,13 +5157,13 @@ ALTER TABLE `tbl_shapes`
 -- AUTO_INCREMENT for table `tbl_students`
 --
 ALTER TABLE `tbl_students`
-  MODIFY `student_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `student_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `tbl_student_assigned`
 --
 ALTER TABLE `tbl_student_assigned`
-  MODIFY `assigned_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `assigned_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `tbl_student_levels`
@@ -4248,7 +5175,7 @@ ALTER TABLE `tbl_student_levels`
 -- AUTO_INCREMENT for table `tbl_student_milestone_interpretation`
 --
 ALTER TABLE `tbl_student_milestone_interpretation`
-  MODIFY `milestone_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `milestone_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `tbl_subjects`
@@ -4260,13 +5187,13 @@ ALTER TABLE `tbl_subjects`
 -- AUTO_INCREMENT for table `tbl_subject_overall_progress`
 --
 ALTER TABLE `tbl_subject_overall_progress`
-  MODIFY `subject_overall_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `subject_overall_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
 
 --
 -- AUTO_INCREMENT for table `tbl_system_logs`
 --
 ALTER TABLE `tbl_system_logs`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=178;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=314;
 
 --
 -- AUTO_INCREMENT for table `tbl_tracking_adventurer`
@@ -4278,19 +5205,19 @@ ALTER TABLE `tbl_tracking_adventurer`
 -- AUTO_INCREMENT for table `tbl_tracking_discoverer`
 --
 ALTER TABLE `tbl_tracking_discoverer`
-  MODIFY `tracking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `tracking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=289;
 
 --
 -- AUTO_INCREMENT for table `tbl_tracking_explorer`
 --
 ALTER TABLE `tbl_tracking_explorer`
-  MODIFY `tracking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=432;
+  MODIFY `tracking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=438;
 
 --
 -- AUTO_INCREMENT for table `tbl_users`
 --
 ALTER TABLE `tbl_users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `tbl_visual_feedback`
