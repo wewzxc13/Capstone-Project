@@ -944,7 +944,10 @@ export default function AssignedClassPage() {
                                                    {(() => {
                             // Get photo from UserContext with fallback, filter out default placeholders
                             const contextPhoto = getUserPhoto(parent.user_id);
-                            const apiPhoto = isDefaultPlaceholder(parent.photo) ? null : parent.photo;
+                            // Construct full URL for API photo if it's not a default placeholder
+                            const apiPhoto = parent.photo && !isDefaultPlaceholder(parent.photo)
+                              ? (parent.photo.startsWith('http') ? parent.photo : API.uploads.getUploadURL(parent.photo))
+                              : null;
                             const realTimePhoto = contextPhoto || apiPhoto;
                             
                             if (realTimePhoto) {
@@ -1122,7 +1125,10 @@ export default function AssignedClassPage() {
                                                {(() => {
                           // Get photo from UserContext with fallback, filter out default placeholders
                           const contextPhoto = getStudentPhoto(student.student_id);
-                          const apiPhoto = isDefaultPlaceholder(student.photo) ? null : student.photo;
+                          // Construct full URL for API photo if it's not a default placeholder
+                          const apiPhoto = student.photo && !isDefaultPlaceholder(student.photo)
+                            ? (student.photo.startsWith('http') ? student.photo : API.uploads.getUploadURL(student.photo))
+                            : null;
                           const realTimePhoto = contextPhoto || apiPhoto;
                           
                           if (realTimePhoto) {
