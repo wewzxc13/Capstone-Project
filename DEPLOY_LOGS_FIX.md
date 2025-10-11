@@ -23,13 +23,16 @@ Upload the updated CORS configuration file to your production server:
 ### Step 2: Frontend Deployment (Vercel)
 
 #### Option A: Automatic Deployment (Recommended)
-1. Stage and commit the new file:
+1. Stage and commit all changes:
    ```bash
    git add frontend/config/api.js
    git add backend-ville/Users/cors_config.php
    git add backend/Users/cors_config.php
+   git add frontend/config/api.ts
    git commit -m "Fix: Logs page CORS and API config for production"
    ```
+   
+   **Note**: The `api.ts` file has been deleted to force production to use the JavaScript version.
 
 2. Push to main branch:
    ```bash
@@ -38,6 +41,7 @@ Upload the updated CORS configuration file to your production server:
 
 3. Vercel will automatically detect changes and deploy
 4. Wait for deployment to complete (~2-3 minutes)
+5. **Important**: Vercel will rebuild the entire frontend, which will now use `api.js` exclusively
 
 #### Option B: Manual Deployment via Vercel Dashboard
 1. Go to your Vercel dashboard
@@ -53,15 +57,9 @@ Upload the updated CORS configuration file to your production server:
 3. The page should load with the logs table
 4. Check browser console (F12) - no CORS errors should appear
 
-### Step 4: Clean Up (Optional)
+### Step 4: Important Note
 
-You can optionally delete the old TypeScript API config:
-```bash
-# This is optional - only if you want a cleaner codebase
-git rm frontend/config/api.ts
-git commit -m "Remove deprecated api.ts file"
-git push origin main
-```
+The TypeScript version (`api.ts`) has been **completely removed** from the codebase. This is intentional and necessary for the fix to work. When you commit and push, make sure to include this deletion in your commit.
 
 ## 🔧 Files Changed
 
@@ -70,6 +68,7 @@ git push origin main
 | `cors_config.php` | Added learnersville.vercel.app | `backend-ville/Users/` |
 | `cors_config.php` | Added learnersville.vercel.app | `backend/Users/` |
 | `api.js` | Created JavaScript version | `frontend/config/` |
+| `api.ts` | **DELETED** | `frontend/config/` |
 
 ## ❌ If It Still Doesn't Work
 

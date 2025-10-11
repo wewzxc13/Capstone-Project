@@ -15,11 +15,12 @@ Fixed **TWO issues**:
 
 ## What Was Changed
 
-### 3 Files Modified/Created:
+### Files Modified/Created/Deleted:
 
 1. ✅ `backend-ville/Users/cors_config.php` - Added learnersville.vercel.app to allowed origins
 2. ✅ `backend/Users/cors_config.php` - Same change for local backend
 3. ✅ `frontend/config/api.js` - Created JavaScript version of API config
+4. ✅ `frontend/config/api.ts` - **DELETED** (was causing production build issues)
 
 ## Next Steps
 

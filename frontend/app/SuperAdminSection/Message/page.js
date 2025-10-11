@@ -55,7 +55,7 @@ const seededGroupChats = [];
 
 export default function SuperAdminMessagesPage() {
   const router = useRouter();
-  const { updateUnreadCounts } = useUser();
+  const { updateUnreadCounts, getUserPhoto, updateAnyUserPhoto } = useUser();
   const [chats, setChats] = useState(seededChats);
   const [groupChats, setGroupChats] = useState(seededGroupChats);
   const [selectedChatId, setSelectedChatId] = useState(chats[0]?.id || "");
@@ -786,23 +786,22 @@ export default function SuperAdminMessagesPage() {
             lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
             lastMessage: normalizedLast,
             messages: [],
-            photo: null, // Will be fetched separately since recent conversations API doesn't include photos
+            photo: u.user_photo || null, // Photo is now included in the API response
           };
         });
+        
         if (isMounted) {
           setRecent(mapped);
           dataLoadedRef.current.recent = true; // Mark as loaded
           isRunningRef.current.recent = false; // Mark as not running
-        }
-        
-        // For users not in userPhotos, we'll use default photos based on their role
-        // Since get_user_profile.php doesn't return photos, we'll mark them as processed
-        // Process all users to mark them as attempted, regardless of userPhotos state
-        const allUsers = mapped.filter(user => user.id);
-        if (allUsers.length > 0) {
-          allUsers.forEach(user => {
-            if (!photosFetchedRef.current.has(user.id)) {
-              photosFetchedRef.current.add(user.id);
+          
+          // Store photos in UserContext for global access
+          (json.data || []).forEach((u) => {
+            const userId = String(u.user_id);
+            if (u.user_photo) {
+              updateAnyUserPhoto(userId, u.user_photo);
+              setUserPhotos(prev => ({ ...prev, [userId]: u.user_photo }));
+              photosFetchedRef.current.add(userId);
             }
           });
         }
@@ -889,7 +888,7 @@ export default function SuperAdminMessagesPage() {
     const uid = Number(localStorage.getItem("userId"));
     if (!uid) return;
     let isMounted = true;
-    fetch(API.communication.getArchivedConversations())
+    fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`)
       .then((r) => safeJsonParse(r))
       .then(async (json) => {
         if (!json?.success) return;
@@ -912,25 +911,13 @@ export default function SuperAdminMessagesPage() {
         if (isMounted) {
           setArchived(mapped);
           
-          // Update userPhotos state with archived user photos
-          const newPhotos = {};
+          // Store photos in UserContext for global access
           mapped.forEach(user => {
             if (user.photo) {
-              newPhotos[user.id] = user.photo;
+              updateAnyUserPhoto(user.id, user.photo);
+              setUserPhotos(prev => ({ ...prev, [user.id]: user.photo }));
             }
           });
-          
-          console.log('Archive - mapped users with photos:', mapped.map(u => ({ id: u.id, name: u.name, photo: u.photo })));
-          console.log('Archive - new photos to add:', newPhotos);
-          
-          if (Object.keys(newPhotos).length > 0) {
-            setUserPhotos(prev => {
-              const updated = { ...prev, ...newPhotos };
-              console.log('Archive - userPhotos state updated from:', prev, 'to:', updated);
-              return updated;
-            });
-            console.log('Archive - userPhotos state update triggered');
-          }
         }
         
 
@@ -1721,6 +1708,7 @@ export default function SuperAdminMessagesPage() {
           
           if (data?.status === 'success' && data.user?.photo) {
             newPhotos[senderId] = data.user.photo;
+            updateAnyUserPhoto(senderId, data.user.photo);
           }
           
           // Mark as processed
@@ -1827,6 +1815,7 @@ export default function SuperAdminMessagesPage() {
           
           if (data?.status === 'success' && data.user?.photo) {
             newPhotos[userId] = data.user.photo;
+            updateAnyUserPhoto(userId, data.user.photo);
           }
           
           // Mark as processed
@@ -1849,18 +1838,19 @@ export default function SuperAdminMessagesPage() {
 
   // Helper function to render user avatar
   const renderUserAvatar = (userId, role, size = "w-10 h-10") => {
-    const photo = userPhotos[userId];
+    // Try to get photo from UserContext first, then fall back to local state
+    const contextPhoto = getUserPhoto(userId);
+    const localPhoto = userPhotos[userId];
+    const photo = contextPhoto || localPhoto;
     
-    console.log('renderUserAvatar called for userId:', userId, 'role:', role, 'photo:', photo);
-    console.log('userPhotos state:', userPhotos);
-    console.log('All userPhotos keys:', Object.keys(userPhotos));
+    console.log('renderUserAvatar called for userId:', userId, 'role:', role, 'contextPhoto:', contextPhoto, 'localPhoto:', localPhoto);
     
     // Always show FaUser icon as fallback - either when no photo or when photo fails to load
     if (photo) {
       return (
         <div className="relative">
           <img
-            src={photo.startsWith('http') ? photo : `/php/Uploads/${photo}`}
+            src={photo.startsWith('http') ? photo : API.uploads.getUploadURL(photo)}
             alt="User"
             className={`${size} rounded-full object-cover border border-gray-200 shadow-sm ${roleAvatarRingClasses(role)}`}
             onError={(e) => {
@@ -2779,7 +2769,7 @@ export default function SuperAdminMessagesPage() {
                                           return (
                                             <>
                                               <img
-                                                src={photo.startsWith('http') ? photo : `/php/Uploads/${photo}`}
+                                                src={photo.startsWith('http') ? photo : API.uploads.getUploadURL(photo)}
                                                 alt="Sender"
                                                 className="w-full h-full rounded-full object-cover"
                                                 onError={(e) => {
@@ -3243,7 +3233,7 @@ export default function SuperAdminMessagesPage() {
                     // Remove from recents
                     setRecent((prev) => prev.filter((r) => r.id !== String(partnerId)));
                     // Refresh archived list
-                    fetch(API.communication.getArchivedConversations())
+                    fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`)
                       .then((r) => safeJsonParse(r))
                       .then((arch) => {
                         if (arch?.success) {
@@ -3258,9 +3248,18 @@ export default function SuperAdminMessagesPage() {
                               lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
                               messages: [],
                               archived: true,
+                              photo: u.user_photo || null,
                             };
                           });
                           setArchived(mapped);
+                          
+                          // Store photos in UserContext for global access
+                          (arch.data || []).forEach((u) => {
+                            if (u.user_photo) {
+                              updateAnyUserPhoto(String(u.user_id), u.user_photo);
+                              setUserPhotos(prev => ({ ...prev, [String(u.user_id)]: u.user_photo }));
+                            }
+                          });
                         }
                       });
                     setShowArchiveModal(false);
@@ -3339,12 +3338,21 @@ export default function SuperAdminMessagesPage() {
                           lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
                           lastMessage: normalizedLast,
                           messages: [],
+                          photo: u.user_photo || null,
                         };
                       });
                       setRecent(mapped);
+                      
+                      // Store photos in UserContext for global access
+                      (rc.data || []).forEach((u) => {
+                        if (u.user_photo) {
+                          updateAnyUserPhoto(String(u.user_id), u.user_photo);
+                          setUserPhotos(prev => ({ ...prev, [String(u.user_id)]: u.user_photo }));
+                        }
+                      });
                     }
                   });
-                  fetch(API.communication.getArchivedConversations()).then(r => r.json()).then(ar => {
+                  fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`).then(r => safeJsonParse(r)).then(ar => {
                     if (ar?.success) {
                       const mapped = (ar.data || []).map((u) => ({
                         id: String(u.user_id),
@@ -3355,8 +3363,17 @@ export default function SuperAdminMessagesPage() {
                         lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
                         messages: [],
                         archived: true,
+                        photo: u.user_photo || null,
                       }));
                       setArchived(mapped);
+                      
+                      // Store photos in UserContext for global access
+                      (ar.data || []).forEach((u) => {
+                        if (u.user_photo) {
+                          updateAnyUserPhoto(String(u.user_id), u.user_photo);
+                          setUserPhotos(prev => ({ ...prev, [String(u.user_id)]: u.user_photo }));
+                        }
+                      });
                     }
                   });
                   setShowRestoreModal(false);

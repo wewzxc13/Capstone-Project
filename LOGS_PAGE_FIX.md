@@ -122,15 +122,13 @@ After deploying the backend fix:
 - **Production Build**: The production build process (minification, tree-shaking) is stricter and the inconsistency caused import resolution issues
 - The minified code couldn't properly resolve `API.user.getStudentNames` function
 
-## Managing Both api.ts and api.js Files
+## File Management Decision
 
-After this fix, you'll have both `api.ts` and `api.js` in the `frontend/config/` directory.
+**Action taken**: The `api.ts` file has been **deleted** completely.
 
-**Recommended approach**:
-1. Keep `api.js` (the JavaScript version) - this is what production will use
-2. You can optionally delete `api.ts` to avoid confusion
-3. If you want to keep both, ensure any changes are made to **both files**
-4. Next.js will prioritize `.js` over `.ts` when both exist with the same name
+**Reason**: Having both `api.ts` and `api.js` caused Next.js production builds to still import the TypeScript version, which led to minification issues. By deleting `api.ts`, we ensure all builds (development and production) use the JavaScript version exclusively.
+
+**Going forward**: Only maintain `frontend/config/api.js`. Do not recreate the TypeScript version.
 
 ## Additional Notes
 

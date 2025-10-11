@@ -1,9 +1,25 @@
 <?php
 ob_start();
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: http://localhost:3000');
+
+// Dynamic CORS configuration
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowedOrigins = [
+    'https://learnersville.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002'
+];
+
+if (in_array($origin, $allowedOrigins) || preg_match('/^http:\/\/localhost:3[0-9]{3}$/', $origin)) {
+    header("Access-Control-Allow-Origin: $origin");
+} else {
+    header('Access-Control-Allow-Origin: *');
+}
+
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Credentials: true');
 
 @ini_set('display_errors', '0');
 @error_reporting(E_ALL);
@@ -65,7 +81,7 @@ try {
             $parts = explode('/', (string)$row['user_photo']);
             $row['user_photo'] = end($parts);
         } else {
-            if ($row['role_name'] === 'Admin') {
+            if ($row['role_name'] === 'Admin' || $row['role_name'] === 'SuperAdmin') {
                 $row['user_photo'] = 'default_admin.png';
             } else if ($row['role_name'] === 'Teacher') {
                 $row['user_photo'] = 'default_teacher.png';
