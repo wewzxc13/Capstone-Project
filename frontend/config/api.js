@@ -32,8 +32,14 @@ const isProduction = API_BASE_URL.includes('learnersville.online') ||
                      (typeof window !== 'undefined' && !window.location.hostname.includes('localhost'));
 
 const getEndpoint = (path) => {
-  // For production, use direct paths without /php/ prefix
-  if (isProduction) {
+  // Dynamic production check at runtime (not module load time)
+  const isDynamicProduction = typeof window !== 'undefined' && 
+                               (window.location.hostname.includes('vercel.app') || 
+                                window.location.hostname.includes('learnersville.online') ||
+                                !window.location.hostname.includes('localhost'));
+  
+  // For production (Vercel or Namecheap), use direct backend URL
+  if (isProduction || isDynamicProduction) {
     // Remove leading slash if present to avoid double slashes
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
     const endpoint = `${API_URL}/${cleanPath}`;
