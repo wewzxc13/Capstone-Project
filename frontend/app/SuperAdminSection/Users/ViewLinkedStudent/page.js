@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { toast } from "react-toastify";
 import { useUser } from "../../../Context/UserContext";
+import { API } from '@/config/api';
 
 // Helper function to format names as "Lastname, Firstname Middlename"
 const formatName = (name) => {
@@ -92,11 +93,11 @@ export default function ViewLinkedStudentPage() {
       setError(null);
       try {
         // Fetch active users
-        const res = await fetch("/php/Users/get_all_users.php");
+        const res = await fetch(API.user.getAllUsers());
         const data = await res.json();
         
         // Fetch archived users
-        const archivedRes = await fetch("/php/Users/get_archived_users.php");
+        const archivedRes = await fetch(API.user.getArchivedUsers());
         const archivedData = await archivedRes.json();
         
         if (data.status === "success" && data.users) {
@@ -187,7 +188,7 @@ export default function ViewLinkedStudentPage() {
   const handleLinkStudent = async () => {
     if (!selectedStudent || !modalParent) return;
     try {
-      const res = await fetch("/php/Users/link_student_to_parent.php", {
+      const res = await fetch(API.user.linkStudentToParent(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -203,11 +204,11 @@ export default function ViewLinkedStudentPage() {
         toast.success("Student successfully linked to parent!");
         // Re-fetch all users to update UI
         try {
-          const res = await fetch("/php/Users/get_all_users.php");
+          const res = await fetch(API.user.getAllUsers());
           const data = await res.json();
           
           // Fetch archived users
-          const archivedRes = await fetch("/php/Users/get_archived_users.php");
+          const archivedRes = await fetch(API.user.getArchivedUsers());
           const archivedData = await archivedRes.json();
           
           if (data.status === "success" && data.users) {
@@ -266,7 +267,7 @@ export default function ViewLinkedStudentPage() {
     if (!studentToRemove) return;
     setRemoving(true);
     try {
-      const res = await fetch('/php/Users/unlink_student_from_parent.php', {
+      const res = await fetch(API.user.unlinkStudentFromParent(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -279,11 +280,11 @@ export default function ViewLinkedStudentPage() {
         toast.success("Student successfully unlinked from parent!");
         // Refresh parent/student list
         try {
-          const res = await fetch("/php/Users/get_all_users.php");
+          const res = await fetch(API.user.getAllUsers());
           const data = await res.json();
           
           // Fetch archived users
-          const archivedRes = await fetch("/php/Users/get_archived_users.php");
+          const archivedRes = await fetch(API.user.getArchivedUsers());
           const archivedData = await archivedRes.json();
           
           if (data.status === "success" && data.users) {

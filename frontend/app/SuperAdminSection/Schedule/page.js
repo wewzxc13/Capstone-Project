@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-toastify/dist/ReactToastify.css";
 import { useModal } from "../../Context/ModalContext";
+import { API } from '@/config/api';
 
 import { createPortal } from "react-dom";
 
@@ -97,7 +98,7 @@ export default function SuperAdminSchedulePage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/php/Schedule/get_schedule.php")
+    fetch(API.schedule.getSchedule())
       .then((res) => res.json())
       .then((data) => {
         if (data.status === "success") {
@@ -149,13 +150,13 @@ export default function SuperAdminSchedulePage() {
   // Fetch routines and subjects when entering edit mode
   useEffect(() => {
     if (editMode) {
-      fetch("/php/Schedule/get_routines.php")
+      fetch(API.schedule.getRoutines())
         .then((res) => res.json())
         .then((data) => {
           setRoutines(data.routines || []);
           console.log('Fetched routines:', data.routines);
         });
-      fetch("/php/Schedule/get_subjects.php")
+      fetch(API.schedule.getSubjects())
         .then((res) => res.json())
         .then((data) => {
           setSubjects(data.subjects || []);
@@ -166,13 +167,13 @@ export default function SuperAdminSchedulePage() {
 
   useEffect(() => {
     if (modalOpen) {
-      fetch("/php/Schedule/get_routines.php")
+      fetch(API.schedule.getRoutines())
         .then((res) => res.json())
         .then((data) => {
           setRoutines(data.routines || []);
           console.log('Fetched routines:', data.routines);
         });
-      fetch("/php/Schedule/get_subjects.php")
+      fetch(API.schedule.getSubjects())
         .then((res) => res.json())
         .then((data) => {
           setSubjects(data.subjects || []);
@@ -187,7 +188,7 @@ export default function SuperAdminSchedulePage() {
   // Fetch subjects and routines when Add Activity modal is opened
   useEffect(() => {
     if (addActivityModalOpen) {
-      fetch("/php/Schedule/get_subjects.php")
+      fetch(API.schedule.getSubjects())
         .then((res) => res.json())
         .then((data) => {
           setSubjects(data.subjects || []);
@@ -196,7 +197,7 @@ export default function SuperAdminSchedulePage() {
           console.error('Failed to fetch subjects:', err);
         });
       
-      fetch("/php/Schedule/get_routines.php")
+      fetch(API.schedule.getRoutines())
         .then((res) => res.json())
         .then((data) => {
           setRoutines(data.routines || []);
@@ -206,7 +207,7 @@ export default function SuperAdminSchedulePage() {
         });
         
       // Fetch usage data
-      fetch("/php/Schedule/get_schedule_item_usage.php")
+      fetch(API.schedule.getScheduleItemUsage())
         .then((res) => res.json())
         .then((data) => {
           if (data.status === 'success') {
@@ -371,10 +372,10 @@ export default function SuperAdminSchedulePage() {
   // In editMode useEffect, only fetch routines/subjects if pendingEdit is true
   useEffect(() => {
     if (pendingEdit) {
-      fetch("/php/Schedule/get_routines.php")
+      fetch(API.schedule.getRoutines())
         .then((res) => res.json())
         .then((data) => setRoutines(data.routines || []));
-      fetch("/php/Schedule/get_subjects.php")
+      fetch(API.schedule.getSubjects())
         .then((res) => res.json())
         .then((data) => setSubjects(data.subjects || []));
     }
@@ -439,7 +440,7 @@ export default function SuperAdminSchedulePage() {
       updates
     };
     try {
-      const res = await fetch("/php/Schedule/update_schedule_items.php", {
+      const res = await fetch(API.schedule.updateScheduleItems(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -447,7 +448,7 @@ export default function SuperAdminSchedulePage() {
       const data = await res.json();
       if (data.status === "success") {
         setLoading(true);
-        fetch("/php/Schedule/get_schedule.php")
+        fetch(API.schedule.getSchedule())
           .then((res) => res.json())
           .then((data) => {
             if (data.status === "success") {
@@ -1156,7 +1157,7 @@ export default function SuperAdminSchedulePage() {
               };
               console.log('Update payload:', payload);
               try {
-                const res = await fetch('/php/Schedule/update_schedule_item.php', {
+                const res = await fetch(API.schedule.updateScheduleItem(), {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(payload)
@@ -1173,7 +1174,7 @@ export default function SuperAdminSchedulePage() {
                     closeModal();
                     setLoading(true);
                     // Refresh schedule
-                    fetch('/php/Schedule/get_schedule.php')
+                    fetch(API.schedule.getSchedule())
                       .then(res => res.json())
                       .then(data => {
                         if (data.status === 'success') {
@@ -1546,7 +1547,7 @@ export default function SuperAdminSchedulePage() {
             
             setSavingActivity(true);
             try {
-              const response = await fetch('/php/Schedule/add_schedule_item.php', {
+              const response = await fetch(API.schedule.addScheduleItem(), {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1566,13 +1567,13 @@ export default function SuperAdminSchedulePage() {
                 
                 // Refresh the lists
                 if (activityType === 'subject') {
-                  const subjectsResponse = await fetch("/php/Schedule/get_subjects.php");
+                  const subjectsResponse = await fetch(API.schedule.getSubjects());
                   const subjectsData = await subjectsResponse.json();
                   if (subjectsData.subjects) {
                     setSubjects(subjectsData.subjects);
                   }
                 } else {
-                  const routinesResponse = await fetch("/php/Schedule/get_routines.php");
+                  const routinesResponse = await fetch(API.schedule.getRoutines());
                   const routinesData = await routinesResponse.json();
                   if (routinesData.routines) {
                     setRoutines(routinesData.routines);
@@ -1675,7 +1676,7 @@ export default function SuperAdminSchedulePage() {
               
               setSavingEdit(true);
               try {
-                const response = await fetch('/php/Schedule/edit_schedule_item.php', {
+                const response = await fetch(API.schedule.editScheduleItem(), {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -1697,13 +1698,13 @@ export default function SuperAdminSchedulePage() {
                   
                   // Refresh the lists
                   if (editingItem.type === 'subject') {
-                    const subjectsResponse = await fetch("/php/Schedule/get_subjects.php");
+                    const subjectsResponse = await fetch(API.schedule.getSubjects());
                     const subjectsData = await subjectsResponse.json();
                     if (subjectsData.subjects) {
                       setSubjects(subjectsData.subjects);
                     }
                   } else {
-                    const routinesResponse = await fetch("/php/Schedule/get_routines.php");
+                    const routinesResponse = await fetch(API.schedule.getRoutines());
                     const routinesData = await routinesResponse.json();
                     if (routinesData.routines) {
                       setRoutines(routinesData.routines);
@@ -1834,7 +1835,7 @@ export default function SuperAdminSchedulePage() {
                 onClick={async () => {
                   setSavingDelete(true);
                   try {
-                    const response = await fetch('/php/Schedule/delete_schedule_item.php', {
+                    const response = await fetch(API.schedule.deleteScheduleItem(), {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
@@ -1855,13 +1856,13 @@ export default function SuperAdminSchedulePage() {
                       
                       // Refresh the lists and usage data
                       if (deletingItem.type === 'subject') {
-                        const subjectsResponse = await fetch("/php/Schedule/get_subjects.php");
+                        const subjectsResponse = await fetch(API.schedule.getSubjects());
                         const subjectsData = await subjectsResponse.json();
                         if (subjectsData.subjects) {
                           setSubjects(subjectsData.subjects);
                         }
                       } else {
-                        const routinesResponse = await fetch("/php/Schedule/get_routines.php");
+                        const routinesResponse = await fetch(API.schedule.getRoutines());
                         const routinesData = await routinesResponse.json();
                         if (routinesData.routines) {
                           setRoutines(routinesData.routines);
@@ -1869,7 +1870,7 @@ export default function SuperAdminSchedulePage() {
                       }
                       
                       // Refresh usage data
-                      const usageResponse = await fetch("/php/Schedule/get_schedule_item_usage.php");
+                      const usageResponse = await fetch(API.schedule.getScheduleItemUsage());
                       const usageData = await usageResponse.json();
                       if (usageData.status === 'success') {
                         setUsedSubjectIds(new Set(usageData.data.used_subject_ids.map(String)));

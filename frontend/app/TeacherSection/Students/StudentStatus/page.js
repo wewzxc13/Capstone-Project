@@ -6,6 +6,7 @@ import "../../../../lib/chart-config.js";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { generateAssessmentPDF } from '../DownloadPDF.js';
+import { API } from '@/config/api';
 
 export default function StudentStatus({ student, renderChart, onBack, triggerExport, onExportComplete, parentProfile, studentLevelData, advisory }) {
   // Handle export trigger from parent
@@ -79,23 +80,23 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
     const fetchData = async () => {
       try {
         const promises = [
-          fetch("/php/Advisory/get_attendance.php", {
+          fetch(API.advisory.getAttendance(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ advisory_id: student.advisory_id })
           }),
-          fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch(`/php/Assessment/get_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch("/php/Assessment/get_visual_feedback.php"),
-          fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch(`/php/Assessment/get_milestone_interpretation.php?student_id=${student.student_id}`),
-          fetch('/php/Users/get_user_profile.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: student.parentId || student.parent_id }) }),
-          fetch('/php/Users/get_student_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) }),
-          fetch('/php/Advisory/get_advisory_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) }),
+          fetch(API.assessment.getSubjectOverallProgress(student.student_id, student.advisory_id)),
+          fetch(API.assessment.getOverallProgress(student.student_id, student.advisory_id)),
+          fetch(API.assessment.getVisualFeedback()),
+          fetch(API.assessment.getStudentProgressCards(student.student_id, student.advisory_id)),
+          fetch(API.assessment.getMilestoneInterpretation(student.student_id)),
+          fetch(API.user.getUserProfile(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: student.parentId || student.parent_id }) }),
+          fetch(API.user.getStudentDetails(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) }),
+          fetch(API.advisory.getAdvisoryDetails(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) }),
           // Additional data for SharedExport
-          fetch(`/php/Assessment/get_subjects_by_advisory.php?advisory_id=${student.advisory_id}`),
-          fetch(`/php/Assessment/get_student_quarter_feedback.php?student_id=${student.student_id}`),
-          fetch(`/php/Assessment/get_comments.php?student_id=${student.student_id}`)
+          fetch(API.assessment.getSubjectsByAdvisory(student.advisory_id)),
+          fetch(API.assessment.getStudentQuarterFeedback(student.student_id)),
+          fetch(API.assessment.getComments(student.student_id))
         ];
 
         const responses = await Promise.all(promises);
@@ -779,7 +780,7 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
                         onClick={async () => {
                           if (!milestoneId) return;
                           try {
-                            const res = await fetch('/php/Assessment/update_milestone_interpretation.php', {
+                            const res = await fetch(API.assessment.updateMilestoneInterpretation(), {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({

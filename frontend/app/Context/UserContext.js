@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { API } from '@/config/api';
 
 const UserContext = createContext();
 
@@ -120,8 +121,8 @@ export function UserProvider({ children }) {
       
       // Fetch current unread counts from backend
       const [recentRes, groupsRes] = await Promise.all([
-        fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`),
-        fetch(`/php/Communication/get_groups.php?user_id=${uid}`)
+        fetch(`${API.communication.getRecentConversations()}?user_id=${uid}`),
+        fetch(`${API.communication.getGroups()}?user_id=${uid}`)
       ]);
       
       const recentData = await recentRes.json();
@@ -280,7 +281,7 @@ export function UserProvider({ children }) {
     }
 
     try {
-      const response = await fetch("/php/Users/get_user_details.php", {
+      const response = await fetch(API.user.getUserDetails(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: lsUserId }),

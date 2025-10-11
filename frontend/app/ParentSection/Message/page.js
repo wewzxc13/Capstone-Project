@@ -6,6 +6,7 @@ import { FaPaperPlane, FaSearch, FaArrowLeft, FaUser, FaUsers, FaTimes, FaEdit, 
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useUser } from "../../Context/UserContext";
 import { toast } from "react-toastify";
+import { API } from '@/config/api';
 
 function getInitials(name) {
   if (!name) return "?";
@@ -221,7 +222,7 @@ export default function ParentMessagesPage() {
 
         
         // Use get_users.php for conversation history (default mode)
-        const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
+        const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -310,7 +311,7 @@ export default function ParentMessagesPage() {
 
       
       // Use get_users.php with search=true parameter to get all active users
-      const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}&search=true`, {
+      const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}&search=true`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -378,7 +379,7 @@ export default function ParentMessagesPage() {
 
       
       // Use get_users.php for conversation history (default mode)
-      const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
+      const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -430,7 +431,7 @@ export default function ParentMessagesPage() {
 
       
       // Check if this user has any conversation history
-      const res = await fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${userId}`, {
+      const res = await fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -480,7 +481,7 @@ export default function ParentMessagesPage() {
 
       
       // Call the backend to mark messages as read
-      const res = await fetch(`/php/Communication/mark_messages_read.php`, {
+      const res = await fetch(API.communication.markMessagesRead(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -495,7 +496,7 @@ export default function ParentMessagesPage() {
         // Refresh unread counts by calling the get_users API again
         try {
           const uid = Number(localStorage.getItem('userId'));
-          const refreshRes = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
+          const refreshRes = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
@@ -546,7 +547,7 @@ export default function ParentMessagesPage() {
       // Mark as running to prevent conflicts
       isRunningRef.current.conversation = userId;
       
-      const res = await fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${userId}`, {
+      const res = await fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -712,7 +713,7 @@ export default function ParentMessagesPage() {
     
 
     
-    fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`, {
+    fetch(`${API.communication.getRecentConversations()}?user_id=${uid}`, {
       signal: controller.signal,
     })
       .then((r) => {
@@ -870,7 +871,7 @@ export default function ParentMessagesPage() {
     const uid = Number(localStorage.getItem("userId"));
     if (!uid) return;
     let isMounted = true;
-    fetch(`/php/Communication/get_archived_conversations.php?user_id=${uid}`)
+    fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`)
       .then((r) => r.json())
       .then(async (json) => {
         if (!json?.success) return;
@@ -989,7 +990,7 @@ export default function ParentMessagesPage() {
         setIsLoadingConversations(true);
         
         // First, load the user list
-        const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
+        const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -1105,7 +1106,7 @@ export default function ParentMessagesPage() {
     // Store the controller reference to allow cancellation
     isRunningRef.current.controller = controller;
     
-    fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${selectedChatId}`, {
+    fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${selectedChatId}`, {
       signal: controller.signal,
     })
       .then((r) => r.json())
@@ -1177,7 +1178,7 @@ export default function ParentMessagesPage() {
     const uid = Number(localStorage.getItem('userId'));
     if (!uid) return;
     const controller = new AbortController();
-    fetch(`/php/Communication/get_group_messages.php?group_id=${selectedChat.id}&user_id=${uid}`, {
+    fetch(`${API.communication.getGroupMessages()}?group_id=${selectedChat.id}&user_id=${uid}`, {
       signal: controller.signal,
     })
       .then((r) => r.json())
@@ -1242,7 +1243,7 @@ export default function ParentMessagesPage() {
       try {
         const senderId = Number(localStorage.getItem('userId'));
         const groupId = Number(selectedChat.id);
-        fetch('/php/Communication/send_group_message.php', {
+        fetch(API.communication.sendGroupMessage(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ group_id: groupId, sender_id: senderId, message_text: text }),
@@ -1346,7 +1347,7 @@ export default function ParentMessagesPage() {
       try {
         const senderId = Number(localStorage.getItem("userId"));
         const receiverId = Number(selectedChat.id);
-        fetch("/php/Communication/send_message.php", {
+        fetch(API.communication.sendMessage(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sender_id: senderId, receiver_id: receiverId, message_text: text }),
@@ -1706,7 +1707,7 @@ export default function ParentMessagesPage() {
         }
           
         try {
-          const res = await fetch(`/php/Users/get_user_details.php`, {
+          const res = await fetch(API.user.getUserDetails(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: senderId })
@@ -1747,7 +1748,7 @@ export default function ParentMessagesPage() {
           try {
             // Since we can't directly query by advisory_id, we'll use a different approach
             // We'll fetch all users and filter by role to get teachers, and use get_all_users for parents
-            const usersRes = await fetch('/php/Users/get_all_users.php');
+            const usersRes = await fetch(API.user.getAllUsers());
             const usersData = await usersRes.json();
             
             if (usersData?.success && usersData.data) {
@@ -1771,7 +1772,7 @@ export default function ParentMessagesPage() {
         } else if (group.groupType === 'Staff') {
           // For staff groups, fetch all teachers, admins, and owners
           try {
-            const usersRes = await fetch('/php/Users/get_all_users.php');
+            const usersRes = await fetch(API.user.getAllUsers());
             const usersData = await usersRes.json();
             
             if (usersData?.success && usersData.data) {
@@ -1787,7 +1788,7 @@ export default function ParentMessagesPage() {
         } else if (group.groupType === 'Overall') {
           // For overall groups, fetch all active users
           try {
-            const usersRes = await fetch('/php/Users/get_all_users.php');
+            const usersRes = await fetch(API.user.getAllUsers());
             const usersData = await usersRes.json();
             
             if (usersData?.success && usersData.data) {
@@ -1812,7 +1813,7 @@ export default function ParentMessagesPage() {
         }
         
         try {
-          const res = await fetch(`/php/Users/get_user_details.php`, {
+          const res = await fetch(API.user.getUserDetails(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId })
@@ -1895,7 +1896,7 @@ export default function ParentMessagesPage() {
           const uid = Number(localStorage.getItem('userId'));
           if (!uid) return;
           
-          const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
+          const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
@@ -2239,7 +2240,7 @@ export default function ParentMessagesPage() {
                                           isRunningRef.current.conversation = chat.id;
                                           
                                           // Load conversation data first, then update chats array in one operation
-                                          const res = await fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${chat.id}`, {
+                                          const res = await fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${chat.id}`, {
                                             method: "GET",
                                             headers: { "Content-Type": "application/json" },
                                           });
@@ -3033,7 +3034,7 @@ export default function ParentMessagesPage() {
                                                 if (!mid) return;
                                                 setShowReadsForId((cur) => (cur === msg.id ? null : msg.id));
                                                 if (!readsCache[mid]) {
-                                                  fetch(`/php/Communication/get_group_message_reads.php?group_message_id=${mid}`)
+                                                  fetch(`${API.communication.getGroupMessageReads()}?group_message_id=${mid}`)
                                                     .then((r) => r.json())
                                                     .then((res) => {
                                                       if (!res?.success) return;
@@ -3064,7 +3065,7 @@ export default function ParentMessagesPage() {
                                               if (!mid) return;
                                               setShowReadsForId((cur) => (cur === msg.id ? null : msg.id));
                                               if (!readsCache[mid]) {
-                                                fetch(`/php/Communication/get_group_message_reads.php?group_message_id=${mid}`)
+                                                fetch(`${API.communication.getGroupMessageReads()}?group_message_id=${mid}`)
                                                   .then((r) => r.json())
                                                   .then((res) => {
                                                     if (!res?.success) return;
@@ -3225,7 +3226,7 @@ export default function ParentMessagesPage() {
                     setArchiving(true);
                     const uid = Number(localStorage.getItem('userId'));
                     const partnerId = Number(selectedChat?.id);
-                    const res = await fetch('/php/Communication/archive_conversation.php', {
+                    const res = await fetch(API.communication.archiveConversation(), {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ user_id: uid, partner_id: partnerId })
@@ -3237,7 +3238,7 @@ export default function ParentMessagesPage() {
                     // Remove from recents
                     setRecent((prev) => prev.filter((r) => r.id !== String(partnerId)));
                     // Refresh archived list
-                    fetch(`/php/Communication/get_archived_conversations.php?user_id=${uid}`)
+                    fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`)
                       .then((r) => r.json())
                       .then((arch) => {
                         if (arch?.success) {
@@ -3310,13 +3311,13 @@ export default function ParentMessagesPage() {
                 try {
                   const uid = Number(localStorage.getItem('userId'));
                   const partnerId = Number(selectedChat?.id);
-                  const res = await fetch('/php/Communication/unarchive_conversation.php', {
+                  const res = await fetch(API.communication.unarchiveConversation(), {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid, partner_id: partnerId })
                   });
                   const json = await res.json();
                   if (!json?.success) throw new Error(json?.error || 'Failed to restore');
                   // Refresh recents and archive lists
-                  fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`).then(r => r.json()).then(rc => {
+                  fetch(`${API.communication.getRecentConversations()}?user_id=${uid}`).then(r => r.json()).then(rc => {
                     if (rc?.success) {
                       const mapped = (rc.data || []).map((u) => {
                         const name = [u.user_firstname, u.user_middlename, u.user_lastname].filter(Boolean).join(' ');
@@ -3338,7 +3339,7 @@ export default function ParentMessagesPage() {
                       setRecent(mapped);
                     }
                   });
-                  fetch(`/php/Communication/get_archived_conversations.php?user_id=${uid}`).then(r => r.json()).then(ar => {
+                  fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`).then(r => r.json()).then(ar => {
                     if (ar?.success) {
                       const mapped = (ar.data || []).map((u) => ({
                         id: String(u.user_id),

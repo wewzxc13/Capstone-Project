@@ -7,6 +7,7 @@ import { FaUndo } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
 import ProtectedRoute from "../../../Context/ProtectedRoute";
 import fullAddress from '../../../../data/full_misamis_oriental_psgc.json';
+import { API } from '@/config/api';
 
 const OTP_TIMEOUT = 180; // 3 minutes in seconds
 const OTP_EXP_KEY = "otp_expiration";
@@ -269,10 +270,10 @@ export default function ViewUserPage() {
     let url = "";
     let body = {};
     if (role === "Student") {
-      url = "/php/Users/get_student_details.php";
+      url = API.user.getStudentDetails();
       body = { student_id: userId };
     } else {
-      url = "/php/Users/get_user_details.php";
+      url = API.user.getUserDetails();
       body = { user_id: userId };
     }
     fetch(url, {
@@ -292,7 +293,7 @@ export default function ViewUserPage() {
             // Check if student is assigned to an advisory
             let className = "Not assigned yet";
             try {
-              const advisoryResponse = await fetch("/php/Advisory/get_advisory_details.php", {
+              const advisoryResponse = await fetch(API.advisory.getAdvisoryDetails(), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ student_id: userId }),
@@ -405,7 +406,7 @@ export default function ViewUserPage() {
 
   useEffect(() => {
     if (formData && formData.role === "Teacher" && formData.id) {
-      fetch("/php/Advisory/get_advisory_details.php", {
+      fetch(API.advisory.getAdvisoryDetails(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teacher_id: formData.id }),
@@ -766,10 +767,10 @@ export default function ViewUserPage() {
     let url = "";
     if (role === "Student") {
       updateData.student_id = formData.id;
-      url = "/php/Users/update_student.php";
+      url = API.user.updateStudent();
     } else {
       updateData.user_id = formData.id;
-      url = "/php/Users/update_user.php";
+      url = API.user.updateUser();
     }
     
     if (!changed) {
@@ -797,7 +798,7 @@ export default function ViewUserPage() {
         let action = "";
         if (role === "Student") {
           action = "Edited the details of a student profile.";
-          fetch("/php/Logs/create_system_log.php", {
+          fetch(API.logs.createSystemLog(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -810,7 +811,7 @@ export default function ViewUserPage() {
         } else {
           let article = (role === "Admin") ? "an" : "a";
           action = `Edited the details of ${article} ${role.toLowerCase()} account.`;
-          fetch("/php/Logs/create_system_log.php", {
+          fetch(API.logs.createSystemLog(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -846,7 +847,7 @@ export default function ViewUserPage() {
       if (role === "Parent") {
         try {
           // Get all students linked to this parent
-          const studentsResponse = await fetch(`/php/Users/get_parent_students.php?parent_id=${userId}`, {
+          const studentsResponse = await fetch(API.user.getParentStudents(userId), {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
@@ -857,7 +858,7 @@ export default function ViewUserPage() {
             // Unlink each student by setting parent_id and parent_profile_id to NULL
             // and set their status to 'Inactive'
             for (const student of studentsData.data.students) {
-              await fetch("/php/Users/update_student.php", {
+              await fetch(API.user.updateStudent(), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -881,7 +882,7 @@ export default function ViewUserPage() {
       }
       
       // Proceed with normal archiving
-      const response = await fetch("/php/Users/archive_user.php", {
+      const response = await fetch(API.user.archiveUser(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -928,7 +929,7 @@ export default function ViewUserPage() {
       let response;
       if (role === "Student") {
         // Restore student using update_student.php
-        response = await fetch("/php/Users/update_student.php", {
+        response = await fetch(API.user.updateStudent(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -939,7 +940,7 @@ export default function ViewUserPage() {
         });
       } else {
         // Restore user using update_user.php
-        response = await fetch("/php/Users/update_user.php", {
+        response = await fetch(API.user.updateUser(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -1043,7 +1044,7 @@ export default function ViewUserPage() {
               {formData.photo ? (
                 <>
                   <img
-                    src={formData.photo.startsWith('http') ? formData.photo : `/php/Uploads/${formData.photo}`}
+                    src={formData.photo.startsWith('http') ? formData.photo : API.uploads.getUploadURL(formData.photo)}
                     alt="Profile"
                     className="w-20 h-20 rounded-full object-cover shadow-sm border-2 border-[#a8b0e0]"
                     onError={(e) => {
@@ -1054,7 +1055,7 @@ export default function ViewUserPage() {
                     }}
                     onLoad={() => {
                       console.log('Photo loaded successfully:', formData.photo);
-                      console.log('Photo URL used:', formData.photo.startsWith('http') ? formData.photo : `/php/Uploads/${formData.photo}`);
+                      console.log('Photo URL used:', formData.photo.startsWith('http') ? formData.photo : API.uploads.getUploadURL(formData.photo));
                     }}
                   />
                   {/* Fallback icon that shows when photo fails to load */}

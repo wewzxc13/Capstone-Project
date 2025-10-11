@@ -12,6 +12,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "../../Context/UserContext";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { API } from '@/config/api';
 
 export default function StudentProgress({ formData: initialFormData }) {
   const { getUserPhoto, getStudentPhoto, updateAnyUserPhoto, updateAnyStudentPhoto, initializeAllUsersPhotos } = useUser();
@@ -224,7 +225,7 @@ export default function StudentProgress({ formData: initialFormData }) {
       }
 
       // Fetch all users to get students
-      const usersRes = await fetch("/php/Users/get_all_users.php");
+      const usersRes = await fetch(API.user.getAllUsers());
       const usersData = await usersRes.json();
       
       // Check if the API response has the expected structure
@@ -282,7 +283,7 @@ export default function StudentProgress({ formData: initialFormData }) {
           }
       
       // Fetch parent profile information
-      const parentRes = await fetch("/php/Users/get_user_details.php", {
+      const parentRes = await fetch(API.user.getUserDetails(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: parentId })
@@ -291,7 +292,7 @@ export default function StudentProgress({ formData: initialFormData }) {
       
       if (parentData.status === "success") {
         // Fetch full parent profile (father/mother details)
-        const parentProfileRes = await fetch("/php/Users/get_user_profile.php", {
+        const parentProfileRes = await fetch(API.user.getUserProfile(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: parentId })
@@ -348,7 +349,7 @@ export default function StudentProgress({ formData: initialFormData }) {
     setStudentDetailsLoading(true);
     try {
       // Fetch student details
-      const res = await fetch("/php/Users/get_student_details.php", {
+      const res = await fetch(API.user.getStudentDetails(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ student_id: studentId })
@@ -377,7 +378,7 @@ export default function StudentProgress({ formData: initialFormData }) {
           console.log('Student levelName (advisory assignment):', currentStudent?.levelName);
           console.log('Student levelId:', currentStudent?.levelId);
           
-          const advisoryRes = await fetch("/php/Advisory/get_advisory_details.php", {
+          const advisoryRes = await fetch(API.advisory.getAdvisoryDetails(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ student_id: studentId })
@@ -496,10 +497,10 @@ export default function StudentProgress({ formData: initialFormData }) {
 
       // Fetch all assessment data
       const promises = [
-        fetch("/php/Assessment/get_visual_feedback.php"),
-        fetch("/php/Assessment/get_risk_levels.php"),
-        fetch(`/php/Assessment/get_comments.php?student_id=${studentId}`),
-        fetch("/php/Advisory/get_attendance.php", {
+        fetch(API.assessment.getVisualFeedback()),
+        fetch(API.assessment.getRiskLevels()),
+        fetch(API.assessment.getComments(studentId)),
+        fetch(API.advisory.getAttendance(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -507,12 +508,12 @@ export default function StudentProgress({ formData: initialFormData }) {
             student_id: studentId 
           })
         }),
-        fetch(`/php/Assessment/get_subjects_by_advisory.php?advisory_id=${advisoryId}`),
-        fetch(`/php/Assessment/get_student_quarter_feedback.php?student_id=${studentId}`),
-        fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${studentId}&advisory_id=${advisoryId}`),
-        fetch('/php/Assessment/get_quarters.php'),
-        fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${studentId}&advisory_id=${advisoryId}`),
-        fetch(`/php/Assessment/get_overall_progress.php?student_id=${studentId}&advisory_id=${advisoryId}`)
+        fetch(API.assessment.getSubjectsByAdvisory(advisoryId)),
+        fetch(API.assessment.getStudentQuarterFeedback(studentId)),
+        fetch(API.assessment.getStudentProgressCards(studentId, advisoryId)),
+        fetch(API.assessment.getQuarters()),
+        fetch(API.assessment.getSubjectOverallProgress(studentId, advisoryId)),
+        fetch(API.assessment.getOverallProgress(studentId, advisoryId))
       ];
 
       const responses = await Promise.all(promises);
@@ -596,11 +597,11 @@ export default function StudentProgress({ formData: initialFormData }) {
       }
 
       const promises = [
-        fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${studentId}&advisory_id=${advisoryId}`),
-        fetch(`/php/Assessment/get_overall_progress.php?student_id=${studentId}&advisory_id=${advisoryId}`),
-        fetch("/php/Assessment/get_visual_feedback.php"),
-        fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${studentId}&advisory_id=${advisoryId}`),
-        fetch(`/php/Assessment/get_milestone_interpretation.php?student_id=${studentId}`)
+        fetch(API.assessment.getSubjectOverallProgress(studentId, advisoryId)),
+        fetch(API.assessment.getOverallProgress(studentId, advisoryId)),
+        fetch(API.assessment.getVisualFeedback()),
+        fetch(API.assessment.getStudentProgressCards(studentId, advisoryId)),
+        fetch(API.assessment.getMilestoneInterpretation(studentId))
       ];
 
       const responses = await Promise.all(promises);

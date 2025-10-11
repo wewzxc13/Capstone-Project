@@ -1,11 +1,170 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { FaEye, FaEyeSlash, FaEnvelope, FaArrowLeft } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaEnvelope, FaArrowLeft, FaRedo } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import Topbar from "../../Topbar/Topbar";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-toastify/dist/ReactToastify.css";
+import { API } from '@/config/api';
+
+// Define keyframe animations
+const KeyframeStyles = () => (
+  <style jsx global>{`
+    @keyframes shake {
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+      10%,
+      30%,
+      50%,
+      70%,
+      90% {
+        transform: translateX(-5px);
+      }
+      20%,
+      40%,
+      60%,
+      80% {
+        transform: translateX(5px);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .animate-shake {
+      animation: shake 0.5s ease-in-out;
+    }
+
+    .animate-pulse {
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+
+    .transition-all-smooth {
+      transition: all 0.3s ease-in-out;
+    }
+
+    .focus-ring:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+      transition: box-shadow 0.3s ease-in-out;
+    }
+  `}</style>
+);
+
+// Custom Captcha Component
+const CustomCaptcha = ({ onCaptchaChange, disabled = false, shake }) => {
+  const [captchaState, setCaptchaState] = useState(() => {
+    try {
+      const savedValues = localStorage.getItem("changePasswordCaptchaNumbers");
+      if (savedValues) {
+        const { num1, num2 } = JSON.parse(savedValues);
+        return {
+          num1: parseInt(num1),
+          num2: parseInt(num2),
+          input: localStorage.getItem("changePasswordCaptchaInput") || "",
+        };
+      }
+    } catch (e) {
+      console.log("Error loading captcha from localStorage");
+    }
+
+    const num1 = Math.floor(Math.random() * 20) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    localStorage.setItem("changePasswordCaptchaNumbers", JSON.stringify({ num1, num2 }));
+    return { num1, num2, input: "" };
+  });
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    if (onCaptchaChange && captchaState.input) {
+      onCaptchaChange(captchaState.input);
+    }
+  }, [captchaState.input, onCaptchaChange]);
+
+  const generateCaptcha = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      const num1 = Math.floor(Math.random() * 20) + 1;
+      const num2 = Math.floor(Math.random() * 10) + 1;
+      setCaptchaState({ num1, num2, input: "" });
+      localStorage.setItem("changePasswordCaptchaNumbers", JSON.stringify({ num1, num2 }));
+      localStorage.setItem("changePasswordCaptchaInput", "");
+      setIsRefreshing(false);
+    }, 500);
+  };
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setCaptchaState((prev) => ({ ...prev, input: value }));
+    localStorage.setItem("changePasswordCaptchaInput", value);
+    if (onCaptchaChange) {
+      onCaptchaChange(value);
+    }
+  };
+
+  return (
+    <div className={`flex items-center justify-center space-x-2 my-4 ${shake ? "animate-shake" : ""}`}>
+      <div className="flex items-center">
+        <div className={`border border-gray-300 rounded-md w-12 h-12 flex items-center justify-center text-lg text-gray-700 bg-white transition-all-smooth ${isRefreshing ? "animate-pulse" : ""}`}>
+          {captchaState.num1}
+        </div>
+        <div className="mx-2 text-xl text-gray-700">+</div>
+        <div className={`border border-gray-300 rounded-md w-12 h-12 flex items-center justify-center text-lg text-gray-700 bg-white transition-all-smooth ${isRefreshing ? "animate-pulse" : ""}`}>
+          {captchaState.num2}
+        </div>
+        <div className="mx-2 text-xl text-gray-700">=</div>
+        <input
+          type="number"
+          value={captchaState.input}
+          onChange={handleInputChange}
+          disabled={disabled}
+          className="border border-gray-300 rounded-md w-12 h-12 text-center text-lg focus-ring transition-all-smooth caret-[#232c67]"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          placeholder=""
+          aria-label="Enter captcha result"
+          min="0"
+          step="1"
+        />
+      </div>
+      <button
+        type="button"
+        onClick={generateCaptcha}
+        disabled={disabled}
+        className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-all-smooth"
+        aria-label="Refresh captcha"
+      >
+        <FaRedo size={16} className={`${disabled ? "opacity-50" : ""} ${isRefreshing ? "animate-spin" : ""}`} />
+      </button>
+    </div>
+  );
+};
 
 export default function ChangePassword({ onSuccess }) {
   const router = useRouter();
@@ -26,6 +185,11 @@ export default function ChangePassword({ onSuccess }) {
     hasMinLength: false
   });
   const [loading, setLoading] = useState(false);
+  const [captchaInput, setCaptchaInput] = useState(() => {
+    return localStorage.getItem("changePasswordCaptchaInput") || "";
+  });
+  const [shakeCaptcha, setShakeCaptcha] = useState(false);
+  const [isCaptchaValid, setIsCaptchaValid] = useState(false);
 
   useEffect(() => {
     // Try all possible keys for the user's email
@@ -52,6 +216,18 @@ export default function ChangePassword({ onSuccess }) {
 
   const allValid = Object.values(passwordValidation).every(Boolean);
 
+  // Handle captcha change
+  const handleCaptchaChange = (value) => {
+    setCaptchaInput(value);
+    const storedCaptcha = localStorage.getItem("changePasswordCaptchaNumbers");
+    if (storedCaptcha) {
+      const { num1, num2 } = JSON.parse(storedCaptcha);
+      setIsCaptchaValid(parseInt(value) === parseInt(num1) + parseInt(num2));
+    } else {
+      setIsCaptchaValid(false);
+    }
+  };
+
   // Close password policy popover on outside click or Escape
   useEffect(() => {
     if (!showPolicy) return;
@@ -75,8 +251,30 @@ export default function ChangePassword({ onSuccess }) {
     e.preventDefault();
     setLoading(true);
 
+    // Captcha blank validation
+    if (!captchaInput || captchaInput.trim() === "") {
+      toast.error("Answer the CAPTCHA");
+      setLoading(false);
+      setShakeCaptcha(true);
+      setTimeout(() => setShakeCaptcha(false), 500);
+      return;
+    }
+
+    // Captcha correctness validation
+    const storedCaptcha = localStorage.getItem("changePasswordCaptchaNumbers");
+    if (storedCaptcha) {
+      const { num1, num2 } = JSON.parse(storedCaptcha);
+      if (parseInt(captchaInput) !== parseInt(num1) + parseInt(num2)) {
+        toast.error("Incorrect CAPTCHA. Please try again.");
+        setLoading(false);
+        setShakeCaptcha(true);
+        setTimeout(() => setShakeCaptcha(false), 500);
+        return;
+      }
+    }
+
     try {
-      const response = await fetch("/php/changepassword.php", {
+      const response = await fetch(API.auth.changePassword(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -89,6 +287,9 @@ export default function ChangePassword({ onSuccess }) {
       });
       const data = await response.json();
       if (data.success) {
+        // Clear captcha data on success
+        localStorage.removeItem("changePasswordCaptchaInput");
+        localStorage.removeItem("changePasswordCaptchaNumbers");
         // Store for OTP verify
         localStorage.setItem("pendingPassword", password);
         localStorage.setItem("userId", data.user_id);
@@ -107,6 +308,7 @@ export default function ChangePassword({ onSuccess }) {
 
   return (
     <div>
+      <KeyframeStyles />
       <Topbar title="Change Password" />
       <div className="flex flex-1 flex-col items-center justify-start py-4">
         <form
@@ -238,14 +440,29 @@ export default function ChangePassword({ onSuccess }) {
               </button>
             </div>
           </div>
+
+          {/* Captcha Section */}
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-blue-900 mb-1">
+              Solve to Continue <span className="text-red-500">*</span>
+            </label>
+            <div className="bg-[#eaf6ff] p-3 rounded-xl border border-blue-100 shadow flex flex-col items-center">
+              <CustomCaptcha
+                onCaptchaChange={handleCaptchaChange}
+                disabled={loading}
+                shake={shakeCaptcha}
+              />
+            </div>
+          </div>
+
           <button
             type="submit"
             className={`w-full py-3 rounded-lg shadow-md text-white text-lg font-semibold transition-all-smooth ${
-              loading || !Object.values(passwordValidation).every(Boolean) || password !== confirmPassword || !email
+              loading || !Object.values(passwordValidation).every(Boolean) || password !== confirmPassword || !email || !isCaptchaValid
                 ? 'bg-gray-400 cursor-not-allowed opacity-60'
                 : 'bg-blue-400 hover:bg-blue-500'
             }`}
-            disabled={loading || !Object.values(passwordValidation).every(Boolean) || password !== confirmPassword || !email}
+            disabled={loading || !Object.values(passwordValidation).every(Boolean) || password !== confirmPassword || !email || !isCaptchaValid}
           >
             {loading ? 'Processing...' : 'Save'}
           </button>

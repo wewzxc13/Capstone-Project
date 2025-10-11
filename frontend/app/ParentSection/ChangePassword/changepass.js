@@ -7,6 +7,7 @@ import ProtectedRoute from "../../Context/ProtectedRoute";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-toastify/dist/ReactToastify.css";
+import { API } from '@/config/api';
 
 export default function ChangePassword({ onSuccess }) {
   const router = useRouter();
@@ -77,7 +78,7 @@ export default function ChangePassword({ onSuccess }) {
     setLoading(true);
 
     try {
-      const response = await fetch("/php/changepassword.php", {
+      const response = await fetch(API.auth.changePassword(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

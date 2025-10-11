@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaCalendarAlt, FaChevronDown, FaSearch, FaEdit, FaPlus, FaEye, FaUserPlus, FaTimes, FaCheck, FaSave, FaExclamationTriangle, FaTrash, FaTimesCircle } from "react-icons/fa";
 import CalendarMonthCellIcons from '../../../components/ui/CalendarMonthCellIcons';
+import { API } from '@/config/api';
 
 const locales = {
   "en-US": enUS,
@@ -104,7 +105,7 @@ function getColorForMeeting(meetingId) {
 // Move fetchMeetings outside useEffect so it can be reused
 async function fetchMeetings(setEvents, userId, setLoading) {
   try {
-    const res = await fetch(`/php/Meeting/get_meetings_details.php?user_id=${userId}`);
+    const res = await fetch(`${API.meeting.getMeetingsDetails()}?user_id=${userId}`);
     const data = await res.json();
     if (data.status === "success" && Array.isArray(data.meetings)) {
       // Map backend meetings to event format
@@ -230,7 +231,7 @@ export default function TeacherCalendarPage() {
   useEffect(() => {
     const userId = localStorage.getItem('userId');
     if (userId) {
-      fetch('/php/Advisory/get_advisory_details.php', {
+      fetch(API.advisory.getAdvisoryDetails(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teacher_id: userId })
@@ -310,7 +311,7 @@ export default function TeacherCalendarPage() {
       } else {
         // For admin-created meetings: get teachers and parents from tbl_notification_recipients
         console.log('Fetching admin-created meeting recipients...');
-        const res = await fetch(`/php/Meeting/get_notification_recipients.php?meeting_id=${meetingId}`);
+        const res = await fetch(API.meeting.getNotificationRecipients(meetingId));
         const data = await res.json();
         console.log('Notification recipients response:', data);
         
@@ -389,7 +390,7 @@ export default function TeacherCalendarPage() {
     };
 
     try {
-      const res = await fetch("/php/Meeting/create_meeting.php", {
+      const res = await fetch(API.meeting.createMeeting(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -688,7 +689,7 @@ export default function TeacherCalendarPage() {
     });
 
     try {
-      const res = await fetch("/php/Meeting/update_meeting.php", {
+      const res = await fetch(API.meeting.updateMeeting(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1621,7 +1622,7 @@ export default function TeacherCalendarPage() {
                       notif_message: "[ONE ON ONE MEETING] Cancelled the meeting"
                     };
                     
-                    const res = await fetch("/php/Meeting/update_meeting.php", {
+                    const res = await fetch(API.meeting.updateMeeting(), {
                       method: 'POST',
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify(payload)

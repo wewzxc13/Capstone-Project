@@ -5,6 +5,7 @@ import { FaSearch, FaEye, FaUsers, FaArchive, FaFilter, FaSort, FaSortUp, FaSort
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "../../Context/UserContext";
+import { API } from '@/config/api';
 
 export default function AdminArchivePage() {
   const [archivedUsers, setArchivedUsers] = useState({
@@ -82,7 +83,7 @@ export default function AdminArchivePage() {
 
   const fetchArchivedUsers = async () => {
     try {
-      const response = await fetch("/php/Users/get_archived_users.php", {
+      const response = await fetch(API.user.getArchivedUsers(), {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });

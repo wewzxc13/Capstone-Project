@@ -8,6 +8,7 @@ import { useAuth } from "../../Context/AuthContext";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRef } from "react"; // at the top
+import { API } from '@/config/api';
 
 
 
@@ -480,11 +481,11 @@ export default function LoginForm({ setIsSignup }) {
           try {
             if (localStorage.getItem('loginAttempts') === '0' && !localStorage.getItem('cooldownLogged')) {
               localStorage.setItem('cooldownLogged', '1');
-              const clientIp = await axios.get('https://api.ipify.org?format=json')
+              const clientIp = await axios.get(API.external.getClientIP())
                 .then(res => res.data.ip)
                 .catch(() => 'Unknown');
               try {
-                await axios.post("/php/Logs/create_system_log.php", {
+                await axios.post(API.logs.createSystemLog(), {
                   user_id: null,
                   action: `Unauthorized login attempt detected from IP ${clientIp}`
                 });
@@ -522,11 +523,11 @@ export default function LoginForm({ setIsSignup }) {
       (async () => {
         // Mark that we've initiated logging for this cooldown window
         try { localStorage.setItem("cooldownLogged", "1"); } catch (_) { /* no-op */ }
-        const clientIp = await axios.get('https://api.ipify.org?format=json')
+        const clientIp = await axios.get(API.external.getClientIP())
           .then(res => res.data.ip)
           .catch(() => 'Unknown');
         try {
-          await axios.post("/php/Logs/create_system_log.php", {
+          await axios.post(API.logs.createSystemLog(), {
             user_id: null,
             action: `Unauthorized login attempt detected from IP ${clientIp}`
           });
@@ -614,7 +615,7 @@ export default function LoginForm({ setIsSignup }) {
     setLoading(true);
 
     try {
-      const response = await axios.post("/php/login.php", {
+      const response = await axios.post(API.auth.login(), {
         email,
         password,
       });
@@ -821,23 +822,28 @@ export default function LoginForm({ setIsSignup }) {
         </div>
 
         {/* Captcha styled box */}
-        <div className="bg-[#eaf6ff] p-2.5 md:p-4 rounded-xl border border-blue-100 shadow flex flex-col items-center mb-1 md:mb-2">
-          <CustomCaptcha
-            onCaptchaChange={handleCaptchaChange}
-            disabled={cooldown > 0 || loginSuccess}
-            shake={shakeCaptcha}
-          />
-          <div className="w-full flex justify-between items-center mt-1 md:mt-2">
-            <span className="text-sm text-gray-600">
-              Attempt remaining:{" "}
-              <span
-                className={
-                  attempts <= 2 ? "text-red-500 font-bold" : "font-semibold"
-                }
-              >
-                {attempts}
+        <div className="mb-1 md:mb-2">
+          <label className="block text-sm font-semibold text-blue-900 mb-1">
+            Solve to Continue <span className="text-red-500">*</span>
+          </label>
+          <div className="bg-[#eaf6ff] p-2.5 md:p-4 rounded-xl border border-blue-100 shadow flex flex-col items-center">
+            <CustomCaptcha
+              onCaptchaChange={handleCaptchaChange}
+              disabled={cooldown > 0 || loginSuccess}
+              shake={shakeCaptcha}
+            />
+            <div className="w-full flex justify-between items-center mt-1 md:mt-2">
+              <span className="text-sm text-gray-600">
+                Attempt remaining:{" "}
+                <span
+                  className={
+                    attempts <= 2 ? "text-red-500 font-bold" : "font-semibold"
+                  }
+                >
+                  {attempts}
+                </span>
               </span>
-            </span>
+            </div>
           </div>
         </div>
 

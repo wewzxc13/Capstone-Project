@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FaCheckCircle, FaArrowLeft } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { API } from '@/config/api';
 
 const OTP_TIMEOUT = 300; // 5 minutes
 const OTP_EXP_KEY = "otp_expiration_time";
@@ -122,7 +123,7 @@ export default function OTPVerify() {
         formData.append("new_password", localStorage.getItem("pendingPassword"));
       }
 
-      const response = await fetch("/php/otpverify.php", {
+      const response = await fetch(API.auth.verifyOTP(), {
         method: "POST",
         body: formData,
       });
@@ -139,7 +140,7 @@ export default function OTPVerify() {
           
           // Add a flag to prevent duplicate logging
           if (!localStorage.getItem("passwordChangeLogged")) {
-            fetch("/php/Logs/create_system_log.php", {
+            fetch(API.logs.createSystemLog(), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -191,7 +192,7 @@ export default function OTPVerify() {
     }
 
     try {
-      const response = await fetch("/php/send_otp.php", {
+      const response = await fetch(API.auth.sendOTP(), {
         method: "POST",
         body: formData,
       });

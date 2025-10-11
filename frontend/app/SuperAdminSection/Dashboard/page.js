@@ -15,6 +15,7 @@ import {
   FaCalendarAlt,
 } from "react-icons/fa";
 import ProtectedRoute from "../../Context/ProtectedRoute";
+import { API } from '@/config/api';
 
 import dynamic from "next/dynamic";
 
@@ -68,7 +69,7 @@ export default function SuperAdminDashboard() {
     try {
       setError(null);
       setLoading(true);
-      const response = await fetch('/php/Users/get_user_counts.php', {
+      const response = await fetch(API.user.getUserCounts(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +97,7 @@ export default function SuperAdminDashboard() {
   const fetchUpcomingMeetings = async () => {
     try {
       setMeetingsLoading(true);
-      const response = await fetch('/php/Meeting/get_upcoming_meetings.php', {
+      const response = await fetch(API.meeting.getUpcomingMeetings(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -126,7 +127,7 @@ export default function SuperAdminDashboard() {
   const fetchProgressData = async () => {
     try {
       setProgressLoading(true);
-      const response = await fetch('/php/Assessment/get_all_classes_quarterly_performance.php', {
+      const response = await fetch(API.assessment.getAllClassesQuarterlyPerformance(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -6,6 +6,7 @@ import { FaPaperPlane, FaSearch, FaArrowLeft, FaUser, FaUsers, FaTimes, FaEdit, 
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useUser } from "../../Context/UserContext";
 import { toast } from "react-toastify";
+import { API } from '@/config/api';
 
 function getInitials(name) {
   if (!name) return "?";
@@ -23,6 +24,28 @@ function pastelColorFor(seed) {
   }
   const hue = Math.abs(hash) % 360;
   return `hsl(${hue}, 70%, 90%)`;
+}
+
+// Helper function to safely parse JSON responses
+async function safeJsonParse(response) {
+  // Check if response is OK
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  // Get response text
+  const text = await response.text();
+  if (!text || text.trim() === '') {
+    throw new Error('Empty response from server');
+  }
+  
+  // Try to parse JSON
+  try {
+    return JSON.parse(text);
+  } catch (parseError) {
+    console.error('Failed to parse JSON:', text);
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 // Populated from backend
@@ -221,12 +244,12 @@ export default function SuperAdminMessagesPage() {
 
         
         // Use get_users.php for conversation history (default mode)
-        const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
+        const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
         });
-        const data = await res.json();
+        const data = await safeJsonParse(res);
 
         
         if (!data?.success) throw new Error(data?.error || "Failed to fetch conversation history");
@@ -310,11 +333,11 @@ export default function SuperAdminMessagesPage() {
 
       
       // Use get_users.php with search=true parameter to get all active users
-      const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}&search=true`, {
+      const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}&search=true`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
-      const data = await res.json();
+      const data = await safeJsonParse(res);
 
       
       if (!data?.success) throw new Error(data?.error || "Failed to fetch all users for search");
@@ -375,14 +398,14 @@ export default function SuperAdminMessagesPage() {
       const uid = Number(localStorage.getItem('userId')) || 0;
       if (!uid) return;
       
-
+     
       
       // Use get_users.php for conversation history (default mode)
-      const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
+      const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
-      const data = await res.json();
+      const data = await safeJsonParse(res);
 
       
       if (!data?.success) throw new Error(data?.error || "Failed to restore conversation history");
@@ -430,11 +453,11 @@ export default function SuperAdminMessagesPage() {
 
       
       // Check if this user has any conversation history
-      const res = await fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${userId}`, {
+      const res = await fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
-      const data = await res.json();
+      const data = await safeJsonParse(res);
       
               if (data?.success && data.data && data.data.length > 0) {
           return true;
@@ -480,7 +503,7 @@ export default function SuperAdminMessagesPage() {
 
       
       // Call the backend to mark messages as read
-      const res = await fetch(`/php/Communication/mark_messages_read.php`, {
+      const res = await fetch(API.communication.markMessagesRead(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -489,18 +512,18 @@ export default function SuperAdminMessagesPage() {
         }),
       });
       
-      const data = await res.json();
+      const data = await safeJsonParse(res);
               if (data?.success) {
         
         // Refresh unread counts by calling the get_users API again
         try {
           const uid = Number(localStorage.getItem('userId'));
-          const refreshRes = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
+          const refreshRes = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
           
-          const refreshData = await refreshRes.json();
+          const refreshData = await safeJsonParse(refreshRes);
           if (refreshData?.success && refreshData.data) {
             // Update the unread counts in both chats and recent arrays
             setChats((prev) => {
@@ -546,12 +569,12 @@ export default function SuperAdminMessagesPage() {
       // Mark as running to prevent conflicts
       isRunningRef.current.conversation = userId;
       
-      const res = await fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${userId}`, {
+      const res = await fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
       
-      const data = await res.json();
+      const data = await safeJsonParse(res);
       
       if (data?.success && data.data && data.data.length > 0) {
         const msgs = data.data.map((m) => ({
@@ -628,14 +651,18 @@ export default function SuperAdminMessagesPage() {
         console.log('loadGroups function called');
         const uid = Number(localStorage.getItem('userId')) || 0;
         console.log('loadGroups - user ID from localStorage:', uid);
-        const url = uid ? `/php/Communication/get_groups.php?user_id=${uid}` : '/php/Communication/get_groups.php';
+        
+        // Add user_id as query parameter
+        const url = `${API.communication.getGroups()}?user_id=${uid}`;
         console.log('loadGroups - API URL:', url);
         const res = await fetch(url, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
         });
-        const json = await res.json();
+        
+        // Use helper function for safe JSON parsing
+        const json = await safeJsonParse(res);
         console.log('Groups API response:', json);
         if (!json?.success) throw new Error(json?.error || 'Failed to fetch groups');
         const mapped = (json.data || []).map((g) => ({
@@ -709,15 +736,10 @@ export default function SuperAdminMessagesPage() {
     
 
     
-    fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`, {
+    fetch(API.communication.getRecentConversations(), {
       signal: controller.signal,
     })
-      .then((r) => {
-        if (!r.ok) {
-          throw new Error(`HTTP error! status: ${r.status}`);
-        }
-        return r.json();
-      })
+      .then((r) => safeJsonParse(r))
       .then(async (json) => {
 
         if (!json?.success) {
@@ -867,8 +889,8 @@ export default function SuperAdminMessagesPage() {
     const uid = Number(localStorage.getItem("userId"));
     if (!uid) return;
     let isMounted = true;
-    fetch(`/php/Communication/get_archived_conversations.php?user_id=${uid}`)
-      .then((r) => r.json())
+    fetch(API.communication.getArchivedConversations())
+      .then((r) => safeJsonParse(r))
       .then(async (json) => {
         if (!json?.success) return;
         console.log('Archive API response:', json);
@@ -986,12 +1008,12 @@ export default function SuperAdminMessagesPage() {
         setIsLoadingConversations(true);
         
         // First, load the user list
-        const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
+        const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
         
-        const data = await res.json();
+        const data = await safeJsonParse(res);
         
         if (data?.success && data.data && data.data.length > 0) {
           const users = data.data.map((u) => {
@@ -1102,10 +1124,10 @@ export default function SuperAdminMessagesPage() {
     // Store the controller reference to allow cancellation
     isRunningRef.current.controller = controller;
     
-    fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${selectedChatId}`, {
+    fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${selectedChatId}`, {
       signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => safeJsonParse(r))
       .then((json) => {
         if (!json?.success) {
           console.error('Failed to load conversation for user:', selectedChatId);
@@ -1174,10 +1196,10 @@ export default function SuperAdminMessagesPage() {
     const uid = Number(localStorage.getItem('userId'));
     if (!uid) return;
     const controller = new AbortController();
-    fetch(`/php/Communication/get_group_messages.php?group_id=${selectedChat.id}&user_id=${uid}`, {
+    fetch(API.communication.getGroupMessages(), {
       signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => safeJsonParse(r))
       .then((json) => {
         if (!json?.success) return;
         const msgs = (json.data || []).map((m) => ({
@@ -1239,12 +1261,12 @@ export default function SuperAdminMessagesPage() {
       try {
         const senderId = Number(localStorage.getItem('userId'));
         const groupId = Number(selectedChat.id);
-        fetch('/php/Communication/send_group_message.php', {
+        fetch(API.communication.sendGroupMessage(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ group_id: groupId, sender_id: senderId, message_text: text }),
         })
-          .then((r) => r.json())
+          .then((r) => safeJsonParse(r))
           .then((res) => {
             if (!res?.success) throw new Error(res?.error || 'Failed to send group message');
             const sentAt = res.data?.sent_at ? new Date(res.data.sent_at) : now;
@@ -1343,12 +1365,12 @@ export default function SuperAdminMessagesPage() {
       try {
         const senderId = Number(localStorage.getItem("userId"));
         const receiverId = Number(selectedChat.id);
-        fetch("/php/Communication/send_message.php", {
+        fetch(API.communication.sendMessage(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sender_id: senderId, receiver_id: receiverId, message_text: text }),
         })
-          .then((r) => r.json())
+          .then((r) => safeJsonParse(r))
           .then((res) => {
             if (!res?.success) throw new Error(res?.error || "Failed to send message");
             // Optionally update sent_at with authoritative time
@@ -1690,12 +1712,12 @@ export default function SuperAdminMessagesPage() {
         }
           
         try {
-          const res = await fetch(`/php/Users/get_user_details.php`, {
+          const res = await fetch(API.user.getUserDetails(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: senderId })
           });
-          const data = await res.json();
+          const data = await safeJsonParse(res);
           
           if (data?.status === 'success' && data.user?.photo) {
             newPhotos[senderId] = data.user.photo;
@@ -1731,8 +1753,8 @@ export default function SuperAdminMessagesPage() {
           try {
             // Since we can't directly query by advisory_id, we'll use a different approach
             // We'll fetch all users and filter by role to get teachers, and use get_all_users for parents
-            const usersRes = await fetch('/php/Users/get_all_users.php');
-            const usersData = await usersRes.json();
+            const usersRes = await fetch(API.user.getAllUsers());
+            const usersData = await safeJsonParse(usersRes);
             
             if (usersData?.success && usersData.data) {
               // Add all teachers (role 3) and admins (role 2) and owners (role 1)
@@ -1755,8 +1777,8 @@ export default function SuperAdminMessagesPage() {
         } else if (group.groupType === 'Staff') {
           // For staff groups, fetch all teachers, admins, and owners
           try {
-            const usersRes = await fetch('/php/Users/get_all_users.php');
-            const usersData = await usersRes.json();
+            const usersRes = await fetch(API.user.getAllUsers());
+            const usersData = await safeJsonParse(usersRes);
             
             if (usersData?.success && usersData.data) {
               usersData.data.forEach(user => {
@@ -1771,8 +1793,8 @@ export default function SuperAdminMessagesPage() {
         } else if (group.groupType === 'Overall') {
           // For overall groups, fetch all active users
           try {
-            const usersRes = await fetch('/php/Users/get_all_users.php');
-            const usersData = await usersRes.json();
+            const usersRes = await fetch(API.user.getAllUsers());
+            const usersData = await safeJsonParse(usersRes);
             
             if (usersData?.success && usersData.data) {
               usersData.data.forEach(user => {
@@ -1796,12 +1818,12 @@ export default function SuperAdminMessagesPage() {
         }
         
         try {
-          const res = await fetch(`/php/Users/get_user_details.php`, {
+          const res = await fetch(API.user.getUserDetails(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId })
           });
-          const data = await res.json();
+          const data = await safeJsonParse(res);
           
           if (data?.status === 'success' && data.user?.photo) {
             newPhotos[userId] = data.user.photo;
@@ -1879,12 +1901,12 @@ export default function SuperAdminMessagesPage() {
           const uid = Number(localStorage.getItem('userId'));
           if (!uid) return;
           
-          const res = await fetch(`/php/Communication/get_users.php?user_id=${uid}`, {
+          const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
           
-          const data = await res.json();
+          const data = await safeJsonParse(res);
           if (data?.success && data.data) {
             // Update the unread counts in both chats and recent arrays
             setChats((prev) => {
@@ -2223,11 +2245,11 @@ export default function SuperAdminMessagesPage() {
                                           isRunningRef.current.conversation = chat.id;
                                           
                                           // Load conversation data first, then update chats array in one operation
-                                          const res = await fetch(`/php/Communication/get_conversation.php?user_id=${uid}&partner_id=${chat.id}`, {
+                                          const res = await fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${chat.id}`, {
                                             method: "GET",
                                             headers: { "Content-Type": "application/json" },
                                           });
-                                          const data = await res.json();
+                                          const data = await safeJsonParse(res);
                                           
                                           if (data?.success && data.data && data.data.length > 0) {
                                             const msgs = data.data.map((m) => ({
@@ -2822,7 +2844,7 @@ export default function SuperAdminMessagesPage() {
                                             ? { group_message_id: Number(msg.id), sender_id: uid }
                                             : { message_id: Number(msg.id), sender_id: uid };
                                           fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-                                            .then((r) => r.json())
+                                            .then((r) => safeJsonParse(r))
                                             .then((res) => {
                                               if (!res?.success) throw new Error(res?.error || 'Failed to unsent');
                                               // Preserve the original message timestamp instead of using current time
@@ -2887,7 +2909,7 @@ export default function SuperAdminMessagesPage() {
                                               ? { group_message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() }
                                               : { message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() };
                                             fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-                                              .then((r) => r.json())
+                                              .then((r) => safeJsonParse(r))
                                               .then((res) => {
                                                 if (!res?.success) throw new Error(res?.error || 'Failed to edit');
                                                 const updatedText = editingText.trim();
@@ -2943,7 +2965,7 @@ export default function SuperAdminMessagesPage() {
                                               ? { group_message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() }
                                               : { message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() };
                                             fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-                                              .then((r) => r.json())
+                                              .then((r) => safeJsonParse(r))
                                               .then((res) => {
                                                 if (!res?.success) throw new Error(res?.error || 'Failed to edit');
                                                 const updatedText = editingText.trim();
@@ -3017,8 +3039,8 @@ export default function SuperAdminMessagesPage() {
                                                 if (!mid) return;
                                                 setShowReadsForId((cur) => (cur === msg.id ? null : msg.id));
                                                 if (!readsCache[mid]) {
-                                                  fetch(`/php/Communication/get_group_message_reads.php?group_message_id=${mid}`)
-                                                    .then((r) => r.json())
+                                                  fetch(`${API.communication.getGroupMessageReads()}?group_message_id=${mid}`)
+                                                    .then((r) => safeJsonParse(r))
                                                     .then((res) => {
                                                       if (!res?.success) return;
                                                       setReadsCache((prev) => ({ ...prev, [mid]: res.data || [] }));
@@ -3048,8 +3070,8 @@ export default function SuperAdminMessagesPage() {
                                               if (!mid) return;
                                               setShowReadsForId((cur) => (cur === msg.id ? null : msg.id));
                                               if (!readsCache[mid]) {
-                                                fetch(`/php/Communication/get_group_message_reads.php?group_message_id=${mid}`)
-                                                  .then((r) => r.json())
+                                                fetch(`${API.communication.getGroupMessageReads()}?group_message_id=${mid}`)
+                                                  .then((r) => safeJsonParse(r))
                                                   .then((res) => {
                                                     if (!res?.success) return;
                                                     setReadsCache((prev) => ({ ...prev, [mid]: res.data || [] }));
@@ -3209,20 +3231,20 @@ export default function SuperAdminMessagesPage() {
                     setArchiving(true);
                     const uid = Number(localStorage.getItem('userId'));
                     const partnerId = Number(selectedChat?.id);
-                    const res = await fetch('/php/Communication/archive_conversation.php', {
+                    const res = await fetch(API.communication.archiveConversation(), {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ user_id: uid, partner_id: partnerId })
                     });
-                    const json = await res.json();
+                    const json = await safeJsonParse(res);
                     if (!json?.success) throw new Error(json?.error || 'Failed to archive');
                     // Clear from active chat view
                     setChats((prev) => prev.map((c) => (c.id === selectedChat?.id ? { ...c, messages: [], lastMessage: '', lastMessageAt: null } : c)));
                     // Remove from recents
                     setRecent((prev) => prev.filter((r) => r.id !== String(partnerId)));
                     // Refresh archived list
-                    fetch(`/php/Communication/get_archived_conversations.php?user_id=${uid}`)
-                      .then((r) => r.json())
+                    fetch(API.communication.getArchivedConversations())
+                      .then((r) => safeJsonParse(r))
                       .then((arch) => {
                         if (arch?.success) {
                           const mapped = (arch.data || []).map((u) => {
@@ -3294,13 +3316,13 @@ export default function SuperAdminMessagesPage() {
                 try {
                   const uid = Number(localStorage.getItem('userId'));
                   const partnerId = Number(selectedChat?.id);
-                  const res = await fetch('/php/Communication/unarchive_conversation.php', {
+                  const res = await fetch(API.communication.unarchiveConversation(), {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid, partner_id: partnerId })
                   });
-                  const json = await res.json();
+                  const json = await safeJsonParse(res);
                   if (!json?.success) throw new Error(json?.error || 'Failed to restore');
                   // Refresh recents and archive lists
-                  fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`).then(r => r.json()).then(rc => {
+                  fetch(API.communication.getRecentConversations()).then(r => safeJsonParse(r)).then(rc => {
                     if (rc?.success) {
                       const mapped = (rc.data || []).map((u) => {
                         const name = [u.user_firstname, u.user_middlename, u.user_lastname].filter(Boolean).join(' ');
@@ -3322,7 +3344,7 @@ export default function SuperAdminMessagesPage() {
                       setRecent(mapped);
                     }
                   });
-                  fetch(`/php/Communication/get_archived_conversations.php?user_id=${uid}`).then(r => r.json()).then(ar => {
+                  fetch(API.communication.getArchivedConversations()).then(r => r.json()).then(ar => {
                     if (ar?.success) {
                       const mapped = (ar.data || []).map((u) => ({
                         id: String(u.user_id),

@@ -9,6 +9,7 @@ import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useUser } from "../../Context/UserContext";
 import { useModal } from "../../Context/ModalContext";
 import fullAddress from '../../../data/full_misamis_oriental_psgc.json';
+import { API } from '@/config/api';
 
 // --- VALIDATION LOGIC (copied and adapted from SuperAdmin) ---
 const validators = {
@@ -272,7 +273,7 @@ export default function ViewOwnUserPage() {
       }
 
       try {
-        const response = await fetch('/php/Users/get_user_details.php', {
+        const response = await fetch(API.user.getUserDetails(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: userId }),
@@ -307,7 +308,7 @@ export default function ViewOwnUserPage() {
               }
               
               // If it's just a filename, construct the full backend URL
-              return `/php/Uploads/${photo}`;
+              return `${API.uploads.getUploadURL(photo)}`;
             })()
           };
           
@@ -479,7 +480,7 @@ export default function ViewOwnUserPage() {
         try {
           const form = new FormData();
           form.append('photo', selectedPhoto);
-          const uploadRes = await fetch('/php/Users/upload_photo.php', {
+          const uploadRes = await fetch(API.user.uploadPhoto(), {
             method: 'POST',
             body: form,
           });
@@ -516,7 +517,7 @@ export default function ViewOwnUserPage() {
           
           const form = new FormData();
           form.append('photo', file);
-          const uploadRes = await fetch('/php/Users/upload_photo.php', {
+          const uploadRes = await fetch(API.user.uploadPhoto(), {
             method: 'POST',
             body: form,
           });
@@ -564,7 +565,7 @@ export default function ViewOwnUserPage() {
         }
       }
 
-      const response = await fetch('/php/Users/update_user.php', {
+      const response = await fetch(API.user.updateUser(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -586,7 +587,7 @@ export default function ViewOwnUserPage() {
         // Update the photo in formData if a new photo was uploaded
         if (uploadedPhotoUrl !== undefined) {
           // Construct full URL for the uploaded photo
-          const fullPhotoUrl = `/php/Uploads/${uploadedPhotoUrl}`;
+          const fullPhotoUrl = `${API.uploads.getUploadURL(uploadedPhotoUrl)}`;
           setFormData(prev => ({ ...prev, user_photo: fullPhotoUrl }));
           // Update the user photo in UserContext for real-time display in Topbar
           updateUserPhoto(uploadedPhotoUrl);
@@ -594,7 +595,7 @@ export default function ViewOwnUserPage() {
           const userId = localStorage.getItem("userId");
           if (userId) {
             // Construct the full URL for the uploaded photo
-            const fullPhotoUrl = `/php/Uploads/${uploadedPhotoUrl}`;
+            const fullPhotoUrl = `${API.uploads.getUploadURL(uploadedPhotoUrl)}`;
             updateAnyUserPhoto(userId, fullPhotoUrl);
             console.log('Updated global photo map for user:', userId, 'with URL:', fullPhotoUrl);
           }
@@ -602,7 +603,7 @@ export default function ViewOwnUserPage() {
         } else if (dataToSend.user_photo && dataToSend.user_photo !== formData.user_photo) {
           // Handle case where preview photo was uploaded (different from original)
           // Construct full URL for the preview photo
-          const fullPhotoUrl = `/php/Uploads/${dataToSend.user_photo}`;
+          const fullPhotoUrl = `${API.uploads.getUploadURL(dataToSend.user_photo)}`;
           setFormData(prev => ({ ...prev, user_photo: fullPhotoUrl }));
           // Update the user photo in UserContext for real-time display in Topbar
           updateUserPhoto(dataToSend.user_photo);
@@ -610,7 +611,7 @@ export default function ViewOwnUserPage() {
           const userId = localStorage.getItem("userId");
           if (userId) {
             // Construct the full URL for the preview photo
-            const fullPhotoUrl = `/php/Uploads/${dataToSend.user_photo}`;
+            const fullPhotoUrl = `${API.uploads.getUploadURL(dataToSend.user_photo)}`;
             updateAnyUserPhoto(userId, fullPhotoUrl);
             console.log('Updated global photo map for user:', userId, 'with preview photo URL:', fullPhotoUrl);
           }
@@ -618,7 +619,7 @@ export default function ViewOwnUserPage() {
         }
 
         // System log for self-update (no notification)
-        fetch("/php/Logs/create_system_log.php", {
+        fetch(API.logs.createSystemLog(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

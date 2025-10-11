@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { FaChevronDown, FaCalendarAlt } from "react-icons/fa";
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useRouter } from "next/navigation";
+import { API } from '@/config/api';
 
 export default function AdminSchedulePage() {
   const [scheduleData, setScheduleData] = useState([]);
@@ -18,7 +19,7 @@ export default function AdminSchedulePage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/php/Schedule/get_schedule.php")
+    fetch(API.schedule.getSchedule())
       .then((res) => res.json())
       .then((data) => {
         if (data.status === "success") {

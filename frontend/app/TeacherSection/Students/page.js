@@ -5,6 +5,7 @@ import { FaEllipsisV, FaSearch, FaChevronDown, FaUser, FaUsers, FaCalendarAlt, F
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useUser } from "../../Context/UserContext";
+import { API } from '@/config/api';
 
 // Dynamically import heavy components
 const StudentStatus = dynamic(() => import("./StudentStatus/page"), { 
@@ -301,7 +302,7 @@ export default function StudentsPage() {
       loadChartConfig();
       
       console.log('=== AUTO-DEBUG: Fetching advisory for teacher ID:', userId, '===');
-      fetch("/php/Advisory/get_advisory_details.php", {
+      fetch(API.advisory.getAdvisoryDetails(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teacher_id: userId })
@@ -412,7 +413,7 @@ export default function StudentsPage() {
     await Promise.all(students.map(async (student) => {
       let risk_id = "nodata";
       try {
-        const riskRes = await fetch("/php/Assessment/get_student_risk_status.php", {
+        const riskRes = await fetch(API.assessment.getStudentRiskStatus(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -439,7 +440,7 @@ export default function StudentsPage() {
     console.log('🔄 Refreshing risk data for student:', studentId);
     
     try {
-      const riskRes = await fetch("/php/Assessment/get_student_risk_status.php", {
+      const riskRes = await fetch(API.assessment.getStudentRiskStatus(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -479,7 +480,7 @@ export default function StudentsPage() {
       // Update URL with student id
       router.push(`/TeacherSection/Students?role=Student&id=${s.student_id || s.id}`);
       // Fetch student details
-      const res = await fetch("/php/Users/get_student_details.php", {
+      const res = await fetch(API.user.getStudentDetails(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ student_id: s.student_id || s.id })
@@ -510,7 +511,7 @@ export default function StudentsPage() {
         // Fetch level name from tbl_student_levels
         if (data.student.levelId) {
           try {
-            const levelRes = await fetch("/php/Advisory/get_student_levels.php");
+            const levelRes = await fetch(API.advisory.getStudentLevels());
             const levelData = await levelRes.json();
             if (levelData.status === 'success' && levelData.levels) {
               const levelInfo = levelData.levels.find(l => l.level_id == data.student.levelId);
@@ -529,7 +530,7 @@ export default function StudentsPage() {
         
         // Fetch parent info if parentId exists
         if (data.student.parentId) {
-          const parentRes = await fetch("/php/Users/get_user_details.php", {
+          const parentRes = await fetch(API.user.getUserDetails(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ user_id: data.student.parentId })
@@ -541,7 +542,7 @@ export default function StudentsPage() {
           }
           
           // Fetch parent profile for detailed info
-          const parentProfileRes = await fetch("/php/Users/get_user_profile.php", {
+          const parentProfileRes = await fetch(API.user.getUserProfile(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ user_id: data.student.parentId })
@@ -557,7 +558,7 @@ export default function StudentsPage() {
         console.log('Student ID:', s.student_id || s.id);
         console.log('Student level_id:', s.level_id || s.levelId);
         
-        const advisoryRes = await fetch("/php/Advisory/get_advisory_details.php", {
+        const advisoryRes = await fetch(API.advisory.getAdvisoryDetails(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ student_id: s.student_id || s.id })
@@ -605,7 +606,7 @@ export default function StudentsPage() {
           if (s.level_id || s.levelId) {
             console.log('Trying to fetch advisory by level_id:', s.level_id || s.levelId);
             try {
-              const levelAdvisoryRes = await fetch("/php/Advisory/get_advisory_details.php", {
+              const levelAdvisoryRes = await fetch(API.advisory.getAdvisoryDetails(), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ level_id: s.level_id || s.levelId })
@@ -688,7 +689,7 @@ export default function StudentsPage() {
 
     try {
       console.log('=== AUTO-DEBUG: Checking advisory assignments ===');
-      const response = await fetch("/php/Advisory/fix_advisory_assignments.php", {
+      const response = await fetch(API.advisory.fixAdvisoryAssignments(), {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });

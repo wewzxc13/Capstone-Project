@@ -8,6 +8,7 @@ import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useUser } from "../../Context/UserContext";
 import { useModal } from "../../Context/ModalContext";
 import fullAddress from '../../../data/full_misamis_oriental_psgc.json';
+import { API } from '@/config/api';
 
 // --- VALIDATION LOGIC (copied and adapted from SuperAdminSection/ViewOwnUser) ---
 const validators = {
@@ -258,7 +259,7 @@ export default function ParentDetails() {
       }
 
       try {
-        const response = await fetch('/php/Users/get_user_details.php', {
+        const response = await fetch(API.user.getUserDetails(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: userId }),
@@ -387,7 +388,7 @@ export default function ParentDetails() {
         try {
           const form = new FormData();
           form.append('photo', selectedPhoto);
-          const uploadRes = await fetch('/php/Users/upload_photo.php', {
+          const uploadRes = await fetch(API.user.uploadPhoto(), {
             method: 'POST',
             body: form,
           });
@@ -424,7 +425,7 @@ export default function ParentDetails() {
           
           const form = new FormData();
           form.append('photo', file);
-          const uploadRes = await fetch('/php/Users/upload_photo.php', {
+          const uploadRes = await fetch(API.user.uploadPhoto(), {
             method: 'POST',
             body: form,
           });
@@ -489,7 +490,7 @@ export default function ParentDetails() {
           municipality_city: dataToSend.city // for backend compatibility
         };
 
-             const response = await fetch('/php/Users/update_user.php', {
+             const response = await fetch(API.user.updateUser(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -537,7 +538,7 @@ export default function ParentDetails() {
         
         // System log for self-update (no notification)
         const action = `Edited their own details.`;
-        fetch("/php/Logs/create_system_log.php", {
+        fetch(API.logs.createSystemLog(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

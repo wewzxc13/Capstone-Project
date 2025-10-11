@@ -6,6 +6,7 @@ import ProtectedRoute from "../../../Context/ProtectedRoute";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useUser } from "../../../Context/UserContext";
+import { API } from '@/config/api';
 
 
 const classTabs = [
@@ -106,7 +107,7 @@ export default function AssignedClassPage() {
     setLoading(true);
     
     // First check if API is accessible
-    fetch("/php/health_check.php")
+    fetch(API.auth.healthCheck())
       .then(res => {
         if (!res.ok) {
           throw new Error("API server is not responding");
@@ -118,7 +119,7 @@ export default function AssignedClassPage() {
           throw new Error("Database connection failed");
         }
         // API is healthy, proceed with data fetch
-        return fetch("/php/Advisory/get_advisory_details.php", {
+        return fetch(API.advisory.getAdvisoryDetails(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ level_id: selectedClass.level_id }),
@@ -174,7 +175,7 @@ export default function AssignedClassPage() {
       };
 
              // Fetch available teachers
-       fetch("/php/Advisory/list_teachers_without_advisory.php")
+       fetch(API.advisory.listTeachersWithoutAdvisory())
          .then(res => {
            if (!res.ok) {
              throw new Error(`HTTP error! status: ${res.status}`);
@@ -199,7 +200,7 @@ export default function AssignedClassPage() {
          });
 
              // Fetch class levels
-       fetch("/php/Advisory/list_class_levels.php")
+       fetch(API.advisory.listClassLevels())
          .then(res => {
            if (!res.ok) {
              throw new Error(`HTTP error! status: ${res.status}`);
@@ -252,7 +253,7 @@ export default function AssignedClassPage() {
     try {
       // Update class name/level
       if (selectedClassLevel && advisory.level_id !== selectedClassLevel) {
-        const res = await fetch("/php/Advisory/update_advisory_class.php", {
+        const res = await fetch(API.advisory.updateAdvisoryClass(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -277,7 +278,7 @@ export default function AssignedClassPage() {
       
       // Update lead teacher
       if (selectedLead && advisory.lead_teacher_id !== selectedLead) {
-        const res = await fetch("/php/Advisory/update_advisory_teacher.php", {
+        const res = await fetch(API.advisory.updateAdvisoryTeacher(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -317,7 +318,7 @@ export default function AssignedClassPage() {
         
         console.log('Request body:', requestBody);
         
-        const res = await fetch("/php/Advisory/update_advisory_teacher.php", {
+        const res = await fetch(API.advisory.updateAdvisoryTeacher(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody)
@@ -378,7 +379,7 @@ export default function AssignedClassPage() {
     setStudents(prev => prev.map(s => s.student_id === studentId ? { ...s, stud_schedule_class: newSchedule } : s));
     
     try {
-      const res = await fetch("/php/Users/update_student.php", {
+      const res = await fetch(API.user.updateStudent(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ student_id: studentId, stud_schedule_class: newSchedule })

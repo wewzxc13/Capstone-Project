@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { FaCalendarAlt, FaUser } from "react-icons/fa";
 import { useUser } from "../../Context/UserContext";
+import { API } from '@/config/api';
 
 // Helper function to construct full photo URL from filename
 function getPhotoUrl(filename) {
@@ -19,7 +20,7 @@ function getPhotoUrl(filename) {
   }
   
   // If it's a filename, construct the full backend URL
-  return `/php/Uploads/${filename}`;
+  return API.uploads.getUploadURL(filename);
 }
 
 function groupByTime(schedule, days) {
@@ -93,7 +94,7 @@ export default function Schedule() {
           return;
         }
 
-        const response = await fetch("/php/Users/get_all_users.php");
+        const response = await fetch(API.user.getAllUsers());
         const data = await response.json();
 
         if (data.status === "success" && data.users && data.users.Student) {
@@ -115,7 +116,7 @@ export default function Schedule() {
             // This will help the navigation tabs display photos
             sortedStudents.forEach(async (student) => {
               try {
-                const studentRes = await fetch("/php/Users/get_student_details.php", {
+                const studentRes = await fetch(API.user.getStudentDetails(), {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ student_id: student.id })
@@ -162,7 +163,7 @@ export default function Schedule() {
     const fetchSchedule = async () => {
       setScheduleLoading(true);
       try {
-        const response = await fetch("/php/Schedule/get_schedule.php");
+          const response = await fetch(API.schedule.getSchedule());
         const data = await response.json();
 
         if (data.status === "success") {

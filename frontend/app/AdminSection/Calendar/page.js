@@ -11,6 +11,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "react-toastify/dist/ReactToastify.css";
 import { FaCalendarAlt, FaChevronDown, FaSearch, FaEdit, FaPlus, FaEye, FaUserPlus, FaTimes, FaCheck, FaSave, FaExclamationTriangle, FaTimesCircle } from "react-icons/fa";
 import CalendarMonthCellIcons from '../../../components/ui/CalendarMonthCellIcons';
+import { API } from '@/config/api';
 
 const locales = {
   "en-US": enUS,
@@ -114,7 +115,7 @@ function getColorForMeeting(meetingId) {
 // Move fetchMeetings outside useEffect so it can be reused
 async function fetchMeetings(setEvents) {
   try {
-    const res = await fetch("/php/Meeting/get_meetings_details.php");
+    const res = await fetch(API.meeting.getMeetingsDetails());
     const data = await res.json();
     if (data.status === "success" && Array.isArray(data.meetings)) {
       // Map backend meetings to event format
@@ -262,7 +263,7 @@ export default function AdminCalendarPage() {
       setUsersLoading(true);
       try {
         console.log("📡 Making API request...");
-        const res = await fetch(`/php/Users/get_all_users.php`, {
+        const res = await fetch(API.user.getAllUsers(), {
           method: 'GET',
           cache: 'no-cache'
         });
@@ -348,7 +349,7 @@ export default function AdminCalendarPage() {
     async function fetchLevelsAndAdvisory() {
       try {
         // Fetch student levels
-        const levelsRes = await fetch("/php/Advisory/get_student_levels.php");
+        const levelsRes = await fetch(API.advisory.getStudentLevels());
         const levelsData = await levelsRes.json();
         console.log("Student levels response:", levelsData);
         if (levelsData.status === "success") {
@@ -359,7 +360,7 @@ export default function AdminCalendarPage() {
         }
 
         // Fetch advisory data
-        const advisoryRes = await fetch("/php/Advisory/get_all_advisory_details.php");
+        const advisoryRes = await fetch(API.advisory.getAllAdvisoryDetails());
         const advisoryData = await advisoryRes.json();
         console.log("Advisory data response:", advisoryData);
         if (advisoryData.status === "success") {
@@ -404,7 +405,7 @@ export default function AdminCalendarPage() {
     if (!createdBy) return null;
     
     try {
-      const response = await fetch('/php/Users/get_user_details.php', {
+      const response = await fetch(API.user.getUserDetails(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: createdBy }),
@@ -525,7 +526,7 @@ export default function AdminCalendarPage() {
         setInvitedList(newInvitedList);
       } else {
         // For group meetings: get teachers and parents from tbl_notification_recipients
-        const res = await fetch(`/php/Meeting/get_notification_recipients.php?meeting_id=${meetingId}`);
+        const res = await fetch(API.meeting.getNotificationRecipients(meetingId));
         const data = await res.json();
         if (data.status === 'success') {
           console.log('Fetched invited teachers:', data.teachers);
@@ -620,7 +621,7 @@ export default function AdminCalendarPage() {
     };
 
     try {
-      const res = await fetch("/php/Meeting/create_meeting.php", {
+      const res = await fetch(API.meeting.createMeeting(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1653,7 +1654,7 @@ export default function AdminCalendarPage() {
                         };
 
                         try {
-                          const res = await fetch("/php/Meeting/update_meeting.php", {
+                          const res = await fetch(API.meeting.updateMeeting(), {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(payload)
@@ -1829,7 +1830,7 @@ export default function AdminCalendarPage() {
                             
                             // Fetch and auto-fill the invited list
                             try {
-                              const res = await fetch(`/php/Meeting/get_notification_recipients.php?meeting_id=${selectedEvent.id}`);
+                              const res = await fetch(API.meeting.getNotificationRecipients(selectedEvent.id));
                               const data = await res.json();
                               if (data.status === 'success') {
                                 // Get the invited user IDs
@@ -2964,7 +2965,7 @@ export default function AdminCalendarPage() {
                   setCancelLoading(true);
                   try {
                     const userId = localStorage.getItem('userId');
-                    const res = await fetch('/php/Meeting/update_meeting.php', {
+                    const res = await fetch(API.meeting.updateMeeting(), {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ 

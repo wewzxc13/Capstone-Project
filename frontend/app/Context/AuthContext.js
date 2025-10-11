@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
+import { API } from '@/config/api';
 
 const AuthContext = createContext();
 
@@ -83,7 +84,7 @@ export function AuthProvider({ children }) {
         // Set a flag to prevent other logout events from firing
         localStorage.setItem("logoutLogged", "true");
         
-        await fetch("/php/Logs/create_system_log.php", {
+        await fetch(API.logs.createSystemLog(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

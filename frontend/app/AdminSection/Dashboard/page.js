@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { API } from '@/config/api';
 import {
   FaUserShield,
   FaUsers,
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
     try {
       setError(null);
       setLoading(true);
-      const response = await fetch('/php/Users/get_user_counts.php', {
+      const response = await fetch(API.user.getUserCounts(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +89,7 @@ export default function AdminDashboard() {
   const fetchUpcomingMeetings = async () => {
     try {
       setMeetingsLoading(true);
-      const response = await fetch('/php/Meeting/get_upcoming_meetings.php', {
+      const response = await fetch(API.meeting.getUpcomingMeetings(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +119,7 @@ export default function AdminDashboard() {
   const fetchProgressData = async () => {
     try {
       setProgressLoading(true);
-      const response = await fetch('/php/Assessment/get_all_classes_quarterly_performance.php', {
+      const response = await fetch(API.assessment.getAllClassesQuarterlyPerformance(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

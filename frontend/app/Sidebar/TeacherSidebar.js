@@ -15,6 +15,7 @@ import {
 import { usePathname } from "next/navigation";
 import { useUser } from "../Context/UserContext";
 import { useModal } from "../Context/ModalContext";
+import { API } from '@/config/api';
 
 const navItems = [
   { name: "Dashboard", icon: FaHome, href: "/TeacherSection/Dashboard" },
@@ -62,10 +63,10 @@ const TeacherSidebar = ({ isSidebarOpen: desktopSidebarOpen, mobileOpenSignal, s
           return;
         }
         const [recentRes, groupsRes, userRes, advRes] = await Promise.all([
-          fetch(`/php/Communication/get_recent_conversations.php?user_id=${uid}`).then((r) => r.json()).catch(() => null),
-          fetch(`/php/Communication/get_groups.php?user_id=${uid}`).then((r) => r.json()).catch(() => null),
-          fetch('/php/Users/get_user_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid }) }).then((r) => r.json()).catch(() => null),
-          fetch('/php/Advisory/get_advisory_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ teacher_id: uid }) }).then((r) => r.json()).catch(() => null),
+          fetch(`${API.communication.getRecentConversations()}?user_id=${uid}`).then((r) => r.json()).catch(() => null),
+          fetch(`${API.communication.getGroups()}?user_id=${uid}`).then((r) => r.json()).catch(() => null),
+          fetch(API.user.getUserDetails(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid }) }).then((r) => r.json()).catch(() => null),
+          fetch(API.advisory.getAdvisoryDetails(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ teacher_id: uid }) }).then((r) => r.json()).catch(() => null),
         ]);
         const usersUnread = Array.isArray(recentRes?.data)
           ? recentRes.data.reduce((s, it) => s + (Number(it.unread_count) || 0), 0)

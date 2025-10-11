@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from 'next/navigation';
 import SharedExport, { generateAssessmentPDF } from '../DownloadPDF';
+import { API } from '@/config/api';
 
 export default function StudentAssessment({ student, onBack, onRiskUpdate, triggerExport, onExportComplete, parentProfile, studentLevelData, advisory }) {
   const router = useRouter();
@@ -257,23 +258,23 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
     const fetchAllData = async () => {
       try {
         const promises = [
-          fetch("/php/Assessment/get_visual_feedback.php"),
-          fetch("/php/Advisory/get_attendance.php", {
+          fetch(API.assessment.getVisualFeedback()),
+          fetch(API.advisory.getAttendance(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ advisory_id: student.advisory_id })
           }),
-          fetch(`/php/Assessment/get_subjects_by_advisory.php?advisory_id=${student.advisory_id}`),
-          fetch(`/php/Assessment/get_student_quarter_feedback.php?student_id=${student.student_id}`),
-          fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch('/php/Assessment/get_quarters.php'),
-          fetch(`/php/Assessment/get_comments.php?student_id=${student.student_id}`),
-          fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`),
-          fetch('/php/Assessment/get_overall_progress.php?student_id=' + student.student_id + '&advisory_id=' + student.advisory_id),
-          fetch(`/php/Assessment/get_milestone_interpretation.php?student_id=${student.student_id}`),
-          fetch('/php/Users/get_user_profile.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: student.parentId || student.parent_id }) }),
-          fetch('/php/Users/get_student_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) }),
-          fetch('/php/Advisory/get_advisory_details.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) })
+          fetch(API.assessment.getSubjectsByAdvisory(student.advisory_id)),
+          fetch(API.assessment.getStudentQuarterFeedback(student.student_id)),
+          fetch(API.assessment.getStudentProgressCards(student.student_id, student.advisory_id)),
+          fetch(API.assessment.getQuarters()),
+          fetch(API.assessment.getComments(student.student_id)),
+          fetch(API.assessment.getSubjectOverallProgress(student.student_id, student.advisory_id)),
+          fetch(API.assessment.getOverallProgress(student.student_id, student.advisory_id)),
+          fetch(API.assessment.getMilestoneInterpretation(student.student_id)),
+          fetch(API.user.getUserProfile(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: student.parentId || student.parent_id }) }),
+          fetch(API.user.getStudentDetails(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) }),
+          fetch(API.advisory.getAdvisoryDetails(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.student_id }) })
         ];
 
         const responses = await Promise.all(promises);
@@ -544,11 +545,11 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                             setOverallProgressLoading(true);
                             const user_id = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
                             try {
-                              const res = await fetch('/php/Assessment/update_overall_progress.php', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id, user_id })
-                              });
+                          const res = await fetch(API.assessment.updateOverallProgress(), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id, user_id })
+                          });
                               const data = await res.json();
                               if (data.status === 'success') {
                                 toast.success('Overall progress updated!');
@@ -572,11 +573,11 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                             setOverallProgressLoading(true);
                             try {
                               const user_id = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
-                              const res = await fetch('/php/Assessment/insert_overall_progress.php', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id, user_id: user_id })
-                              });
+                          const res = await fetch(API.assessment.insertOverallProgress(), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id, user_id: user_id })
+                          });
                               const data = await res.json();
                               if (data.status === 'success') {
                                 toast.success('Overall Progress computed!');
@@ -635,21 +636,21 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                             }
                             
                             try {
-                              const res = await fetch('/php/Assessment/update_progress_card.php', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  student_id: student.student_id,
-                                  advisory_id: student.advisory_id,
-                                  quarter_id: q.id,
-                                  user_id: user_id
-                                })
-                              });
+                            const res = await fetch(API.assessment.updateProgressCard(), {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                student_id: student.student_id,
+                                advisory_id: student.advisory_id,
+                                quarter_id: q.id,
+                                user_id: user_id
+                              })
+                            });
                               const data = await res.json();
                               
                               if (data.status === 'success') {
                                 // Refresh data
-                                const refreshRes = await fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                const refreshRes = await fetch(API.assessment.getStudentProgressCards(student.student_id, student.advisory_id));
                                 const refreshData = await refreshRes.json();
                                 if (refreshData.status === 'success' && Array.isArray(refreshData.cards)) {
                                   const status = {};
@@ -662,20 +663,20 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                                 
                                 if (q.id === 4) {
                                   // Check if subject overall progress already exists to decide between insert/update
-                                  const checkRes = await fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                  const checkRes = await fetch(API.assessment.getSubjectOverallProgress(student.student_id, student.advisory_id));
                                   const checkData = await checkRes.json();
                                   
                                   let subjectRes;
                                   if (checkData.status === 'success' && checkData.progress && checkData.progress.length > 0) {
                                     // Records exist - use UPDATE
-                                    subjectRes = await fetch('/php/Assessment/update_subject_overall_progress.php', {
+                                    subjectRes = await fetch(API.assessment.updateSubjectOverallProgress(), {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
                                     });
                                   } else {
                                     // No records exist - use INSERT
-                                    subjectRes = await fetch('/php/Assessment/insert_subject_overall_progress.php', {
+                                    subjectRes = await fetch(API.assessment.insertSubjectOverallProgress(), {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
@@ -686,7 +687,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                                   
                                   if (subjectData.status === 'success') {
                                     // Refresh the subject progress data
-                                    const refreshSubjectRes = await fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                    const refreshSubjectRes = await fetch(API.assessment.getSubjectOverallProgress(student.student_id, student.advisory_id));
                                     const refreshSubjectData = await refreshSubjectRes.json();
                                     if (refreshSubjectData.status === 'success') {
                                       setFinalSubjectProgress(refreshSubjectData.progress || []);
@@ -733,7 +734,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                               }
                                 
                               try {
-                                const res = await fetch('/php/Assessment/insert_progress_card.php', {
+                                const res = await fetch(API.assessment.insertProgressCard(), {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
@@ -748,7 +749,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                                 
                                 if (data.status === 'success' && data.students && data.students.length > 0) {
                                   // Refresh data
-                                  const refreshRes = await fetch(`/php/Assessment/get_student_progress_cards.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                  const refreshRes = await fetch(API.assessment.getStudentProgressCards(student.student_id, student.advisory_id));
                                   const refreshData = await refreshRes.json();
                                   if (refreshData.status === 'success' && Array.isArray(refreshData.cards)) {
                                     const status = {};
@@ -761,20 +762,20 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                                   
                                   if (q.id === 4) {
                                     // Check if subject overall progress already exists to decide between insert/update
-                                    const checkRes = await fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                    const checkRes = await fetch(API.assessment.getSubjectOverallProgress(student.student_id, student.advisory_id));
                                     const checkData = await checkRes.json();
                                     
                                     let subjectRes;
                                     if (checkData.status === 'success' && checkData.progress && checkData.progress.length > 0) {
                                       // Records exist - use UPDATE
-                                      subjectRes = await fetch('/php/Assessment/update_subject_overall_progress.php', {
+                                      subjectRes = await fetch(API.assessment.updateSubjectOverallProgress(), {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
                                       });
                                     } else {
                                       // No records exist - use INSERT
-                                      subjectRes = await fetch('/php/Assessment/insert_subject_overall_progress.php', {
+                                      subjectRes = await fetch(API.assessment.insertSubjectOverallProgress(), {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ student_id: student.student_id, advisory_id: student.advisory_id })
@@ -785,7 +786,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                                     
                                     if (subjectData.status === 'success') {
                                       // Refresh the subject progress data
-                                      const refreshSubjectRes = await fetch(`/php/Assessment/get_subject_overall_progress.php?student_id=${student.student_id}&advisory_id=${student.advisory_id}`);
+                                      const refreshSubjectRes = await fetch(API.assessment.getSubjectOverallProgress(student.student_id, student.advisory_id));
                                       const refreshSubjectData = await refreshSubjectRes.json();
                                       if (refreshSubjectData.status === 'success') {
                                         setFinalSubjectProgress(refreshSubjectData.progress || []);
@@ -1131,7 +1132,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                         }
                         if (!canComment) return;
                         try {
-                          const res = await fetch('/php/Assessment/create_comment.php', {
+                          const res = await fetch(API.assessment.createComment(), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ comment: comment, commentor_id: commentor_id, student_id: student.student_id })
@@ -1221,7 +1222,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                                   const trimmed = editingValue.trim();
                                   if (!trimmed) return;
                                   try {
-                                    const res = await fetch('/php/Assessment/update_comment.php', {
+                                    const res = await fetch(API.assessment.updateComment(), {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ comment_id: c.comment_id, comment: trimmed })

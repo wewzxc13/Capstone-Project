@@ -12,6 +12,7 @@ const loadChartConfig = () => import('../../../lib/chart-config.js');
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation';
 import { useUser } from "../../Context/UserContext";
+import { API } from '@/config/api';
 
 export default function TeacherDashboard() {
   const router = useRouter();
@@ -181,7 +182,7 @@ export default function TeacherDashboard() {
     document.addEventListener('error', handleImageError, true);
 
     // Fetch teacher info
-    fetch("/php/Users/get_user_details.php", {
+    fetch(API.user.getUserDetails(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: teacher_id })
@@ -204,7 +205,7 @@ export default function TeacherDashboard() {
     
     // Fetch subjects data for the chart
     setSubjectsLoading(true);
-    fetch(`/php/Assessment/get_advisory_subject_averages.php?teacher_id=${teacher_id}`)
+    fetch(API.assessment.getAdvisorySubjectAverages(teacher_id))
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success' && data.data) {
@@ -227,7 +228,7 @@ export default function TeacherDashboard() {
     
     // Fetch quarterly performance data for the chart
     setQuarterlyLoading(true);
-    fetch(`/php/Assessment/get_class_quarterly_performance.php?teacher_id=${teacher_id}`)
+    fetch(API.assessment.getClassQuarterlyPerformance(teacher_id))
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success' && data.data) {
@@ -263,7 +264,7 @@ export default function TeacherDashboard() {
 
     setLoadingSchedule(true);
     // Fetch advisory
-    fetch("/php/Advisory/get_advisory_details.php", {
+    fetch(API.advisory.getAdvisoryDetails(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ teacher_id })
@@ -273,7 +274,7 @@ export default function TeacherDashboard() {
         if (data.advisory && data.advisory.level_id) {
           setAdvisory(data.advisory);
           // Fetch schedule for this level
-          fetch("/php/Schedule/get_schedule.php")
+          fetch(API.schedule.getSchedule())
             .then(res => res.json())
             .then(schedData => {
               if (schedData.status === "success") {
@@ -291,7 +292,7 @@ export default function TeacherDashboard() {
           
           // Fetch risk count and student counts using the new API endpoint
           setRiskLoading(true);
-          fetch("/php/Assessment/get_students_at_risk_count.php", {
+          fetch(API.assessment.getStudentsAtRiskCount(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -321,7 +322,7 @@ export default function TeacherDashboard() {
       });
 
     // Fetch meetings for this teacher and format them for client only
-    fetch(`/php/Meeting/get_meetings_details.php?user_id=${teacher_id}`)
+    fetch(`${API.meeting.getMeetingsDetails()}?user_id=${teacher_id}`)
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {

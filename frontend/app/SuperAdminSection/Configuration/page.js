@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { API } from '@/config/api';
 import { 
   FaSearch, 
   FaTools,
@@ -80,7 +81,7 @@ export default function SuperAdminConfigurationPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/php/Assessment/get_detailed_activity_data.php", {
+      const response = await fetch(API.assessment.getDetailedActivityData(), {
         method: "GET",
       });
       const text = await response.text();
@@ -114,7 +115,7 @@ export default function SuperAdminConfigurationPage() {
   // Fetch available shapes from tbl_shapes
   const fetchAvailableShapes = async () => {
     try {
-      const response = await fetch("/php/Assessment/get_shapes.php", {
+      const response = await fetch(API.assessment.getShapes(), {
         method: "GET",
       });
       const text = await response.text();
@@ -137,7 +138,7 @@ export default function SuperAdminConfigurationPage() {
   // Fetch visual feedback data
   const fetchVisualFeedbackData = async () => {
     try {
-      const response = await fetch("/php/Assessment/get_visual_feedback.php", {
+      const response = await fetch(API.assessment.getVisualFeedback(), {
         method: "GET",
       });
       const text = await response.text();
@@ -250,7 +251,7 @@ export default function SuperAdminConfigurationPage() {
       };
       
       // Make API call to update the database
-      const response = await fetch("/php/Logs/update_school_year_timeline.php", {
+      const response = await fetch(API.logs.updateSchoolYearTimeline(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData)
@@ -562,7 +563,7 @@ export default function SuperAdminConfigurationPage() {
        const currentUserId = localStorage.getItem("userId");
        
        // Make API call to update the database
-       const response = await fetch("/php/Assessment/update_visual_feedback.php", {
+       const response = await fetch(API.assessment.updateVisualFeedback(), {
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify({
@@ -663,7 +664,7 @@ export default function SuperAdminConfigurationPage() {
       };
       
       // Make API call to bulk archive activities
-      const response = await fetch("/php/Assessment/bulk_archive_activities.php", {
+      const response = await fetch(API.assessment.bulkArchiveActivities(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData)

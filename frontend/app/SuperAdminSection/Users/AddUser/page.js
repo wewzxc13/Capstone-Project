@@ -7,6 +7,7 @@ import ReactCountryFlag from "react-country-flag";
 import ProtectedRoute from "../../../Context/ProtectedRoute";
 import { useRouter } from "next/navigation";
 import fullAddress from '../../../../data/full_misamis_oriental_psgc.json';
+import { API } from '@/config/api';
 
 
 const userTypes = ["Admin", "Teacher", "Parent", "Student"];
@@ -723,8 +724,8 @@ export default function AddUserPage() {
     const isStudent = userType === "Student";
   
     const apiURL = isStudent
-      ? "/php/Users/add_student.php"
-      : "/php/Users/add_user.php";
+      ? API.user.addStudent()
+      : API.user.addUser();
   
     let dataToSend = {
       ...formData,

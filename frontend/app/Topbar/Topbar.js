@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { FaBell, FaCog, FaArrowLeft, FaUser, FaBars } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useUser } from "../Context/UserContext";
+import { API } from '@/config/api';
 
 export default function Topbar({ title = "Dashboard", notifications = null, onBack, onOpenSidebar }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -43,7 +44,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
     setMeetingLoading(true);
     try {
       // Fetch notifications from tbl_notifications instead of meetings
-      const res = await fetch("/php/Notifications/get_notifications.php");
+      const res = await fetch(API.notification.getNotifications());
       
       if (!res.ok) {
         console.error('Meeting notifications HTTP error:', res.status, res.statusText);
@@ -74,7 +75,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         let userNames = {};
         let userRoles = {};
         if (userIds.length > 0) {
-          const res2 = await fetch("/php/Users/get_user_names.php", {
+          const res2 = await fetch(API.user.getUserNames(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ user_ids: userIds })
@@ -101,7 +102,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
           }
           
           try {
-            const recRes = await fetch(`/php/Meeting/get_notification_recipients.php?meeting_id=${n.meeting_id}`);
+            const recRes = await fetch(`${API.meeting.getNotificationRecipients(n.meeting_id)}`);
             if (recRes.ok) {
               const recResponseText = await recRes.text();
               try {
@@ -148,7 +149,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         
         if (advisoryIds.length > 0) {
           try {
-            const advisoryRes = await fetch("/php/Advisory/get_advisory_teachers.php", {
+            const advisoryRes = await fetch(API.advisory.getAdvisoryTeachers(), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ advisory_ids: advisoryIds })
@@ -179,7 +180,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
   const fetchAdminNotifications = useCallback(async () => {
     setMeetingLoading(true);
     try {
-      const response = await fetch("/php/Notifications/get_notifications_with_read_status.php", {
+      const response = await fetch(API.notification.getNotificationsWithReadStatus(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -230,7 +231,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
           const userIds = Array.from(new Set(data.notifications.map(n => n.created_by).filter(Boolean)));
           if (userIds.length > 0) {
             try {
-              const userRes = await fetch("/php/Users/get_user_names.php", {
+              const userRes = await fetch(API.user.getUserNames(), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_ids: userIds })
@@ -266,7 +267,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
   const fetchTeacherNotifications = useCallback(async () => {
     setMeetingLoading(true);
     try {
-      const response = await fetch("/php/Notifications/get_teacher_notifications.php", {
+      const response = await fetch(API.notification.getTeacherNotifications(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -319,7 +320,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
           const userIds = Array.from(new Set(data.notifications.map(n => n.created_by).filter(Boolean)));
           if (userIds.length > 0) {
             try {
-              const userRes = await fetch("/php/Users/get_user_names.php", {
+              const userRes = await fetch(API.user.getUserNames(), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_ids: userIds })
@@ -355,7 +356,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
   const fetchParentNotifications = useCallback(async () => {
     setMeetingLoading(true);
     try {
-      const response = await fetch("/php/Notifications/get_parent_notifications.php", {
+      const response = await fetch(API.notification.getParentNotifications(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -393,7 +394,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         const userIds = Array.from(new Set(transformed.map(n => n.created_by).filter(Boolean)));
         if (userIds.length > 0) {
           try {
-            const userRes = await fetch("/php/Users/get_user_names.php", {
+            const userRes = await fetch(API.user.getUserNames(), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ user_ids: userIds })
@@ -437,7 +438,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         user_role: userData.role === 'SuperAdmin' ? 'Super Admin' : userData.role
       };
       
-      const res = await fetch("/php/Assessment/get_progress_card_notifications.php", {
+      const res = await fetch(API.assessment.getProgressCardNotifications(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody)
@@ -508,7 +509,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         user_role: userData.role === 'SuperAdmin' ? 'Super Admin' : userData.role
       };
       
-      const res = await fetch("/php/Assessment/get_overall_progress_notifications.php", {
+      const res = await fetch(API.assessment.getOverallProgressNotifications(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody)
@@ -578,7 +579,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         user_role: 'Parent'
       };
       
-      const res = await fetch("/php/Assessment/get_parent_progress_notifications.php", {
+      const res = await fetch(API.assessment.getParentProgressNotifications(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody)
@@ -643,7 +644,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         user_role: 'Parent'
       };
       
-      const res = await fetch("/php/Assessment/get_parent_overall_progress_notifications.php", {
+      const res = await fetch(API.assessment.getParentOverallProgressNotifications(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody)
@@ -693,7 +694,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
   // On app open, ping the reminder endpoint once (throttled) so the server creates reminders.
   const triggerMeetingReminders = useCallback(async () => {
     try {
-      const resp = await fetch('/php/Meeting/send_meeting_reminders.php', { method: 'GET', cache: 'no-store' });
+      const resp = await fetch(API.meeting.sendMeetingReminders(), { method: 'GET', cache: 'no-store' });
       const txt = await resp.text();
       console.log('Reminder trigger response:', resp.status, txt);
     } catch (e) {
@@ -810,7 +811,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         console.log('Sending logout request to API...');
         
         // Log logout to system logs before clearing localStorage
-        const response = await fetch("/php/Logs/create_system_log.php", {
+        const response = await fetch(API.logs.createSystemLog(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1871,7 +1872,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         };
         console.log('Request body:', requestBody);
         
-        const response = await fetch("/php/Notifications/mark_all_notifications_read.php", {
+        const response = await fetch(API.notification.markAllNotificationsRead(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody)
@@ -1896,7 +1897,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
             // Progress notifications are now included in fetchAdminNotifications()
             
             // Also refresh the unread count
-            const countResponse = await fetch("/php/Notifications/count_unread_notifications.php", {
+            const countResponse = await fetch(API.notification.countUnreadNotifications(), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -1922,7 +1923,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
             await fetchTeacherNotifications();
             
             // Also refresh the unread count
-            const countResponse = await fetch("/php/Notifications/count_unread_notifications.php", {
+            const countResponse = await fetch(API.notification.countUnreadNotifications(), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -1946,7 +1947,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
             // Refresh parent unified notifications
             await fetchParentNotifications();
             // Refresh unread count
-            const countResponse = await fetch("/php/Notifications/count_unread_notifications.php", {
+            const countResponse = await fetch(API.notification.countUnreadNotifications(), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -1991,7 +1992,7 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
     if ((userData.role === "Admin" || userData.role === "SuperAdmin" || userData.role === "Super Admin" || userData.role === "Teacher" || userData.role === "Parent") && userData.userId) {
       const fetchUnreadCount = async () => {
         try {
-          const response = await fetch("/php/Notifications/count_unread_notifications.php", {
+          const response = await fetch(API.notification.countUnreadNotifications(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

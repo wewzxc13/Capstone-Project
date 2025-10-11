@@ -5,6 +5,7 @@ import { FaUser, FaSearch, FaTimes, FaUsers, FaClipboardCheck, FaCalendarAlt, Fa
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useRouter } from "next/navigation";
 import { useUser } from "../../Context/UserContext";
+import { API } from '@/config/api';
 
 
 // Admin users can only see Teacher, Parent, and Student users (not other Admin users)
@@ -114,7 +115,7 @@ export default function AdminUsersPage() {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/php/Users/get_all_users.php', {
+        const response = await fetch(API.user.getAllUsers(), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -145,7 +146,7 @@ export default function AdminUsersPage() {
           console.log('=== END USERS DEBUG ===');
           
                     // Fetch advisory data to get teacher assignments
-          const advisoryResponse = await fetch('/php/Advisory/get_all_advisory_details.php', {
+          const advisoryResponse = await fetch(API.advisory.getAllAdvisoryDetails(), {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -185,7 +186,7 @@ export default function AdminUsersPage() {
                 const parentsWithChildren = await Promise.all(
                   updatedUsers.Parent.map(async (parent) => {
                     try {
-                      const childrenResponse = await fetch(`/php/Users/get_parent_students.php?parent_id=${parent.id}`, {
+                      const childrenResponse = await fetch(API.user.getParentStudents(parent.id), {
                         method: 'GET',
                         headers: {
                           'Content-Type': 'application/json',
@@ -256,7 +257,7 @@ export default function AdminUsersPage() {
                 const parentsWithChildren = await Promise.all(
                   updatedUsers.Parent.map(async (parent) => {
                     try {
-                      const childrenResponse = await fetch(`/php/Users/get_parent_students.php?parent_id=${parent.id}`, {
+                      const childrenResponse = await fetch(API.user.getParentStudents(parent.id), {
                         method: 'GET',
                         headers: {
                           'Content-Type': 'application/json',
@@ -328,7 +329,7 @@ export default function AdminUsersPage() {
               const parentsWithChildren = await Promise.all(
                 updatedUsers.Parent.map(async (parent) => {
                   try {
-                    const childrenResponse = await fetch(`/php/Users/get_parent_students.php?parent_id=${parent.id}`, {
+                    const childrenResponse = await fetch(API.user.getParentStudents(parent.id), {
                       method: 'GET',
                       headers: {
                         'Content-Type': 'application/json',
@@ -535,7 +536,7 @@ export default function AdminUsersPage() {
     setArchiving(prev => ({ ...prev, [user.id]: true }));
     
     try {
-      const response = await fetch("/php/Users/archive_user.php", {
+      const response = await fetch(API.user.archiveUser(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -556,7 +557,7 @@ export default function AdminUsersPage() {
         let action = "";
         if (user.role === "Student") {
           action = "Archived a student profile.";
-          await fetch("/php/Logs/create_system_log.php", {
+          await fetch(API.logs.createSystemLog(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -568,7 +569,7 @@ export default function AdminUsersPage() {
           });
         } else {
           action = `Archived a ${user.role.toLowerCase()} account.`;
-          await fetch("/php/Logs/create_system_log.php", {
+          await fetch(API.logs.createSystemLog(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -581,7 +582,7 @@ export default function AdminUsersPage() {
         }
         
         // Refresh the user list
-        const refreshResponse = await fetch('/php/Users/get_all_users.php', {
+        const refreshResponse = await fetch(API.user.getAllUsers(), {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });

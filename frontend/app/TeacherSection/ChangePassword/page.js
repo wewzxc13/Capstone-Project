@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { FaEye, FaEyeSlash, FaEnvelope, FaArrowLeft, FaCheckCircle } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaEnvelope, FaArrowLeft, FaCheckCircle, FaRedo } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import Topbar from "../../Topbar/Topbar";
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useAuth } from "../../Context/AuthContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { API } from '@/config/api';
 
 const OTP_TIMEOUT = 300; // 5 minutes
 const OTP_EXP_KEY = "otp_expiration_time_teacher";
@@ -18,6 +19,138 @@ function getRemainingTime() {
   const diff = Math.floor((parseInt(exp) - now) / 1000);
   return diff > 0 ? diff : 0;
 }
+
+// Define keyframe animations
+const KeyframeStyles = () => (
+  <style jsx global>{`
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .animate-shake {
+      animation: shake 0.5s ease-in-out;
+    }
+    .animate-pulse {
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+    .transition-all-smooth {
+      transition: all 0.3s ease-in-out;
+    }
+  `}</style>
+);
+
+// Custom CAPTCHA Component
+const CustomCaptcha = ({ onCaptchaChange, disabled = false, shake }) => {
+  const [captchaState, setCaptchaState] = useState(() => {
+    if (typeof window === 'undefined') {
+      const num1 = Math.floor(Math.random() * 20) + 1;
+      const num2 = Math.floor(Math.random() * 10) + 1;
+      return { num1, num2, input: "" };
+    }
+    try {
+      const savedValues = localStorage.getItem("captchaNumbers_teacher");
+      if (savedValues) {
+        const { num1, num2 } = JSON.parse(savedValues);
+        return {
+          num1: parseInt(num1),
+          num2: parseInt(num2),
+          input: localStorage.getItem("captchaInput_teacher") || "",
+        };
+      }
+    } catch (e) {
+      console.log("Error loading captcha from localStorage");
+    }
+    const num1 = Math.floor(Math.random() * 20) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("captchaNumbers_teacher", JSON.stringify({ num1, num2 }));
+    }
+    return { num1, num2, input: "" };
+  });
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    if (onCaptchaChange && captchaState.input) {
+      onCaptchaChange(captchaState.input);
+    }
+  }, [captchaState.input, onCaptchaChange]);
+
+  const generateCaptcha = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      const num1 = Math.floor(Math.random() * 20) + 1;
+      const num2 = Math.floor(Math.random() * 10) + 1;
+      setCaptchaState({ num1, num2, input: "" });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("captchaNumbers_teacher", JSON.stringify({ num1, num2 }));
+        localStorage.setItem("captchaInput_teacher", "");
+      }
+      setIsRefreshing(false);
+    }, 500);
+  };
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setCaptchaState((prev) => ({ ...prev, input: value }));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("captchaInput_teacher", value);
+    }
+    if (onCaptchaChange) {
+      onCaptchaChange(value);
+    }
+  };
+
+  return (
+    <div className={`flex items-center justify-center space-x-1.5 my-2 ${shake ? "animate-shake" : ""}`}>
+      <div className="flex items-center">
+        <div className={`border border-gray-300 rounded-md w-10 h-10 flex items-center justify-center text-base text-gray-700 bg-white transition-all-smooth ${isRefreshing ? "animate-pulse" : ""}`}>
+          {captchaState.num1}
+        </div>
+        <div className="mx-1.5 text-lg text-gray-700">+</div>
+        <div className={`border border-gray-300 rounded-md w-10 h-10 flex items-center justify-center text-base text-gray-700 bg-white transition-all-smooth ${isRefreshing ? "animate-pulse" : ""}`}>
+          {captchaState.num2}
+        </div>
+        <div className="mx-1.5 text-lg text-gray-700">=</div>
+        <input
+          type="number"
+          value={captchaState.input}
+          onChange={handleInputChange}
+          disabled={disabled}
+          className="border border-gray-300 rounded-md w-10 h-10 text-center text-base focus-ring transition-all-smooth caret-[#232c67]"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          placeholder=""
+          aria-label="Enter captcha result"
+          min="0"
+          step="1"
+        />
+      </div>
+      <button
+        type="button"
+        onClick={generateCaptcha}
+        disabled={disabled}
+        className="text-gray-500 hover:text-gray-700 p-1.5 rounded-full hover:bg-gray-100 transition-all-smooth"
+        aria-label="Refresh captcha"
+      >
+        <FaRedo size={14} className={`${disabled ? "opacity-50" : ""} ${isRefreshing ? "animate-spin" : ""}`} />
+      </button>
+    </div>
+  );
+};
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -43,6 +176,14 @@ export default function ChangePasswordPage() {
     hasMinLength: false
   });
   const [loading, setLoading] = useState(false);
+
+  // CAPTCHA states
+  const [captchaInput, setCaptchaInput] = useState(() => {
+    if (typeof window === 'undefined') return "";
+    return localStorage.getItem("captchaInput_teacher") || "";
+  });
+  const [shakeCaptcha, setShakeCaptcha] = useState(false);
+  const [isCaptchaValid, setIsCaptchaValid] = useState(false);
 
   // OTP states
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -175,12 +316,44 @@ export default function ChangePasswordPage() {
     }
   }, [step]);
 
+  const handleCaptchaChange = (value) => {
+    setCaptchaInput(value);
+    const storedCaptcha = typeof window !== 'undefined' ? localStorage.getItem("captchaNumbers_teacher") : null;
+    if (storedCaptcha) {
+      const { num1, num2 } = JSON.parse(storedCaptcha);
+      setIsCaptchaValid(parseInt(value) === parseInt(num1) + parseInt(num2));
+    } else {
+      setIsCaptchaValid(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
+    // Validate CAPTCHA before proceeding
+    if (!captchaInput || captchaInput.trim() === "") {
+      toast.error("Please answer the CAPTCHA");
+      setShakeCaptcha(true);
+      setTimeout(() => setShakeCaptcha(false), 500);
+      setLoading(false);
+      return;
+    }
+
+    const storedCaptcha = typeof window !== 'undefined' ? localStorage.getItem("captchaNumbers_teacher") : null;
+    if (storedCaptcha) {
+      const { num1, num2 } = JSON.parse(storedCaptcha);
+      if (parseInt(captchaInput) !== parseInt(num1) + parseInt(num2)) {
+        toast.error("Incorrect CAPTCHA. Please try again.");
+        setShakeCaptcha(true);
+        setTimeout(() => setShakeCaptcha(false), 500);
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
-      const response = await fetch("/php/changepassword.php", {
+      const response = await fetch(API.auth.changePassword(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -212,7 +385,7 @@ export default function ChangePasswordPage() {
         formData.append("user_id", data.user_id);
         formData.append("email", data.email);
 
-        const otpRes = await fetch("/php/send_otp.php", {
+        const otpRes = await fetch(API.auth.sendOTP(), {
           method: "POST",
           body: formData,
         });
@@ -228,6 +401,12 @@ export default function ChangePasswordPage() {
         }
 
         if (otpData.status === "success") {
+          // Clear CAPTCHA data from localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem("captchaNumbers_teacher");
+            localStorage.removeItem("captchaInput_teacher");
+          }
+          
           // Set new OTP expiration time (5 minutes from now)
           if (typeof window !== 'undefined') {
             const expirationTime = Date.now() + (OTP_TIMEOUT * 1000);
@@ -297,7 +476,7 @@ export default function ChangePasswordPage() {
         formData.append("new_password", localStorage.getItem("pendingPassword"));
       }
 
-      const response = await fetch("/php/otpverify.php", {
+      const response = await fetch(API.auth.verifyOTP(), {
         method: "POST",
         body: formData,
       });
@@ -368,7 +547,7 @@ export default function ChangePasswordPage() {
     }
 
     try {
-      const response = await fetch("/php/send_otp.php", {
+      const response = await fetch(API.auth.sendOTP(), {
         method: "POST",
         body: formData,
       });
@@ -405,12 +584,13 @@ export default function ChangePasswordPage() {
   return (
     <ProtectedRoute role="Teacher">
     <div suppressHydrationWarning>
+      <KeyframeStyles />
       <Topbar title="Change Password" />
-      <div className="flex flex-1 flex-col items-center">
-        <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md animate-form-appear">
+      <div className="flex flex-1 flex-col items-center justify-start py-3">
+        <div className="bg-white p-4 rounded-2xl shadow-xl w-full max-w-md animate-form-appear">
           {step === "form" ? (
             <>
-              <div className="relative mb-4 flex items-center" style={{ minHeight: "2.5rem" }}>
+              <div className="relative mb-3 flex items-center" style={{ minHeight: "2rem" }}>
                 <button
                   type="button"
                   onClick={() => {
@@ -419,17 +599,17 @@ export default function ChangePasswordPage() {
                     }
                     router.back();
                   }}
-                  className="absolute left-0 p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+                  className="absolute left-0 p-1.5 rounded-full hover:bg-gray-100 focus:outline-none"
                   title="Back to Dashboard"
                   aria-label="Back"
                 >
-                  <FaArrowLeft className="text-blue-900 text-lg" />
+                  <FaArrowLeft className="text-blue-900 text-base" />
                 </button>
-                <h2 className="w-full text-2xl font-bold text-blue-900 text-center">
+                <h2 className="w-full text-xl font-bold text-blue-900 text-center">
                   Create New Password
                 </h2>
               </div>
-              <div className="mb-4">
+              <div className="mb-3">
                 <label className="block text-sm font-semibold text-blue-900 mb-1">
                   Account Email
                 </label>
@@ -439,12 +619,12 @@ export default function ChangePasswordPage() {
                     placeholder="Enter your email"
                     value={email}
                     readOnly
-                    className="w-full px-4 py-3 pr-10 rounded-lg shadow-sm border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-[#f3f9ff] text-gray-500 cursor-not-allowed caret-[#232c67]"
+                    className="w-full px-3 py-2 pr-10 rounded-lg shadow-sm border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-[#f3f9ff] text-gray-500 cursor-not-allowed caret-[#232c67]"
                   />
-                  <FaEnvelope className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                  <FaEnvelope className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                 </div>
               </div>
-              <div className="mb-4">
+              <div className="mb-3">
                 <label className="block text-sm font-semibold text-blue-900 mb-1">
                   Current Password <span className="text-red-500">*</span>
                 </label>
@@ -454,7 +634,7 @@ export default function ChangePasswordPage() {
                     placeholder="Enter your current password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full px-4 py-3 pr-10 rounded-lg shadow-sm border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-[#f3f9ff] caret-[#232c67]"
+                    className="w-full px-3 py-2 pr-10 rounded-lg shadow-sm border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-[#f3f9ff] caret-[#232c67]"
                   />
                   <button
                     type="button"
@@ -462,11 +642,11 @@ export default function ChangePasswordPage() {
                     onClick={() => setShowCurrentPassword((prev) => !prev)}
                     tabIndex={-1}
                   >
-                    {showCurrentPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                    {showCurrentPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                   </button>
                 </div>
               </div>
-              <div className="mb-4">
+              <div className="mb-3">
                 <label className="block text-sm font-semibold text-blue-900 mb-1">
                   New Password <span className="text-red-500">*</span>
                 </label>
@@ -476,7 +656,7 @@ export default function ChangePasswordPage() {
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 pr-10 rounded-lg shadow-sm border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-[#f3f9ff] caret-[#232c67]"
+                    className="w-full px-3 py-2 pr-10 rounded-lg shadow-sm border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-[#f3f9ff] caret-[#232c67]"
                   />
                   <button
                     type="button"
@@ -484,11 +664,11 @@ export default function ChangePasswordPage() {
                     onClick={() => setShowPassword((prev) => !prev)}
                     tabIndex={-1}
                   >
-                    {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                    {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                   </button>
                 </div>
                 {/* Password Policy popover */}
-                <div className="mt-2 text-xs relative">
+                <div className="mt-1 text-xs relative">
                   <button
                     type="button"
                     className={`${allValid ? 'text-green-600' : 'text-gray-600'} hover:underline`}
@@ -518,7 +698,7 @@ export default function ChangePasswordPage() {
                   )}
                 </div>
               </div>
-              <div className="mb-4">
+              <div className="mb-3">
                 <label className="block text-sm font-semibold text-blue-900 mb-1">
                   Confirm Password <span className="text-red-500">*</span>
                 </label>
@@ -528,7 +708,7 @@ export default function ChangePasswordPage() {
                     placeholder="Confirm Password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-4 py-3 pr-10 rounded-lg shadow-sm border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-[#f3f9ff] caret-[#232c67]"
+                    className="w-full px-3 py-2 pr-10 rounded-lg shadow-sm border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-[#f3f9ff] caret-[#232c67]"
                   />
                   <button
                     type="button"
@@ -536,19 +716,34 @@ export default function ChangePasswordPage() {
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                     tabIndex={-1}
                   >
-                    {showConfirmPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                    {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                   </button>
                 </div>
               </div>
+
+              {/* Captcha Section */}
+              <div className="mb-3">
+                <label className="block text-sm font-semibold text-blue-900 mb-1">
+                  Solve to Continue <span className="text-red-500">*</span>
+                </label>
+                <div className="bg-[#eaf6ff] p-2 rounded-xl border border-blue-100 shadow flex flex-col items-center">
+                  <CustomCaptcha
+                    onCaptchaChange={handleCaptchaChange}
+                    disabled={loading}
+                    shake={shakeCaptcha}
+                  />
+                </div>
+              </div>
+
               <form onSubmit={handleSubmit}>
                 <button
                   type="submit"
-                  className={`w-full py-3 rounded-lg shadow-md text-white text-lg font-semibold transition-all-smooth ${
-                    loading || !Object.values(passwordValidation).every(Boolean) || password !== confirmPassword || !email || !currentPassword
+                  className={`w-full py-2.5 rounded-lg shadow-md text-white text-base font-semibold transition-all-smooth ${
+                    loading || !Object.values(passwordValidation).every(Boolean) || password !== confirmPassword || !email || !currentPassword || !isCaptchaValid
                       ? 'bg-gray-400 cursor-not-allowed opacity-60'
                       : 'bg-blue-400 hover:bg-blue-500'
                   }`}
-                  disabled={loading || !Object.values(passwordValidation).every(Boolean) || password !== confirmPassword || !email || !currentPassword}
+                  disabled={loading || !Object.values(passwordValidation).every(Boolean) || password !== confirmPassword || !email || !currentPassword || !isCaptchaValid}
                 >
                   {loading ? 'Processing...' : 'Save'}
                 </button>

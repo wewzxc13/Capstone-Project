@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "../../Context/UserContext";
+import { API } from '@/config/api';
 
 // Add a simple modal component
 function Modal({ open, onClose, children }) {
@@ -232,7 +233,7 @@ export default function AttendancePage() {
 
   // Fetch quarters data for dynamic date validation
   useEffect(() => {
-    fetch('/php/Assessment/get_quarters.php')
+    fetch(API.assessment.getQuarters())
       .then(response => response.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -275,7 +276,7 @@ export default function AttendancePage() {
     const userId = localStorage.getItem("userId");
     if (userId) {
       // 1. Get advisory_id for this teacher
-      fetch("/php/Advisory/get_advisory_details.php", {
+      fetch(API.advisory.getAdvisoryDetails(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teacher_id: userId })
@@ -310,7 +311,7 @@ export default function AttendancePage() {
           
           setStudents(data.students || []);
           // 2. Get ALL attendance records for this advisory
-          fetch("/php/Advisory/get_attendance.php", {
+          fetch(API.advisory.getAttendance(), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ advisory_id: data.advisory.advisory_id })
@@ -519,7 +520,7 @@ export default function AttendancePage() {
         // 1. Update existing records
         let updatePromise = Promise.resolve({ updated: 0, errors: [] });
         if (recordsToUpdate.length > 0) {
-          updatePromise = fetch('/php/Advisory/update_attendance.php', {
+          updatePromise = fetch(API.advisory.updateAttendance(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ records: recordsToUpdate }),
@@ -528,7 +529,7 @@ export default function AttendancePage() {
         // 2. Insert new records
         let insertPromise = Promise.resolve({ status: 'success' });
         if (recordsToInsert.length > 0) {
-          insertPromise = fetch('/php/Advisory/create_attendance.php', {
+          insertPromise = fetch(API.advisory.createAttendance(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ records: recordsToInsert }),
@@ -587,7 +588,7 @@ export default function AttendancePage() {
       return;
     }
     try {
-      const res = await fetch('/php/Advisory/create_attendance.php', {
+      const res = await fetch(API.advisory.createAttendance(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ records }),
@@ -599,7 +600,7 @@ export default function AttendancePage() {
         // Refetch latest attendance records from backend
         const userId = localStorage.getItem('userId');
         if (userId) {
-          fetch('/php/Advisory/get_advisory_details.php', {
+          fetch(API.advisory.getAdvisoryDetails(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ teacher_id: userId })
@@ -608,7 +609,7 @@ export default function AttendancePage() {
             .then(data => {
               setStudents(data.students || []);
               if (data.advisory && data.advisory.advisory_id) {
-                fetch('/php/Advisory/get_attendance.php', {
+                fetch(API.advisory.getAttendance(), {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ advisory_id: data.advisory.advisory_id })
