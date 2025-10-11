@@ -244,57 +244,71 @@ export function UserProvider({ children }) {
   const initializeAdvisoryPhotos = (students, parents, advisory = null) => {
     const photoMap = new Map();
     
-    // Process students
+    // Process students - include ALL photos (even defaults)
     if (students) {
       students.forEach(student => {
-        if (student.photo) {
-          const finalUrl = normalizePhotoUrl(student.photo);
+        const photoValue = student.photo || student.stud_photo;
+        if (photoValue) {
+          const finalUrl = normalizePhotoUrl(photoValue);
           console.log('Student photo initialized:', {
             studentId: student.student_id,
             studentName: `${student.stud_firstname} ${student.stud_lastname}`,
-            originalPhoto: student.photo,
-            finalUrl: finalUrl || '(empty - using fallback icon)'
+            originalPhoto: photoValue,
+            finalUrl: finalUrl || '(empty - using fallback icon)',
+            isDefault: photoValue.includes('default_')
           });
-          photoMap.set(`student_${student.student_id}`, finalUrl);
+          if (finalUrl) {
+            photoMap.set(`student_${student.student_id}`, finalUrl);
+          }
         }
       });
     }
     
-    // Process parents
+    // Process parents - include ALL photos (even defaults)
     if (parents) {
       parents.forEach(parent => {
-        if (parent.photo) {
-          const finalUrl = normalizePhotoUrl(parent.photo);
+        const photoValue = parent.photo || parent.user_photo;
+        if (photoValue) {
+          const finalUrl = normalizePhotoUrl(photoValue);
           console.log('Parent photo initialized:', {
             parentId: parent.user_id,
             parentName: `${parent.user_firstname} ${parent.user_lastname}`,
-            originalPhoto: parent.photo,
-            finalUrl: finalUrl || '(empty - using fallback icon)'
+            originalPhoto: photoValue,
+            finalUrl: finalUrl || '(empty - using fallback icon)',
+            isDefault: photoValue.includes('default_')
           });
-          photoMap.set(parent.user_id.toString(), finalUrl);
+          if (finalUrl) {
+            photoMap.set(parent.user_id.toString(), finalUrl);
+          }
         }
       });
     }
     
-    // Process teachers from advisory data
+    // Process teachers from advisory data - include ALL photos (even defaults)
     if (advisory) {
       if (advisory.lead_teacher_id && advisory.lead_teacher_photo) {
         const finalUrl = normalizePhotoUrl(advisory.lead_teacher_photo);
-        photoMap.set(advisory.lead_teacher_id.toString(), finalUrl);
         console.log('Lead teacher photo initialized:', {
           teacherId: advisory.lead_teacher_id,
           photo: advisory.lead_teacher_photo,
-          finalUrl
+          finalUrl: finalUrl || '(empty)',
+          isDefault: advisory.lead_teacher_photo.includes('default_')
         });
+        if (finalUrl) {
+          photoMap.set(advisory.lead_teacher_id.toString(), finalUrl);
+        }
       }
       if (advisory.assistant_teacher_id && advisory.assistant_teacher_photo) {
         const finalUrl = normalizePhotoUrl(advisory.assistant_teacher_photo);
-        photoMap.set(advisory.assistant_teacher_id.toString(), finalUrl);
         console.log('Assistant teacher photo initialized:', {
           teacherId: advisory.assistant_teacher_id,
           photo: advisory.assistant_teacher_photo,
-          finalUrl
+          finalUrl: finalUrl || '(empty)',
+          isDefault: advisory.assistant_teacher_photo.includes('default_')
         });
+        if (finalUrl) {
+          photoMap.set(advisory.assistant_teacher_id.toString(), finalUrl);
+        }
       }
     }
     
