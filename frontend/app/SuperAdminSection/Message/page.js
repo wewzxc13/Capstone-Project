@@ -1183,7 +1183,7 @@ export default function SuperAdminMessagesPage() {
     const uid = Number(localStorage.getItem('userId'));
     if (!uid) return;
     const controller = new AbortController();
-    fetch(API.communication.getGroupMessages(), {
+    fetch(`${API.communication.getGroupMessages()}?group_id=${selectedChat.id}&user_id=${uid}`, {
       signal: controller.signal,
     })
       .then((r) => safeJsonParse(r))
