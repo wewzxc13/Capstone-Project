@@ -266,6 +266,12 @@ export function UserProvider({ children }) {
       students.forEach(student => {
         if (student.photo) {
           const finalUrl = normalizePhotoUrl(student.photo);
+          console.log('Student photo initialized:', {
+            studentId: student.student_id,
+            studentName: `${student.stud_firstname} ${student.stud_lastname}`,
+            originalPhoto: student.photo,
+            finalUrl: finalUrl || '(empty - using fallback icon)'
+          });
           photoMap.set(`student_${student.student_id}`, finalUrl);
         }
       });
@@ -276,6 +282,12 @@ export function UserProvider({ children }) {
       parents.forEach(parent => {
         if (parent.photo) {
           const finalUrl = normalizePhotoUrl(parent.photo);
+          console.log('Parent photo initialized:', {
+            parentId: parent.user_id,
+            parentName: `${parent.user_firstname} ${parent.user_lastname}`,
+            originalPhoto: parent.photo,
+            finalUrl: finalUrl || '(empty - using fallback icon)'
+          });
           photoMap.set(parent.user_id.toString(), finalUrl);
         }
       });
