@@ -221,7 +221,7 @@ function getPhotoUrl(filename) {
   }
   
   // If it's a filename, construct the full backend URL
-  return `${API.uploads.getUploadURL(filename}`;
+  return `${API.uploads.getUploadURL(filename)}`;
 }
 
 
@@ -618,7 +618,7 @@ export default function ViewOwnUserPage() {
         // Update the photo in formData if a new photo was uploaded
         if (uploadedPhotoUrl !== undefined) {
           // Construct full URL for the uploaded photo
-          const fullPhotoUrl = `${API.uploads.getUploadURL(uploadedPhotoUrl}`;
+          const fullPhotoUrl = `${API.uploads.getUploadURL(uploadedPhotoUrl)}`;
           setFormData(prev => ({ ...prev, user_photo: fullPhotoUrl }));
           // Update the user photo in UserContext for real-time display in Topbar
           updateUserPhoto(uploadedPhotoUrl);
@@ -626,7 +626,7 @@ export default function ViewOwnUserPage() {
           const userId = localStorage.getItem("userId");
           if (userId) {
             // Construct the full URL for the uploaded photo
-            const fullPhotoUrl = `${API.uploads.getUploadURL(uploadedPhotoUrl}`;
+            const fullPhotoUrl = `${API.uploads.getUploadURL(uploadedPhotoUrl)}`;
             updateAnyUserPhoto(userId, fullPhotoUrl);
             console.log('Updated global photo map for user:', userId, 'with URL:', fullPhotoUrl);
           }
@@ -634,7 +634,7 @@ export default function ViewOwnUserPage() {
         } else if (dataToSend.user_photo && dataToSend.user_photo !== formData.user_photo) {
           // Handle case where preview photo was uploaded (different from original)
           // Construct full URL for the preview photo
-          const fullPhotoUrl = `${API.uploads.getUploadURL(dataToSend.user_photo}`;
+          const fullPhotoUrl = `${API.uploads.getUploadURL(dataToSend.user_photo)}`;
           setFormData(prev => ({ ...prev, user_photo: fullPhotoUrl }));
           // Update the user photo in UserContext for real-time display in Topbar
           updateUserPhoto(dataToSend.user_photo);
@@ -642,7 +642,7 @@ export default function ViewOwnUserPage() {
           const userId = localStorage.getItem("userId");
           if (userId) {
             // Construct the full URL for the preview photo
-            const fullPhotoUrl = `${API.uploads.getUploadURL(dataToSend.user_photo}`;
+            const fullPhotoUrl = `${API.uploads.getUploadURL(dataToSend.user_photo)}`;
             updateAnyUserPhoto(userId, fullPhotoUrl);
             console.log('Updated global photo map for user:', userId, 'with preview photo URL:', fullPhotoUrl);
           }
