@@ -36,6 +36,26 @@ export function UserProvider({ children }) {
     const value = raw.trim();
     if (value.length === 0) return "";
 
+    // Skip default placeholder images - these don't exist on Vercel and should use fallback icons instead
+    const defaultImages = [
+      'default_teacher.png',
+      'default_parent.png',
+      'default_boy_student.png',
+      'default_girl_student.png',
+      'default_admin.png',
+      'default_user.png'
+    ];
+    
+    // Check if the value ends with any default image filename
+    const isDefaultImage = defaultImages.some(defaultImg => 
+      value.endsWith(defaultImg) || value.includes('/' + defaultImg)
+    );
+    
+    if (isDefaultImage) {
+      console.log('Skipping default placeholder image:', value);
+      return ""; // Return empty string to trigger fallback icon in UI
+    }
+
     // If already absolute or blob URL, keep as-is
     if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('blob:')) {
       return value;
@@ -238,7 +258,7 @@ export function UserProvider({ children }) {
   };
 
   // New function: Initialize photos for advisory data (called when AssignedClass page loads)
-  const initializeAdvisoryPhotos = (students, parents) => {
+  const initializeAdvisoryPhotos = (students, parents, advisory = null) => {
     const photoMap = new Map();
     
     // Process students
@@ -261,9 +281,34 @@ export function UserProvider({ children }) {
       });
     }
     
+    // Process teachers from advisory data
+    if (advisory) {
+      if (advisory.lead_teacher_id && advisory.lead_teacher_photo) {
+        const finalUrl = normalizePhotoUrl(advisory.lead_teacher_photo);
+        photoMap.set(advisory.lead_teacher_id.toString(), finalUrl);
+        console.log('Lead teacher photo initialized:', {
+          teacherId: advisory.lead_teacher_id,
+          photo: advisory.lead_teacher_photo,
+          finalUrl
+        });
+      }
+      if (advisory.assistant_teacher_id && advisory.assistant_teacher_photo) {
+        const finalUrl = normalizePhotoUrl(advisory.assistant_teacher_photo);
+        photoMap.set(advisory.assistant_teacher_id.toString(), finalUrl);
+        console.log('Assistant teacher photo initialized:', {
+          teacherId: advisory.assistant_teacher_id,
+          photo: advisory.assistant_teacher_photo,
+          finalUrl
+        });
+      }
+    }
+    
     console.log('initializeAdvisoryPhotos called:', {
       studentCount: students?.length || 0,
       parentCount: parents?.length || 0,
+      hasAdvisory: !!advisory,
+      leadTeacherIncluded: !!(advisory?.lead_teacher_id && advisory?.lead_teacher_photo),
+      assistantTeacherIncluded: !!(advisory?.assistant_teacher_id && advisory?.assistant_teacher_photo),
       photoMapSize: photoMap.size,
       studentPhotos: students?.map(s => ({ id: s.student_id, photo: s.photo })),
       parentPhotos: parents?.map(p => ({ id: p.user_id, photo: p.photo }))

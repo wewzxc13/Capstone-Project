@@ -2571,7 +2571,7 @@ export default function SuperAdminMessagesPage() {
                         <p className="font-semibold text-[#1E2A79]">{tempSelectedChat.name}</p>
                         <p className="text-xs mt-1">No messages yet. Say hello!</p>
                       </div>
-                    ) : selectedChatId && (isRunningRef.current.conversation === selectedChatId || isLoadingSpecificConversation || isLoadingConversations) ? (
+                    ) : selectedChatId && selectedType === 'user' && (isRunningRef.current.conversation === selectedChatId || isLoadingSpecificConversation || isLoadingConversations) ? (
                       <div className="flex flex-col items-center justify-center p-8">
                         <div className="w-10 h-10 rounded-full bg-[#1E2A79] text-white flex items-center justify-center font-bold mb-3">
                           <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -2702,12 +2702,44 @@ export default function SuperAdminMessagesPage() {
                     {!(selectedChat?.messages && selectedChat.messages.length > 0) ? (
                       <div className="flex-1 flex items-center justify-center text-center text-gray-500 relative z-10">
                         <div>
-                          <div className="mx-auto w-16 h-16 rounded-full bg-white border border-gray-300 flex items-center justify-center text-[#1E2A79] mb-3">
-                            {renderUserAvatar(selectedChat?.id, selectedChat?.role, "w-full h-full")}
+                          <div className={`mx-auto w-16 h-16 ${selectedType === 'group' ? 'rounded-xl' : 'rounded-full'} bg-white border border-gray-300 flex items-center justify-center text-[#1E2A79] mb-3 overflow-hidden`}>
+                            {selectedType === 'group' ? (
+                              <img 
+                                src={(() => {
+                                  const groupType = selectedChat?.groupType || '';
+                                  if (groupType === 'Class') {
+                                    const groupRefId = selectedChat?.groupRefId;
+                                    const groupName = selectedChat?.name;
+                                    return getClassPhoto(groupRefId, groupName);
+                                  } else {
+                                    switch (groupType.toLowerCase()) {
+                                      case 'overall':
+                                      default:
+                                        return '/assets/image/general_gc_photo.png';
+                                    }
+                                  }
+                                })()}
+                                alt={selectedChat?.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : (
+                              renderUserAvatar(selectedChat?.id, selectedChat?.role, "w-full h-full")
+                            )}
+                            {selectedType === 'group' && (
+                              <div className={`w-full h-full ${selectedChat?.color || 'bg-gray-500'} text-white flex items-center justify-center font-bold shadow-sm`} style={{display: 'none'}}>
+                                <FaUsers />
+                              </div>
+                            )}
                           </div>
                           <p className="font-semibold text-[#1E2A79]">{selectedChat?.name}</p>
                           {selectedType === 'archived' ? (
                             <div className="mt-1 text-xs">This conversation is archived.</div>
+                          ) : selectedType === 'group' ? (
+                            <p className="text-xs">No messages yet. Start the conversation!</p>
                           ) : (() => {
                             // Check if this user has conversation history by looking at the chats array
                             const hasConversationHistory = chats.some(c => c.id === selectedChat?.id && c.messages && c.messages.length > 0);
@@ -2715,8 +2747,8 @@ export default function SuperAdminMessagesPage() {
                             const hasRecentHistory = recent.some(r => r.id === selectedChat?.id);
                             // Check if this user has any lastMessage (indicating previous conversation)
                             const hasLastMessage = selectedChat?.lastMessage && selectedChat.lastMessage.trim() !== '';
-                            // Check if conversation is currently loading
-                            const isConversationLoading = isRunningRef.current.conversation === selectedChat?.id || isLoadingSpecificConversation;
+                            // Check if conversation is currently loading (only for user conversations)
+                            const isConversationLoading = selectedType === 'user' && (isRunningRef.current.conversation === selectedChat?.id || isLoadingSpecificConversation);
                             // Check if this user was found in the conversation history API
                             const hasConversationHistoryAPI = chats.some(c => c.id === selectedChat?.id && c.lastMessage && c.lastMessage.trim() !== '');
                             // Check if this user was just selected from search results and has messages

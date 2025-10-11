@@ -139,8 +139,8 @@ export default function AssignedClassPage() {
             setStudents(data.students || []);
             setParents(data.parents || []);
             
-            // Initialize UserContext with advisory photos for real-time updates
-            initializeAdvisoryPhotos(data.students || [], data.parents || []);
+            // Initialize UserContext with advisory photos for real-time updates (including teacher photos)
+            initializeAdvisoryPhotos(data.students || [], data.parents || [], data.advisory);
         } else {
           // No advisory found for this level - this is normal for empty classes
           setAdvisory(null);
@@ -508,29 +508,38 @@ export default function AssignedClassPage() {
               <h4 className="text-sm font-semibold text-gray-700 mb-3">Teaching Staff</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                  {advisory?.lead_teacher_photo ? (
-                    <>
-                      <img
-                        src={advisory.lead_teacher_photo}
-                        alt="Lead Teacher"
-                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          if (e.target.nextSibling) {
-                            e.target.nextSibling.style.display = 'flex';
-                          }
-                        }}
-                      />
-                      {/* Fallback icon that shows when photo fails to load */}
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
-                        <FaChalkboardTeacher />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
-                      <FaChalkboardTeacher />
-                    </div>
-                  )}
+                  {(() => {
+                    // Get photo from UserContext (properly normalized, skips default placeholders)
+                    const realTimePhoto = getUserPhoto(advisory?.lead_teacher_id);
+                    
+                    if (realTimePhoto) {
+                      return (
+                        <>
+                          <img
+                            src={realTimePhoto}
+                            alt="Lead Teacher"
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              if (e.target.nextSibling) {
+                                e.target.nextSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                          {/* Fallback icon that shows when photo fails to load */}
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
+                            <FaChalkboardTeacher />
+                          </div>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
+                          <FaChalkboardTeacher />
+                        </div>
+                      );
+                    }
+                  })()}
                   <div className="min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-medium text-gray-900">Lead Teacher</p>
                     <p className="text-xs sm:text-sm text-gray-600 truncate">
@@ -551,29 +560,38 @@ export default function AssignedClassPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                  {advisory?.assistant_teacher_photo ? (
-                    <>
-                      <img
-                        src={advisory.assistant_teacher_photo}
-                        alt="Assistant Teacher"
-                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          if (e.target.nextSibling) {
-                            e.target.nextSibling.style.display = 'flex';
-                          }
-                        }}
-                      />
-                      {/* Fallback icon that shows when photo fails to load */}
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
-                        <FaChalkboardTeacher />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
-                      <FaChalkboardTeacher />
-                    </div>
-                  )}
+                  {(() => {
+                    // Get photo from UserContext (properly normalized, skips default placeholders)
+                    const realTimePhoto = getUserPhoto(advisory?.assistant_teacher_id);
+                    
+                    if (realTimePhoto) {
+                      return (
+                        <>
+                          <img
+                            src={realTimePhoto}
+                            alt="Assistant Teacher"
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              if (e.target.nextSibling) {
+                                e.target.nextSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                          {/* Fallback icon that shows when photo fails to load */}
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm hidden flex-shrink-0">
+                            <FaChalkboardTeacher />
+                          </div>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm sm:text-lg shadow-sm flex-shrink-0">
+                          <FaChalkboardTeacher />
+                        </div>
+                      );
+                    }
+                  })()}
                   <div className="min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-medium text-gray-900">Assistant Teacher</p>
                     <p className="text-xs sm:text-sm text-gray-600 truncate">
