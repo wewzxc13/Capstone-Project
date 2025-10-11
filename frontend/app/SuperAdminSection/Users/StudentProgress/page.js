@@ -13,6 +13,7 @@ import jsPDF from 'jspdf';
 import { API } from '@/config/api';
 
 // Helper function to construct full photo URL from filename
+// Now uses API.uploads.getUploadURL() for proper production URL resolution
 function getPhotoUrl(filename) {
   if (!filename) {
     return null;
@@ -23,14 +24,8 @@ function getPhotoUrl(filename) {
     return filename;
   }
   
-  // If it already starts with /php/Uploads/, return as is
-  if (filename.startsWith('/php/Uploads/')) {
-    return filename;
-  }
-  
-  // If it's a filename, construct the full backend URL
-  const fullUrl = `/php/Uploads/${filename}`;
-  return fullUrl;
+  // Use API.uploads.getUploadURL() to construct proper backend URL for production
+  return API.uploads.getUploadURL(filename);
 }
 
 export default function StudentProgress({ formData: initialFormData }) {
@@ -2518,15 +2513,19 @@ export default function StudentProgress({ formData: initialFormData }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
                   {(() => {
-                    // Get teacher photo from advisory data
-                    const teacherPhoto = advisory?.lead_teacher_photo;
-                    const photoUrl = teacherPhoto ? getPhotoUrl(teacherPhoto) : null;
+                    // Get photo from UserContext (properly normalized, includes default placeholders)
+                    const contextPhoto = getUserPhoto(advisory?.lead_teacher_id);
+                    // Construct full URL for API photo (including default placeholders)
+                    const apiPhoto = advisory?.lead_teacher_photo
+                      ? (advisory.lead_teacher_photo.startsWith('http') ? advisory.lead_teacher_photo : API.uploads.getUploadURL(advisory.lead_teacher_photo))
+                      : null;
+                    const realTimePhoto = contextPhoto || apiPhoto;
                     
-                    if (photoUrl) {
+                    if (realTimePhoto) {
                       return (
                         <>
                           <img
-                            src={photoUrl}
+                            src={realTimePhoto}
                             alt="Lead Teacher"
                             className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-sm flex-shrink-0"
                             onError={(e) => {
@@ -2557,15 +2556,19 @@ export default function StudentProgress({ formData: initialFormData }) {
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
                   {(() => {
-                    // Get teacher photo from advisory data
-                    const teacherPhoto = advisory?.assistant_teacher_photo;
-                    const photoUrl = teacherPhoto ? getPhotoUrl(teacherPhoto) : null;
+                    // Get photo from UserContext (properly normalized, includes default placeholders)
+                    const contextPhoto = getUserPhoto(advisory?.assistant_teacher_id);
+                    // Construct full URL for API photo (including default placeholders)
+                    const apiPhoto = advisory?.assistant_teacher_photo
+                      ? (advisory.assistant_teacher_photo.startsWith('http') ? advisory.assistant_teacher_photo : API.uploads.getUploadURL(advisory.assistant_teacher_photo))
+                      : null;
+                    const realTimePhoto = contextPhoto || apiPhoto;
                     
-                    if (photoUrl) {
+                    if (realTimePhoto) {
                       return (
                         <>
                           <img
-                            src={photoUrl}
+                            src={realTimePhoto}
                             alt="Assistant Teacher"
                             className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-sm flex-shrink-0"
                             onError={(e) => {
