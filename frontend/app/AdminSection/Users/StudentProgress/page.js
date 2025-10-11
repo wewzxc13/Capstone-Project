@@ -2687,38 +2687,43 @@ export default function StudentProgress({ formData: initialFormData }) {
                            className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                            onClick={() => setSelectedStudent(student)}
                          >
-                           {(() => {
-                             // Get real-time photo from UserContext, fallback to student.photo if not available
-                             const realTimePhoto = getStudentPhoto(student.student_id) || student.photo;
-                             
-                             if (realTimePhoto) {
-                               return (
-                                 <>
-                                   <img
-                                     src={realTimePhoto}
-                                     alt="Profile"
-                                     className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
-                                     onError={(e) => {
-                                       e.target.style.display = 'none';
-                                       if (e.target.nextSibling) {
-                                         e.target.nextSibling.style.display = 'flex';
-                                       }
-                                     }}
-                                   />
-                                   {/* Fallback icon that shows when photo fails to load */}
-                                   <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center hidden flex-shrink-0">
-                                     <FaUser className="text-blue-600 text-xs sm:text-sm" />
-                                   </div>
-                                 </>
-                               );
-                             } else {
-                               return (
-                                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                   <FaUser className="text-blue-600 text-xs sm:text-sm" />
-                                 </div>
-                               );
-                             }
-                           })()}
+                          {(() => {
+                            // Get photo from UserContext with fallback to API photo
+                            const contextPhoto = getStudentPhoto(student.student_id);
+                            // Construct full URL for API photo (including default placeholders)
+                            const apiPhoto = student.photo
+                              ? (student.photo.startsWith('http') ? student.photo : API.uploads.getUploadURL(student.photo))
+                              : null;
+                            const realTimePhoto = contextPhoto || apiPhoto;
+                            
+                            if (realTimePhoto) {
+                              return (
+                                <>
+                                  <img
+                                    src={realTimePhoto}
+                                    alt="Profile"
+                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm flex-shrink-0"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      if (e.target.nextSibling) {
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                  {/* Fallback icon that shows when photo fails to load */}
+                                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center hidden flex-shrink-0">
+                                    <FaUser className="text-blue-600 text-xs sm:text-sm" />
+                                  </div>
+                                </>
+                              );
+                            } else {
+                              return (
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <FaUser className="text-blue-600 text-xs sm:text-sm" />
+                                </div>
+                              );
+                            }
+                          })()}
                            <div className="flex-1 min-w-0">
                              <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                                {student.stud_lastname}, {student.stud_firstname} {student.stud_middlename || ''}
@@ -2759,8 +2764,13 @@ export default function StudentProgress({ formData: initialFormData }) {
                {/* Left side with avatar and name - 40% */}
                <div className="flex items-center gap-3 md:gap-4 w-full md:w-[40%]">
                  {(() => {
-                   // Get real-time photo from UserContext, fallback to student.photo if not available
-                   const realTimePhoto = getStudentPhoto(selectedStudent.student_id) || selectedStudent.photo;
+                   // Get photo from UserContext with fallback to API photo
+                   const contextPhoto = getStudentPhoto(selectedStudent.student_id);
+                   // Construct full URL for API photo (including default placeholders)
+                   const apiPhoto = selectedStudent.photo
+                     ? (selectedStudent.photo.startsWith('http') ? selectedStudent.photo : API.uploads.getUploadURL(selectedStudent.photo))
+                     : null;
+                   const realTimePhoto = contextPhoto || apiPhoto;
                    
                    if (realTimePhoto) {
                      return (
@@ -2840,8 +2850,13 @@ export default function StudentProgress({ formData: initialFormData }) {
                {/* Left side with avatar and name - 40% */}
                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-[40%]">
                  {(() => {
-                   // Get real-time photo from UserContext, fallback to student.photo if not available
-                   const realTimePhoto = getStudentPhoto(selectedStudent.student_id) || selectedStudent.photo;
+                   // Get photo from UserContext with fallback to API photo
+                   const contextPhoto = getStudentPhoto(selectedStudent.student_id);
+                   // Construct full URL for API photo (including default placeholders)
+                   const apiPhoto = selectedStudent.photo
+                     ? (selectedStudent.photo.startsWith('http') ? selectedStudent.photo : API.uploads.getUploadURL(selectedStudent.photo))
+                     : null;
+                   const realTimePhoto = contextPhoto || apiPhoto;
                    
                    if (realTimePhoto) {
                      return (
