@@ -615,10 +615,19 @@ export default function LoginForm({ setIsSignup }) {
     setLoading(true);
 
     try {
-      const response = await axios.post(API.auth.login(), {
-        email,
-        password,
-      });
+      const response = await axios.post(
+        API.auth.login(), 
+        {
+          email,
+          password,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          withCredentials: true
+        }
+      );
 
       if (response.data.success) {
         // Clear localStorage on successful login
