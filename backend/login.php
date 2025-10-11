@@ -1,22 +1,6 @@
 <?php
-// Dynamic CORS for localhost:3000+
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (preg_match('/^http:\/\/localhost:3[0-9]{3,}$/', $origin)) {
-    header("Access-Control-Allow-Origin: $origin");
-} else {
-    header("Access-Control-Allow-Origin: http://localhost:3000"); // fallback
-}
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Access-Control-Allow-Credentials: true");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
 session_start();
-include_once 'connection.php';
+include_once 'connection.php'; // CORS headers are now handled in connection.php
 
 define("MAX_ATTEMPTS", 5);
 define("LOCKOUT_TIME", 300); // 5 minutes
@@ -145,12 +129,18 @@ try {
 if (isset($e)) {
     $log = date('Y-m-d H:i:s') . " - " . $e->getMessage() . "\n";
     file_put_contents("error_log.txt", $log, FILE_APPEND);
+    
+    // Only log debug info if variables are set
+    if (isset($email)) {
+        file_put_contents("debug_login.txt", date('Y-m-d H:i:s') . " - Input: $email\n", FILE_APPEND);
+    }
+    if (isset($password)) {
+        file_put_contents("debug_login.txt", date('Y-m-d H:i:s') . " - Plain Input Password: $password\n", FILE_APPEND);
+    }
+    if (isset($user) && isset($user['user_pass'])) {
+        file_put_contents("debug_login.txt", date('Y-m-d H:i:s') . " - Hashed DB Password: " . $user['user_pass'] . "\n", FILE_APPEND);
+    }
 }
-
-file_put_contents("debug_login.txt", "Input: $email\n", FILE_APPEND);
-file_put_contents("debug_login.txt", "Hashed DB Password: " . $user['user_pass'] . "\n", FILE_APPEND);
-file_put_contents("debug_login.txt", "Plain Input Password: $password\n", FILE_APPEND);
-
 ?>
 
 

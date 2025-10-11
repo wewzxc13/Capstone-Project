@@ -117,6 +117,7 @@ export const userAPI = {
   getUserDetails: () => getEndpoint('Users/get_user_details.php'),
   getUserProfile: () => getEndpoint('Users/get_user_profile.php'),
   getUserNames: () => getEndpoint('Users/get_user_names.php'),
+  getStudentNames: () => getEndpoint('Users/get_student_names.php'),
   getStudentDetails: () => getEndpoint('Users/get_student_details.php'),
   getUserCounts: () => getEndpoint('Users/get_user_counts.php'),
   createUser: () => getEndpoint('Users/create_user.php'),

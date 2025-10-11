@@ -15,6 +15,11 @@ backend/**/uploads/
 backend/**/cache/
 backend/connection.php
 
+# Backend-Ville
+backend-ville/.env
+backend-ville/.env.*
+backend-ville/vendor/
+
 # Logs
 backend/SystemLogs/*.txt
 backend/SystemLogs/*.log
