@@ -27,7 +27,9 @@ const BACKEND_PATH = process.env.NEXT_PUBLIC_BACKEND_PATH || '/backend-ville';
 export const API_URL = `${API_BASE_URL}${BACKEND_PATH}`;
 
 // Determine if we're using production or local development
-const isProduction = API_BASE_URL.includes('learnersville.online');
+// Check both the API URL and if we're NOT on localhost
+const isProduction = API_BASE_URL.includes('learnersville.online') || 
+                     (typeof window !== 'undefined' && !window.location.hostname.includes('localhost'));
 
 const getEndpoint = (path) => {
   // For production, use direct paths without /php/ prefix
@@ -358,12 +360,29 @@ export const externalAPI = {
  */
 export const uploadsAPI = {
   getUploadURL: (filename) => {
-    // For production, use direct backend URL
-    if (isProduction) {
-      return `${API_URL}/Uploads/${filename}`;
+    // Dynamic production check - check if we're on Vercel or production domain
+    const isDynamic = typeof window !== 'undefined' && 
+                      (window.location.hostname.includes('vercel.app') || 
+                       window.location.hostname.includes('learnersville.online') ||
+                       !window.location.hostname.includes('localhost'));
+    
+    const finalUrl = (isProduction || isDynamic) 
+      ? `${API_URL}/Uploads/${filename}`
+      : `/php/Uploads/${filename}`;
+    
+    // Debug logging
+    if (typeof window !== 'undefined') {
+      console.log('[API] getUploadURL:', {
+        filename,
+        hostname: window.location.hostname,
+        isProduction,
+        isDynamic,
+        API_URL,
+        finalUrl
+      });
     }
-    // For local development, use Next.js rewrite
-    return `/php/Uploads/${filename}`;
+    
+    return finalUrl;
   },
   // Alternative paths for different server configurations
   getUploadURLAlt: (filename) => [
