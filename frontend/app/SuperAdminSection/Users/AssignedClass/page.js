@@ -926,8 +926,8 @@ export default function AssignedClassPage() {
                          onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?role=Parent&id=${parent.user_id}`)}
                        >
                                                    {(() => {
-                            // Get real-time photo from UserContext, fallback to parent.photo if not available
-                            const realTimePhoto = getUserPhoto(parent.user_id) || parent.photo;
+                            // Get photo from UserContext (properly normalized, skips default placeholders)
+                            const realTimePhoto = getUserPhoto(parent.user_id);
                             
                             if (realTimePhoto) {
                               return (
@@ -1102,8 +1102,8 @@ export default function AssignedClassPage() {
                        onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?role=Student&id=${student.student_id}`)}
                      >
                                                {(() => {
-                          // Get real-time photo from UserContext, fallback to student.photo if not available
-                          const realTimePhoto = getStudentPhoto(student.student_id) || student.photo;
+                          // Get photo from UserContext (properly normalized, skips default placeholders)
+                          const realTimePhoto = getStudentPhoto(student.student_id);
                           
                           if (realTimePhoto) {
                             return (
