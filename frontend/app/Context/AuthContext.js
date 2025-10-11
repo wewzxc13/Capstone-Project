@@ -11,27 +11,29 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check localStorage for authentication status and role
-    const storedAuth = localStorage.getItem("isAuthenticated");
-    const storedRole = localStorage.getItem("userRole");
-    const storedUserId = localStorage.getItem("userId");
+    // Check localStorage for authentication status and role (client-side only)
+    if (typeof window !== 'undefined') {
+      const storedAuth = localStorage.getItem("isAuthenticated");
+      const storedRole = localStorage.getItem("userRole");
+      const storedUserId = localStorage.getItem("userId");
 
-    console.log('AuthContext: Initializing with localStorage data:', {
-      storedAuth,
-      storedRole,
-      storedUserId
-    });
+      console.log('AuthContext: Initializing with localStorage data:', {
+        storedAuth,
+        storedRole,
+        storedUserId
+      });
 
-    // Only set as authenticated if we have all required data
-    const hasValidAuth = storedAuth === "true" && storedRole && storedUserId;
-    
-    console.log('AuthContext: Setting authentication state:', {
-      hasValidAuth,
-      role: storedRole
-    });
-    
-    setIsAuthenticated(hasValidAuth);
-    setRole(storedRole);
+      // Only set as authenticated if we have all required data
+      const hasValidAuth = storedAuth === "true" && storedRole && storedUserId;
+      
+      console.log('AuthContext: Setting authentication state:', {
+        hasValidAuth,
+        role: storedRole
+      });
+      
+      setIsAuthenticated(hasValidAuth);
+      setRole(storedRole);
+    }
     setLoading(false);
   }, []);
 
@@ -41,21 +43,23 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(true);
     setRole(userRole);
 
-    // Store in localStorage for persistence
-    localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("userRole", userRole);
-    
-    // Also store userId if provided
-    if (userData && userData.id) {
-      localStorage.setItem("userId", userData.id);
-    }
+    // Store in localStorage for persistence (client-side only)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("userRole", userRole);
+      
+      // Also store userId if provided
+      if (userData && userData.id) {
+        localStorage.setItem("userId", userData.id);
+      }
 
-    // Optionally persist commonly used fields if provided
-    if (userData && userData.email) {
-      localStorage.setItem("userEmail", userData.email);
-    }
-    if (userData && (userData.fullName || userData.user_fullname)) {
-      localStorage.setItem("userFullName", userData.fullName || userData.user_fullname);
+      // Optionally persist commonly used fields if provided
+      if (userData && userData.email) {
+        localStorage.setItem("userEmail", userData.email);
+      }
+      if (userData && (userData.fullName || userData.user_fullname)) {
+        localStorage.setItem("userFullName", userData.fullName || userData.user_fullname);
+      }
     }
 
     // Notify the app that the authenticated user changed
@@ -78,20 +82,22 @@ export function AuthProvider({ children }) {
   // Logout function
   const logout = async () => {
     try {
-      // Log logout to system logs before clearing localStorage
-      const userId = localStorage.getItem("userId");
-      if (userId) {
-        // Set a flag to prevent other logout events from firing
-        localStorage.setItem("logoutLogged", "true");
-        
-        await fetch(API.logs.createSystemLog(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: userId,
-            action: "Logout"
-          })
-        });
+      // Log logout to system logs before clearing localStorage (client-side only)
+      if (typeof window !== 'undefined') {
+        const userId = localStorage.getItem("userId");
+        if (userId) {
+          // Set a flag to prevent other logout events from firing
+          localStorage.setItem("logoutLogged", "true");
+          
+          await fetch(API.logs.createSystemLog(), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: userId,
+              action: "Logout"
+            })
+          });
+        }
       }
     } catch (error) {
       console.error("Failed to log logout:", error);
@@ -101,16 +107,20 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(false);
     setRole(null);
 
-    // Clear localStorage
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userFullName");
+    // Clear localStorage (client-side only)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("isAuthenticated");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("userFullName");
+    }
 
     // Notify the app that the authenticated user changed (logged out)
     try {
-      window.dispatchEvent(new CustomEvent('userChanged', { detail: { userId: null, role: null } }));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('userChanged', { detail: { userId: null, role: null } }));
+      }
     } catch (err) {
       // no-op
     }

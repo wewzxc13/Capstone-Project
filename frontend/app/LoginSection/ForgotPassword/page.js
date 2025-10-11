@@ -95,31 +95,39 @@ const KeyframeStyles = () => (
 
 // Custom Captcha Component
 const CustomCaptcha = ({ onCaptchaChange, disabled = false, shake }) => {
-  // Initialize state with values from localStorage
+  // Initialize state with default values (localStorage will be loaded in useEffect)
   const [captchaState, setCaptchaState] = useState(() => {
-    try {
-      const savedValues = localStorage.getItem("forgotPasswordCaptchaNumbers");
-      if (savedValues) {
-        const { num1, num2 } = JSON.parse(savedValues);
-        return {
-          num1: parseInt(num1),
-          num2: parseInt(num2),
-          input: localStorage.getItem("forgotPasswordCaptchaInput") || "",
-        };
-      }
-    } catch (e) {
-      console.log("Error loading captcha from localStorage");
-    }
-
-    // Generate new values if nothing in localStorage
+    // Generate initial values without localStorage during SSR
     const num1 = Math.floor(Math.random() * 20) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;
-
-    // Save to localStorage
-    localStorage.setItem("forgotPasswordCaptchaNumbers", JSON.stringify({ num1, num2 }));
-
     return { num1, num2, input: "" };
   });
+
+  // Load from localStorage after component mounts (client-side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedValues = localStorage.getItem("forgotPasswordCaptchaNumbers");
+        const savedInput = localStorage.getItem("forgotPasswordCaptchaInput") || "";
+        
+        if (savedValues) {
+          const { num1, num2 } = JSON.parse(savedValues);
+          setCaptchaState({
+            num1: parseInt(num1),
+            num2: parseInt(num2),
+            input: savedInput,
+          });
+        } else {
+          // Save the initial random values to localStorage
+          const { num1, num2 } = captchaState;
+          localStorage.setItem("forgotPasswordCaptchaNumbers", JSON.stringify({ num1, num2 }));
+        }
+      } catch (e) {
+        console.log("Error loading captcha from localStorage");
+        // Keep the current state if localStorage fails
+      }
+    }
+  }, []); // Empty dependency array to run only once after mount
 
   // Animation state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -142,9 +150,11 @@ const CustomCaptcha = ({ onCaptchaChange, disabled = false, shake }) => {
       // Update state
       setCaptchaState({ num1, num2, input: "" });
 
-      // Save to localStorage
-      localStorage.setItem("forgotPasswordCaptchaNumbers", JSON.stringify({ num1, num2 }));
-      localStorage.setItem("forgotPasswordCaptchaInput", "");
+      // Save to localStorage (client-side only)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("forgotPasswordCaptchaNumbers", JSON.stringify({ num1, num2 }));
+        localStorage.setItem("forgotPasswordCaptchaInput", "");
+      }
 
       setIsRefreshing(false);
     }, 500);
@@ -159,8 +169,10 @@ const CustomCaptcha = ({ onCaptchaChange, disabled = false, shake }) => {
       input: value,
     }));
 
-    // Save to localStorage
-    localStorage.setItem("forgotPasswordCaptchaInput", value);
+    // Save to localStorage (client-side only)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("forgotPasswordCaptchaInput", value);
+    }
 
     if (onCaptchaChange) {
       onCaptchaChange(value);
@@ -245,15 +257,19 @@ const ForgotPassword = () => {
     hasMinLength: false
   });
   const [showPolicy, setShowPolicy] = useState(false);
-  const [captchaInput, setCaptchaInput] = useState(() => {
-    return localStorage.getItem("forgotPasswordCaptchaInput") || "";
-  });
+  const [captchaInput, setCaptchaInput] = useState("");
   const [shakeCaptcha, setShakeCaptcha] = useState(false);
   const [isCaptchaValid, setIsCaptchaValid] = useState(false);
   const policyRef = useRef(null);
   const router = useRouter();
 
-
+  // Load captchaInput from localStorage after component mounts (client-side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCaptchaInput = localStorage.getItem("forgotPasswordCaptchaInput") || "";
+      setCaptchaInput(savedCaptchaInput);
+    }
+  }, []);
 
   // Password validation effect
   useEffect(() => {
@@ -272,11 +288,15 @@ const ForgotPassword = () => {
   // Handle captcha change
   const handleCaptchaChange = (value) => {
     setCaptchaInput(value);
-    // Check if the answer is correct
-    const storedCaptcha = localStorage.getItem("forgotPasswordCaptchaNumbers");
-    if (storedCaptcha) {
-      const { num1, num2 } = JSON.parse(storedCaptcha);
-      setIsCaptchaValid(parseInt(value) === parseInt(num1) + parseInt(num2));
+    // Check if the answer is correct (client-side only)
+    if (typeof window !== 'undefined') {
+      const storedCaptcha = localStorage.getItem("forgotPasswordCaptchaNumbers");
+      if (storedCaptcha) {
+        const { num1, num2 } = JSON.parse(storedCaptcha);
+        setIsCaptchaValid(parseInt(value) === parseInt(num1) + parseInt(num2));
+      } else {
+        setIsCaptchaValid(false);
+      }
     } else {
       setIsCaptchaValid(false);
     }
@@ -302,16 +322,18 @@ const ForgotPassword = () => {
       return;
     }
 
-    // Captcha correctness validation
-    const storedCaptcha = localStorage.getItem("forgotPasswordCaptchaNumbers");
-    if (storedCaptcha) {
-      const { num1, num2 } = JSON.parse(storedCaptcha);
-      if (parseInt(captchaInput) !== parseInt(num1) + parseInt(num2)) {
-        toast.error("Incorrect CAPTCHA. Please try again.");
-        setLoading(false);
-        setShakeCaptcha(true);
-        setTimeout(() => setShakeCaptcha(false), 500);
-        return;
+    // Captcha correctness validation (client-side only)
+    if (typeof window !== 'undefined') {
+      const storedCaptcha = localStorage.getItem("forgotPasswordCaptchaNumbers");
+      if (storedCaptcha) {
+        const { num1, num2 } = JSON.parse(storedCaptcha);
+        if (parseInt(captchaInput) !== parseInt(num1) + parseInt(num2)) {
+          toast.error("Incorrect CAPTCHA. Please try again.");
+          setLoading(false);
+          setShakeCaptcha(true);
+          setTimeout(() => setShakeCaptcha(false), 500);
+          return;
+        }
       }
     }
 
@@ -358,14 +380,17 @@ const ForgotPassword = () => {
       }
 
       if (data.success) {
-        localStorage.setItem("userId", data.user_id);
-        localStorage.setItem("userEmail", data.email);
-        localStorage.setItem("pendingPassword", password);
-        // Clear any previous password change logging flag
-        localStorage.removeItem("passwordChangeLogged");
-        // Clear captcha data
-        localStorage.removeItem("forgotPasswordCaptchaInput");
-        localStorage.removeItem("forgotPasswordCaptchaNumbers");
+        // Store data in localStorage (client-side only)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem("userId", data.user_id);
+          localStorage.setItem("userEmail", data.email);
+          localStorage.setItem("pendingPassword", password);
+          // Clear any previous password change logging flag
+          localStorage.removeItem("passwordChangeLogged");
+          // Clear captcha data
+          localStorage.removeItem("forgotPasswordCaptchaInput");
+          localStorage.removeItem("forgotPasswordCaptchaNumbers");
+        }
         // Send OTP
         const formData = new FormData();
         formData.append("user_id", data.user_id);
