@@ -15,6 +15,22 @@ const classTabs = [
   { name: "Adventurer", level_id: 3, age: "4 yrs" },
 ];
 
+// Helper function to check if a photo URL is a default placeholder
+const isDefaultPlaceholder = (photoUrl) => {
+  if (!photoUrl) return true;
+  const defaultImages = [
+    'default_teacher.png',
+    'default_parent.png',
+    'default_boy_student.png',
+    'default_girl_student.png',
+    'default_admin.png',
+    'default_user.png'
+  ];
+  return defaultImages.some(defaultImg => 
+    photoUrl.endsWith(defaultImg) || photoUrl.includes('/' + defaultImg)
+  );
+};
+
 // Modal component using React Portal
 function Modal({ open, onClose, children }) {
   if (!open) return null;
@@ -926,8 +942,10 @@ export default function AssignedClassPage() {
                          onClick={() => router.push(`/AdminSection/Users/ViewUser?role=Parent&id=${parent.user_id}`)}
                        >
                                                    {(() => {
-                            // Get photo from UserContext (properly normalized, skips default placeholders)
-                            const realTimePhoto = getUserPhoto(parent.user_id);
+                            // Get photo from UserContext with fallback, filter out default placeholders
+                            const contextPhoto = getUserPhoto(parent.user_id);
+                            const apiPhoto = isDefaultPlaceholder(parent.photo) ? null : parent.photo;
+                            const realTimePhoto = contextPhoto || apiPhoto;
                             
                             if (realTimePhoto) {
                               return (
@@ -1102,8 +1120,10 @@ export default function AssignedClassPage() {
                        onClick={() => router.push(`/AdminSection/Users/ViewUser?role=Student&id=${student.student_id}`)}
                      >
                                                {(() => {
-                          // Get photo from UserContext (properly normalized, skips default placeholders)
-                          const realTimePhoto = getStudentPhoto(student.student_id);
+                          // Get photo from UserContext with fallback, filter out default placeholders
+                          const contextPhoto = getStudentPhoto(student.student_id);
+                          const apiPhoto = isDefaultPlaceholder(student.photo) ? null : student.photo;
+                          const realTimePhoto = contextPhoto || apiPhoto;
                           
                           if (realTimePhoto) {
                             return (
