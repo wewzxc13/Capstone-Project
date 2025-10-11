@@ -38,6 +38,18 @@ const getEndpoint = (path) => {
                                 window.location.hostname.includes('learnersville.online') ||
                                 !window.location.hostname.includes('localhost'));
   
+  // Debug logging
+  if (typeof window !== 'undefined') {
+    console.log('[API Debug] getEndpoint called:', {
+      path,
+      hostname: window.location.hostname,
+      isProduction,
+      isDynamicProduction,
+      API_BASE_URL,
+      API_URL
+    });
+  }
+  
   // For production (Vercel or Namecheap), use direct backend URL
   if (isProduction || isDynamicProduction) {
     // Remove leading slash if present to avoid double slashes
@@ -48,6 +60,7 @@ const getEndpoint = (path) => {
   }
   
   // For local development, use Next.js rewrites (/php/ -> /capstone-project/backend/)
+  console.log('[API] Local development endpoint:', path);
   if (path.startsWith('/php/')) {
     return path;
   }
