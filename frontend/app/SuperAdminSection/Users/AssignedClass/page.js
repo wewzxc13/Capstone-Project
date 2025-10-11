@@ -942,10 +942,10 @@ export default function AssignedClassPage() {
                          onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?role=Parent&id=${parent.user_id}`)}
                        >
                                                    {(() => {
-                            // Get photo from UserContext with fallback, filter out default placeholders
+                            // Get photo from UserContext with fallback to API photo
                             const contextPhoto = getUserPhoto(parent.user_id);
-                            // Construct full URL for API photo if it's not a default placeholder
-                            const apiPhoto = parent.photo && !isDefaultPlaceholder(parent.photo)
+                            // Construct full URL for API photo (including default placeholders)
+                            const apiPhoto = parent.photo
                               ? (parent.photo.startsWith('http') ? parent.photo : API.uploads.getUploadURL(parent.photo))
                               : null;
                             const realTimePhoto = contextPhoto || apiPhoto;
@@ -1123,10 +1123,10 @@ export default function AssignedClassPage() {
                        onClick={() => router.push(`/SuperAdminSection/Users/ViewUser?role=Student&id=${student.student_id}`)}
                      >
                                                {(() => {
-                          // Get photo from UserContext with fallback, filter out default placeholders
+                          // Get photo from UserContext with fallback to API photo
                           const contextPhoto = getStudentPhoto(student.student_id);
-                          // Construct full URL for API photo if it's not a default placeholder
-                          const apiPhoto = student.photo && !isDefaultPlaceholder(student.photo)
+                          // Construct full URL for API photo (including default placeholders)
+                          const apiPhoto = student.photo
                             ? (student.photo.startsWith('http') ? student.photo : API.uploads.getUploadURL(student.photo))
                             : null;
                           const realTimePhoto = contextPhoto || apiPhoto;

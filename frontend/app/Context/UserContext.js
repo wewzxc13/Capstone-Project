@@ -36,25 +36,8 @@ export function UserProvider({ children }) {
     const value = raw.trim();
     if (value.length === 0) return "";
 
-    // Skip default placeholder images - these don't exist on Vercel and should use fallback icons instead
-    const defaultImages = [
-      'default_teacher.png',
-      'default_parent.png',
-      'default_boy_student.png',
-      'default_girl_student.png',
-      'default_admin.png',
-      'default_user.png'
-    ];
-    
-    // Check if the value ends with any default image filename
-    const isDefaultImage = defaultImages.some(defaultImg => 
-      value.endsWith(defaultImg) || value.includes('/' + defaultImg)
-    );
-    
-    if (isDefaultImage) {
-      console.log('Skipping default placeholder image:', value);
-      return ""; // Return empty string to trigger fallback icon in UI
-    }
+    // Note: We now allow default placeholder images to be displayed
+    // They will be fetched from the backend Uploads folder
 
     // If already absolute or blob URL, keep as-is
     if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('blob:')) {
