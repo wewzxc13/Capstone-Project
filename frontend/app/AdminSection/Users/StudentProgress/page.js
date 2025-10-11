@@ -2516,8 +2516,11 @@ export default function StudentProgress({ formData: initialFormData }) {
                     // Get photo from UserContext (properly normalized, includes default placeholders)
                     const contextPhoto = getUserPhoto(advisory?.lead_teacher_id);
                     // Construct full URL for API photo (including default placeholders)
+                    // Strip /php/Uploads/ prefix if present to avoid double-pathing
                     const apiPhoto = advisory?.lead_teacher_photo
-                      ? (advisory.lead_teacher_photo.startsWith('http') ? advisory.lead_teacher_photo : API.uploads.getUploadURL(advisory.lead_teacher_photo))
+                      ? (advisory.lead_teacher_photo.startsWith('http') 
+                          ? advisory.lead_teacher_photo 
+                          : API.uploads.getUploadURL(advisory.lead_teacher_photo.replace(/^\/php\/Uploads\//, '')))
                       : null;
                     const realTimePhoto = contextPhoto || apiPhoto;
                     
@@ -2559,8 +2562,11 @@ export default function StudentProgress({ formData: initialFormData }) {
                     // Get photo from UserContext (properly normalized, includes default placeholders)
                     const contextPhoto = getUserPhoto(advisory?.assistant_teacher_id);
                     // Construct full URL for API photo (including default placeholders)
+                    // Strip /php/Uploads/ prefix if present to avoid double-pathing
                     const apiPhoto = advisory?.assistant_teacher_photo
-                      ? (advisory.assistant_teacher_photo.startsWith('http') ? advisory.assistant_teacher_photo : API.uploads.getUploadURL(advisory.assistant_teacher_photo))
+                      ? (advisory.assistant_teacher_photo.startsWith('http') 
+                          ? advisory.assistant_teacher_photo 
+                          : API.uploads.getUploadURL(advisory.assistant_teacher_photo.replace(/^\/php\/Uploads\//, '')))
                       : null;
                     const realTimePhoto = contextPhoto || apiPhoto;
                     
@@ -2691,8 +2697,11 @@ export default function StudentProgress({ formData: initialFormData }) {
                             // Get photo from UserContext with fallback to API photo
                             const contextPhoto = getStudentPhoto(student.student_id);
                             // Construct full URL for API photo (including default placeholders)
+                            // Strip /php/Uploads/ prefix if present to avoid double-pathing
                             const apiPhoto = student.photo
-                              ? (student.photo.startsWith('http') ? student.photo : API.uploads.getUploadURL(student.photo))
+                              ? (student.photo.startsWith('http') 
+                                  ? student.photo 
+                                  : API.uploads.getUploadURL(student.photo.replace(/^\/php\/Uploads\//, '')))
                               : null;
                             const realTimePhoto = contextPhoto || apiPhoto;
                             
@@ -2767,8 +2776,11 @@ export default function StudentProgress({ formData: initialFormData }) {
                    // Get photo from UserContext with fallback to API photo
                    const contextPhoto = getStudentPhoto(selectedStudent.student_id);
                    // Construct full URL for API photo (including default placeholders)
+                   // Strip /php/Uploads/ prefix if present to avoid double-pathing
                    const apiPhoto = selectedStudent.photo
-                     ? (selectedStudent.photo.startsWith('http') ? selectedStudent.photo : API.uploads.getUploadURL(selectedStudent.photo))
+                     ? (selectedStudent.photo.startsWith('http') 
+                         ? selectedStudent.photo 
+                         : API.uploads.getUploadURL(selectedStudent.photo.replace(/^\/php\/Uploads\//, '')))
                      : null;
                    const realTimePhoto = contextPhoto || apiPhoto;
                    
@@ -2853,8 +2865,11 @@ export default function StudentProgress({ formData: initialFormData }) {
                    // Get photo from UserContext with fallback to API photo
                    const contextPhoto = getStudentPhoto(selectedStudent.student_id);
                    // Construct full URL for API photo (including default placeholders)
+                   // Strip /php/Uploads/ prefix if present to avoid double-pathing
                    const apiPhoto = selectedStudent.photo
-                     ? (selectedStudent.photo.startsWith('http') ? selectedStudent.photo : API.uploads.getUploadURL(selectedStudent.photo))
+                     ? (selectedStudent.photo.startsWith('http') 
+                         ? selectedStudent.photo 
+                         : API.uploads.getUploadURL(selectedStudent.photo.replace(/^\/php\/Uploads\//, '')))
                      : null;
                    const realTimePhoto = contextPhoto || apiPhoto;
                    

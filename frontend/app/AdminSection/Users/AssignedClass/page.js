@@ -525,8 +525,15 @@ export default function AssignedClassPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
                   {(() => {
-                    // Get photo from UserContext (properly normalized, skips default placeholders)
-                    const realTimePhoto = getUserPhoto(advisory?.lead_teacher_id);
+                    // Get photo from UserContext with fallback to API photo
+                    const contextPhoto = getUserPhoto(advisory?.lead_teacher_id);
+                    // Construct full URL for API photo (strip /php/Uploads/ prefix to avoid double-pathing)
+                    const apiPhoto = advisory?.lead_teacher_photo
+                      ? (advisory.lead_teacher_photo.startsWith('http') 
+                          ? advisory.lead_teacher_photo 
+                          : API.uploads.getUploadURL(advisory.lead_teacher_photo.replace(/^\/php\/Uploads\//, '')))
+                      : null;
+                    const realTimePhoto = contextPhoto || apiPhoto;
                     
                     if (realTimePhoto) {
                       return (
@@ -577,8 +584,15 @@ export default function AssignedClassPage() {
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
                   {(() => {
-                    // Get photo from UserContext (properly normalized, skips default placeholders)
-                    const realTimePhoto = getUserPhoto(advisory?.assistant_teacher_id);
+                    // Get photo from UserContext with fallback to API photo
+                    const contextPhoto = getUserPhoto(advisory?.assistant_teacher_id);
+                    // Construct full URL for API photo (strip /php/Uploads/ prefix to avoid double-pathing)
+                    const apiPhoto = advisory?.assistant_teacher_photo
+                      ? (advisory.assistant_teacher_photo.startsWith('http') 
+                          ? advisory.assistant_teacher_photo 
+                          : API.uploads.getUploadURL(advisory.assistant_teacher_photo.replace(/^\/php\/Uploads\//, '')))
+                      : null;
+                    const realTimePhoto = contextPhoto || apiPhoto;
                     
                     if (realTimePhoto) {
                       return (
@@ -944,9 +958,11 @@ export default function AssignedClassPage() {
                                                    {(() => {
                             // Get photo from UserContext with fallback to API photo
                             const contextPhoto = getUserPhoto(parent.user_id);
-                            // Construct full URL for API photo (including default placeholders)
+                            // Construct full URL for API photo (strip /php/Uploads/ prefix to avoid double-pathing)
                             const apiPhoto = parent.photo
-                              ? (parent.photo.startsWith('http') ? parent.photo : API.uploads.getUploadURL(parent.photo))
+                              ? (parent.photo.startsWith('http') 
+                                  ? parent.photo 
+                                  : API.uploads.getUploadURL(parent.photo.replace(/^\/php\/Uploads\//, '')))
                               : null;
                             const realTimePhoto = contextPhoto || apiPhoto;
                             
@@ -1123,13 +1139,15 @@ export default function AssignedClassPage() {
                        onClick={() => router.push(`/AdminSection/Users/ViewUser?role=Student&id=${student.student_id}`)}
                      >
                                                {(() => {
-                          // Get photo from UserContext with fallback to API photo
-                          const contextPhoto = getStudentPhoto(student.student_id);
-                          // Construct full URL for API photo (including default placeholders)
-                          const apiPhoto = student.photo
-                            ? (student.photo.startsWith('http') ? student.photo : API.uploads.getUploadURL(student.photo))
-                            : null;
-                          const realTimePhoto = contextPhoto || apiPhoto;
+                            // Get photo from UserContext with fallback to API photo
+                            const contextPhoto = getStudentPhoto(student.student_id);
+                            // Construct full URL for API photo (strip /php/Uploads/ prefix to avoid double-pathing)
+                            const apiPhoto = student.photo
+                              ? (student.photo.startsWith('http') 
+                                  ? student.photo 
+                                  : API.uploads.getUploadURL(student.photo.replace(/^\/php\/Uploads\//, '')))
+                              : null;
+                            const realTimePhoto = contextPhoto || apiPhoto;
                           
                           if (realTimePhoto) {
                             return (
