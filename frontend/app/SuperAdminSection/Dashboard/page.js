@@ -69,26 +69,34 @@ export default function SuperAdminDashboard() {
     try {
       setError(null);
       setLoading(true);
-      const response = await fetch(API.user.getUserCounts(), {
+      const endpoint = API.user.getUserCounts();
+      console.log('[Dashboard] Fetching user counts from:', endpoint);
+      
+      const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
+      console.log('[Dashboard] User counts response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('[Dashboard] User counts data:', data);
         if (data.status === 'success') {
           setUserCounts(data.counts);
         } else {
-          setError('Failed to fetch user counts');
+          setError('Failed to fetch user counts: Invalid response format');
         }
       } else {
-        setError('Failed to fetch user counts');
+        const errorText = await response.text();
+        console.error('[Dashboard] Failed to fetch user counts:', response.status, errorText);
+        setError(`Failed to fetch user counts (Status: ${response.status})`);
       }
     } catch (error) {
-      console.error('Error fetching user counts:', error);
-      setError('Failed to fetch user counts');
+      console.error('[Dashboard] Error fetching user counts:', error);
+      setError(`Network error: ${error.message}`);
     } finally {
       setLoading(false);
     }

@@ -28,7 +28,7 @@ export function UserProvider({ children }) {
 
   // Normalize any photo value to a usable URL
   // - Accepts plain filename (e.g., "img_xyz.png")
-  // - Accepts already-prefixed path ("/php/Uploads/img_xyz.png")
+  // - Accepts already-prefixed path ("/php/Uploads/img_xyz.png" or full backend URL)
   // - Accepts absolute URLs (http/https) and blob URLs
   const normalizePhotoUrl = (raw) => {
     if (!raw || typeof raw !== 'string') return "";
@@ -41,17 +41,30 @@ export function UserProvider({ children }) {
       return value;
     }
 
-    // If already points to our uploads path, ensure it has a single leading slash
-    if (value.startsWith('/php/Uploads/')) return value;
-    if (value.startsWith('php/Uploads/')) return `/${value}`;
-
-    // Some records might accidentally store with double prefix; de-dupe conservatively
-    if (value.startsWith('/php/Uploads/php/Uploads/')) {
-      return value.replace('/php/Uploads/php/Uploads/', '/php/Uploads/');
+    // If it's a full path with backend-ville, reconstruct using API config
+    if (value.includes('backend-ville/Uploads/') || value.includes('backend/Uploads/')) {
+      const filename = value.split('/Uploads/').pop();
+      return API.uploads.getUploadURL(filename);
     }
 
-    // Otherwise treat it as a filename residing in backend/Uploads
-    return `/php/Uploads/${value}`;
+    // If already points to our uploads path (legacy format), extract filename and use API
+    if (value.startsWith('/php/Uploads/')) {
+      const filename = value.replace('/php/Uploads/', '');
+      return API.uploads.getUploadURL(filename);
+    }
+    if (value.startsWith('php/Uploads/')) {
+      const filename = value.replace('php/Uploads/', '');
+      return API.uploads.getUploadURL(filename);
+    }
+
+    // Some records might accidentally store with double prefix; de-dupe and use API
+    if (value.startsWith('/php/Uploads/php/Uploads/')) {
+      const filename = value.replace('/php/Uploads/php/Uploads/', '');
+      return API.uploads.getUploadURL(filename);
+    }
+
+    // Otherwise treat it as a filename residing in backend/Uploads and use API
+    return API.uploads.getUploadURL(value);
   };
 
   const updateUserData = (newData) => {

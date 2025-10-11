@@ -34,7 +34,9 @@ const getEndpoint = (path: string) => {
   if (isProduction) {
     // Remove leading slash if present to avoid double slashes
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-    return `${API_URL}/${cleanPath}`;
+    const endpoint = `${API_URL}/${cleanPath}`;
+    console.log('[API] Production endpoint:', endpoint);
+    return endpoint;
   }
   
   // For local development, use Next.js rewrites (/php/ -> /capstone-project/backend/)
@@ -76,9 +78,17 @@ apiClient.interceptors.response.use(
     // Handle common errors here
     if (error.response?.status === 401) {
       // Handle unauthorized access
-      console.error('Unauthorized access');
+      console.error('[API] Unauthorized access');
     } else if (error.response?.status === 500) {
-      console.error('Server error');
+      console.error('[API] Server error:', error.response?.data);
+    } else if (error.response?.status === 0 || error.code === 'ERR_NETWORK') {
+      console.error('[API] Network error - Check CORS configuration');
+    } else {
+      console.error('[API] Request failed:', {
+        status: error.response?.status,
+        url: error.config?.url,
+        message: error.message
+      });
     }
     return Promise.reject(error);
   }
@@ -346,9 +356,17 @@ export const externalAPI = {
  * File Upload URLs
  */
 export const uploadsAPI = {
-  getUploadURL: (filename: string) => `/php/Uploads/${filename}`,
+  getUploadURL: (filename: string) => {
+    // For production, use direct backend URL
+    if (isProduction) {
+      return `${API_URL}/Uploads/${filename}`;
+    }
+    // For local development, use Next.js rewrite
+    return `/php/Uploads/${filename}`;
+  },
   // Alternative paths for different server configurations
   getUploadURLAlt: (filename: string) => [
+    `${API_URL}/Uploads/${filename}`,
     `http://localhost/backend/Uploads/${filename}`,
     `http://localhost/capstone-project/Uploads/${filename}`,
   ],
