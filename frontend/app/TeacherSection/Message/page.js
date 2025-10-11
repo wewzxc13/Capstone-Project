@@ -637,7 +637,7 @@ export default function TeacherMessagesPage() {
         console.log('loadGroups function called');
         const uid = Number(localStorage.getItem('userId')) || 0;
         console.log('loadGroups - user ID from localStorage:', uid);
-        const url = uid ? `/php/Communication/get_groups.php?user_id=${uid}` : '/php/Communication/get_groups.php';
+        const url = `${API.communication.getGroups()}?user_id=${uid}`;
         console.log('loadGroups - API URL:', url);
         const res = await fetch(url, {
           method: 'GET',
@@ -2847,8 +2847,8 @@ export default function TeacherMessagesPage() {
                                           e.stopPropagation();
                                           const uid = Number(localStorage.getItem('userId'));
                                           const url = selectedType === 'group'
-                                            ? '/php/Communication/unsent_group_message.php'
-                                            : '/php/Communication/unsent_message.php';
+                                            ? API.communication.unsentGroupMessage()
+                                            : API.communication.unsentMessage();
                                           const payload = selectedType === 'group'
                                             ? { group_message_id: Number(msg.id), sender_id: uid }
                                             : { message_id: Number(msg.id), sender_id: uid };
@@ -2912,8 +2912,8 @@ export default function TeacherMessagesPage() {
                                           if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                                             const uid = Number(localStorage.getItem('userId'));
                                             const url = selectedType === 'group'
-                                              ? '/php/Communication/edit_group_message.php'
-                                              : '/php/Communication/edit_message.php';
+                                              ? API.communication.editGroupMessage()
+                                              : API.communication.editMessage();
                                             const payload = selectedType === 'group'
                                               ? { group_message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() }
                                               : { message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() };
@@ -2968,8 +2968,8 @@ export default function TeacherMessagesPage() {
                                           onClick={() => {
                                             const uid = Number(localStorage.getItem('userId'));
                                             const url = selectedType === 'group'
-                                              ? '/php/Communication/edit_group_message.php'
-                                              : '/php/Communication/edit_message.php';
+                                              ? API.communication.editGroupMessage()
+                                              : API.communication.editMessage();
                                             const payload = selectedType === 'group'
                                               ? { group_message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() }
                                               : { message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() };

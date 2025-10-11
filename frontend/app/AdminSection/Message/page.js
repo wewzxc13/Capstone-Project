@@ -2827,8 +2827,8 @@ export default function AdminMessagesPage() {
                                           e.stopPropagation();
                                           const uid = Number(localStorage.getItem('userId'));
                                           const url = selectedType === 'group'
-                                            ? '/php/Communication/unsent_group_message.php'
-                                            : '/php/Communication/unsent_message.php';
+                                            ? API.communication.unsentGroupMessage()
+                                            : API.communication.unsentMessage();
                                           const payload = selectedType === 'group'
                                             ? { group_message_id: Number(msg.id), sender_id: uid }
                                             : { message_id: Number(msg.id), sender_id: uid };
@@ -2892,8 +2892,8 @@ export default function AdminMessagesPage() {
                                           if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                                             const uid = Number(localStorage.getItem('userId'));
                                             const url = selectedType === 'group'
-                                              ? '/php/Communication/edit_group_message.php'
-                                              : '/php/Communication/edit_message.php';
+                                              ? API.communication.editGroupMessage()
+                                              : API.communication.editMessage();
                                             const payload = selectedType === 'group'
                                               ? { group_message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() }
                                               : { message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() };
@@ -2948,8 +2948,8 @@ export default function AdminMessagesPage() {
                                           onClick={() => {
                                             const uid = Number(localStorage.getItem('userId'));
                                             const url = selectedType === 'group'
-                                              ? '/php/Communication/edit_group_message.php'
-                                              : '/php/Communication/edit_message.php';
+                                              ? API.communication.editGroupMessage()
+                                              : API.communication.editMessage();
                                             const payload = selectedType === 'group'
                                               ? { group_message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() }
                                               : { message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() };
