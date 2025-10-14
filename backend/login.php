@@ -1,8 +1,12 @@
 <?php
 session_start();
+// Ensure all responses are JSON
+if (!headers_sent()) {
+    header('Content-Type: application/json');
+}
 include_once 'connection.php'; // CORS headers are now handled in connection.php
 
-define("MAX_ATTEMPTS", 5);
+define("MAX_ATTEMPTS", 10);
 define("LOCKOUT_TIME", 300); // 5 minutes
 
 if (!isset($_SESSION['attempts'])) {

@@ -1,23 +1,8 @@
 <?php
-// Dynamic CORS for localhost:3000+
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (preg_match('/^http:\/\/localhost:3[0-9]{3,}$/', $origin)) {
-    header("Access-Control-Allow-Origin: $origin");
-} else {
-    header("Access-Control-Allow-Origin: http://localhost:3000"); // fallback
-}
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json");
-
+// CORS headers are handled in connection.php which supports production domains
 require "connection.php"; // Database connection
 
-// Handle CORS preflight request
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+header("Content-Type: application/json");
 
 // Start session only if necessary
 if (session_status() === PHP_SESSION_NONE) {

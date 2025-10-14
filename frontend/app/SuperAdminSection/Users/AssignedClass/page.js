@@ -317,7 +317,9 @@ export default function AssignedClassPage() {
           const teacher = availableTeachers.find(t => String(t.id) === String(selectedLead));
           if (teacher) {
             updatedAdvisory.lead_teacher_id = selectedLead;
-            updatedAdvisory.lead_teacher_name = `${teacher.firstName} ${teacher.lastName}`;
+            // Format as "Lastname, Firstname Middlename"
+            const middleName = teacher.middleName ? ` ${teacher.middleName}` : '';
+            updatedAdvisory.lead_teacher_name = `${teacher.lastName}, ${teacher.firstName}${middleName}`;
           }
         }
       }
@@ -360,7 +362,9 @@ export default function AssignedClassPage() {
             const teacher = availableTeachers.find(t => String(t.id) === String(selectedAsst));
             if (teacher) {
               updatedAdvisory.assistant_teacher_id = selectedAsst;
-              updatedAdvisory.assistant_teacher_name = `${teacher.firstName} ${teacher.lastName}`;
+              // Format as "Lastname, Firstname Middlename"
+              const middleName = teacher.middleName ? ` ${teacher.middleName}` : '';
+              updatedAdvisory.assistant_teacher_name = `${teacher.lastName}, ${teacher.firstName}${middleName}`;
             }
           } else {
             // Clear assistant teacher
@@ -566,19 +570,7 @@ export default function AssignedClassPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-medium text-gray-900">Lead Teacher</p>
                     <p className="text-xs sm:text-sm text-gray-600 truncate">
-                      {advisory?.lead_teacher_name ? 
-                        (() => {
-                          const nameParts = advisory.lead_teacher_name.split(' ');
-                          if (nameParts.length >= 2) {
-                            const lastName = nameParts[nameParts.length - 1];
-                            const firstName = nameParts[0];
-                            const middleName = nameParts.slice(1, -1).join(' ');
-                            return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}`;
-                          }
-                          return advisory.lead_teacher_name;
-                        })() 
-                        : 'Not Assigned'
-                      }
+                      {advisory?.lead_teacher_name || 'Not Assigned'}
                     </p>
                   </div>
                 </div>
@@ -625,19 +617,7 @@ export default function AssignedClassPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-medium text-gray-900">Assistant Teacher</p>
                     <p className="text-xs sm:text-sm text-gray-600 truncate">
-                      {advisory?.assistant_teacher_name ? 
-                        (() => {
-                          const nameParts = advisory.assistant_teacher_name.split(' ');
-                          if (nameParts.length >= 2) {
-                            const lastName = nameParts[nameParts.length - 1];
-                            const firstName = nameParts[0];
-                            const middleName = nameParts.slice(1, -1).join(' ');
-                            return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}`;
-                          }
-                          return advisory.assistant_teacher_name;
-                        })() 
-                        : 'Not Assigned'
-                      }
+                      {advisory?.assistant_teacher_name || 'Not Assigned'}
                     </p>
                   </div>
                 </div>

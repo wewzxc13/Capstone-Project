@@ -8,10 +8,11 @@ ob_start();
 @ini_set('html_errors', '0');
 @error_reporting(0);
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Content-Type: application/json");
+header("Content-Type: application/json; charset=utf-8");
+
+// Include dynamic CORS configuration
+include_once 'cors_config.php';
+header('Access-Control-Allow-Methods: POST, OPTIONS');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);

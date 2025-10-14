@@ -150,7 +150,13 @@ try {
         $stmt->execute([$advisory['lead_teacher_id']]);
         $lead = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($lead) {
-            $lead_teacher_name = trim($lead['user_firstname'] . ' ' . $lead['user_middlename'] . ' ' . $lead['user_lastname']);
+            // Format as "Lastname, Firstname Middlename"
+            $middlename = trim($lead['user_middlename']);
+            if (!empty($middlename)) {
+                $lead_teacher_name = trim($lead['user_lastname'] . ', ' . $lead['user_firstname'] . ' ' . $middlename);
+            } else {
+                $lead_teacher_name = trim($lead['user_lastname'] . ', ' . $lead['user_firstname']);
+            }
             $lead_teacher_name = preg_replace('/\s+/', ' ', $lead_teacher_name);
             $lead_teacher_photo = $lead['user_photo'] ? 
                 (strpos($lead['user_photo'], '/php/Uploads/') === 0 ? $lead['user_photo'] : '/php/Uploads/' . $lead['user_photo']) : 
@@ -162,7 +168,13 @@ try {
         $stmt->execute([$advisory['assistant_teacher_id']]);
         $assistant = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($assistant) {
-            $assistant_teacher_name = trim($assistant['user_firstname'] . ' ' . $assistant['user_middlename'] . ' ' . $assistant['user_lastname']);
+            // Format as "Lastname, Firstname Middlename"
+            $middlename = trim($assistant['user_middlename']);
+            if (!empty($middlename)) {
+                $assistant_teacher_name = trim($assistant['user_lastname'] . ', ' . $assistant['user_firstname'] . ' ' . $middlename);
+            } else {
+                $assistant_teacher_name = trim($assistant['user_lastname'] . ', ' . $assistant['user_firstname']);
+            }
             $assistant_teacher_name = preg_replace('/\s+/', ' ', $assistant_teacher_name);
             $assistant_teacher_photo = $assistant['user_photo'] ? 
                 (strpos($assistant['user_photo'], '/php/Uploads/') === 0 ? $assistant['user_photo'] : '/php/Uploads/' . $assistant['user_photo']) : 

@@ -57,15 +57,40 @@ $allowedOrigins = array_map('trim', explode(',', $corsOrigin));
 // Get the request origin
 $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
+// Default allowed origins (fallback if .env not configured)
+$defaultAllowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'https://learnersville.online',
+    'http://learnersville.online'
+];
+
+// Merge with .env origins
+if ($corsOrigin !== '*') {
+    $allowedOrigins = array_unique(array_merge($allowedOrigins, $defaultAllowedOrigins));
+}
+
 // Set CORS headers
 if ($corsOrigin === '*') {
+    // Allow all origins (development only)
     header("Access-Control-Allow-Origin: *");
-} elseif (in_array($requestOrigin, $allowedOrigins)) {
+} elseif ($requestOrigin && in_array($requestOrigin, $allowedOrigins)) {
+    // Origin is in allowed list - reflect it back
     header("Access-Control-Allow-Origin: $requestOrigin");
     header("Vary: Origin");
-} elseif (count($allowedOrigins) === 1) {
-    // Single origin specified
-    header("Access-Control-Allow-Origin: " . $allowedOrigins[0]);
+} elseif ($requestOrigin && (
+    // Also allow Vercel preview/production domains dynamically
+    preg_match('/^https:\/\/.*\.vercel\.app$/', $requestOrigin) ||
+    // Allow learnersville.online and subdomains
+    preg_match('/^https?:\/\/(.*\.)?learnersville\.online$/', $requestOrigin)
+)) {
+    header("Access-Control-Allow-Origin: $requestOrigin");
+    header("Vary: Origin");
+} else {
+    // Fallback to first allowed origin or production domain
+    $fallbackOrigin = !empty($allowedOrigins) ? $allowedOrigins[0] : 'https://learnersville.online';
+    header("Access-Control-Allow-Origin: $fallbackOrigin");
 }
 
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE, PATCH");

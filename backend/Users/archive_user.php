@@ -3,21 +3,9 @@
 // - Archives users by setting status to 'Inactive'
 // - Archives students by setting stud_school_status to 'Inactive'
 // - Parent archiving with student unlinking is handled in the frontend
-// Dynamic CORS for localhost:3000+
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (preg_match('/^http:\/\/localhost:3[0-9]{3,}$/', $origin)) {
-    header("Access-Control-Allow-Origin: $origin");
-} else {
-    header("Access-Control-Allow-Origin: http://localhost:3000"); // fallback
-}
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Access-Control-Allow-Credentials: true");
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+// Include CORS configuration
+include_once 'cors_config.php';
 
 include_once '../connection.php';
 

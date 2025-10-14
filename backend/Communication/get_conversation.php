@@ -1,9 +1,10 @@
 <?php
 ob_start();
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: http://localhost:3000');
+
+// Include dynamic CORS configuration
+include_once 'cors_config.php';
 header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
 
 @ini_set('display_errors', '0');
 @error_reporting(E_ALL);

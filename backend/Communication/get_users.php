@@ -11,6 +11,16 @@ ob_start();
 // Set JSON header
 header('Content-Type: application/json; charset=utf-8');
 
+// Include dynamic CORS configuration
+include_once 'cors_config.php';
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 // Use shared PDO connection
 include_once '../connection.php';
 

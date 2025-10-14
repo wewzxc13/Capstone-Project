@@ -81,7 +81,7 @@ try {
             $parts = explode('/', (string)$row['user_photo']);
             $row['user_photo'] = end($parts);
         } else {
-            if ($row['role_name'] === 'Admin') {
+            if ($row['role_name'] === 'Admin' || $row['role_name'] === 'SuperAdmin') {
                 $row['user_photo'] = 'default_admin.png';
             } else if ($row['role_name'] === 'Teacher') {
                 $row['user_photo'] = 'default_teacher.png';

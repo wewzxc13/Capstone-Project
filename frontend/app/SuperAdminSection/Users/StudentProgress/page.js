@@ -533,15 +533,15 @@ export default function StudentProgress({ formData: initialFormData }) {
           initializeAdvisoryPhotos(studentsWithParents, data.parents || []);
         }
         
-        // Set teacher information from advisory data (formatted as "Lastname, Firstname Middlename")
+        // Set teacher information from advisory data (already formatted as "Lastname, Firstname Middlename" from backend)
         if (data.advisory?.lead_teacher_name) {
-          setLeadTeacher(formatName(data.advisory.lead_teacher_name));
+          setLeadTeacher(data.advisory.lead_teacher_name);
         } else {
           setLeadTeacher("");
         }
         
         if (data.advisory?.assistant_teacher_name) {
-          setAssistantTeacher(formatName(data.advisory.assistant_teacher_name));
+          setAssistantTeacher(data.advisory.assistant_teacher_name);
         } else {
           setAssistantTeacher("");
         }
@@ -1036,7 +1036,7 @@ export default function StudentProgress({ formData: initialFormData }) {
       pdf.text('Lead Teacher:', leftX, startY + (lineHeight * 2));
       pdf.setTextColor(0, 0, 0);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(advisory?.lead_teacher_name ? formatName(advisory.lead_teacher_name) : '________________________', leftX + 30, startY + (lineHeight * 2));
+      pdf.text(advisory?.lead_teacher_name || '________________________', leftX + 30, startY + (lineHeight * 2));
       
       // Right Column
       // Sex (Right Column)
@@ -1062,7 +1062,7 @@ export default function StudentProgress({ formData: initialFormData }) {
       pdf.text('Assistant Teacher:', rightX, startY + (lineHeight * 2));
       pdf.setTextColor(0, 0, 0);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(advisory?.assistant_teacher_name ? formatName(advisory.assistant_teacher_name) : '________________________', rightX + 40, startY + (lineHeight * 2));
+      pdf.text(advisory?.assistant_teacher_name || '________________________', rightX + 40, startY + (lineHeight * 2));
       
       endWhiteBox(learnerBox.boxEndY);
 
@@ -3014,11 +3014,11 @@ export default function StudentProgress({ formData: initialFormData }) {
                   </div>
                   <div>
                     <div className="text-gray-600 font-semibold text-base">Lead Teacher</div>
-                    <div className="text-gray-900 font-semibold text-lg">{displayOrLine(advisory?.lead_teacher_name ? formatName(advisory.lead_teacher_name) : '')}</div>
+                    <div className="text-gray-900 font-semibold text-lg">{displayOrLine(advisory?.lead_teacher_name || '')}</div>
                   </div>
                   <div>
                     <div className="text-gray-600 font-semibold text-base">Assistant Teacher</div>
-                    <div className="text-gray-900 font-semibold text-lg">{displayOrLine(advisory?.assistant_teacher_name ? formatName(advisory.assistant_teacher_name) : '')}</div>
+                    <div className="text-gray-900 font-semibold text-lg">{displayOrLine(advisory?.assistant_teacher_name || '')}</div>
                   </div>
                 </div>
               </div>

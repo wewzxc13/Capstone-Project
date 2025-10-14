@@ -33,14 +33,22 @@ ENVIRONMENT=production
 # CORS Configuration
 # ==================
 # Add your frontend URL(s) here
-# For single origin:
-CORS_ORIGIN=https://your-vercel-app.vercel.app
+# IMPORTANT: Include your Vercel deployment URL!
 
-# For multiple origins (comma-separated):
-# CORS_ORIGIN=https://your-vercel-app.vercel.app,https://yourdomain.com,https://www.yourdomain.com
+# For Vercel + Custom Domain:
+CORS_ORIGIN=https://your-vercel-app.vercel.app,https://learnersville.online,http://localhost:3000
+
+# For multiple origins (comma-separated, NO SPACES):
+# CORS_ORIGIN=https://capstone-project.vercel.app,https://learnersville.online,http://localhost:3000
 
 # For development (allow all - NOT recommended for production):
 # CORS_ORIGIN=*
+
+# NOTE: The config automatically allows:
+# - All *.vercel.app domains
+# - learnersville.online (http and https)
+# - localhost:3000, 3001, 3002
+# You can add more specific origins here if needed
 
 # ==================
 # Example Values
