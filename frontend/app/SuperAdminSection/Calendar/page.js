@@ -1298,7 +1298,7 @@ export default function SuperAdminCalendarPage() {
       </div>
       {/* Modal for adding event */}
       {showInputModal && !selectedEvent && !showInviteSelectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[9999] p-4">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md max-h-[90vh] overflow-hidden">
             <div className="bg-[#232c67] px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -1401,7 +1401,7 @@ export default function SuperAdminCalendarPage() {
       )}
       {/* Modal for viewing event details */}
       {selectedEvent && !showInviteViewModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[9999] p-4">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md max-h-[90vh] overflow-hidden">
             <div className="bg-[#232c67] px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -1857,7 +1857,7 @@ export default function SuperAdminCalendarPage() {
       )}
       {/* Invite modal for add/edit mode */}
       {showInviteSelectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-[200]">
+        <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-[9999]">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-lg overflow-hidden">
             <div className="bg-[#232c67] px-6 py-3 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -2414,7 +2414,7 @@ export default function SuperAdminCalendarPage() {
       )}
       {/* Invite modal for view mode */}
       {showInviteViewModal && selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-[200]">
+        <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-[9999]">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-lg overflow-hidden">
             <div className="bg-[#232c67] px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -2848,7 +2848,7 @@ export default function SuperAdminCalendarPage() {
       )}
       {/* Cancel confirmation modal */}
       {showCancelModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[200]">
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[9999]">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md overflow-hidden">
             <div className="bg-white px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Cancel Meeting</h2>
@@ -2933,7 +2933,7 @@ export default function SuperAdminCalendarPage() {
 
       {/* Delete Meeting Confirmation Modal */}
       {showDeleteModal && selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[110]">
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[9999]">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md overflow-hidden">
             <div className="bg-white px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Delete Meeting</h2>

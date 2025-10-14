@@ -920,7 +920,7 @@ export default function ParentCalendarPage() {
       </div>
       {/* Modal for viewing event details */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-[9999] p-4">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md max-h-[90vh] overflow-hidden">
             <div className="bg-[#232c67] px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
               <div className="flex items-center justify-center">

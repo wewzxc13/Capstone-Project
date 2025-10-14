@@ -18,7 +18,7 @@ function Modal({ open, onClose, children }) {
   if (!open) return null;
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 w-[95vw] max-w-[520px] sm:w-[520px] sm:min-w-[480px] relative border border-gray-100" style={{ overflow: 'visible' }}>
+      <div className="bg-white rounded-xl shadow-2xl pt-0 px-4 pb-4 sm:pt-0 sm:px-8 sm:pb-8 w-[95vw] max-w-[520px] sm:w-[520px] sm:min-w-[480px] relative border border-gray-100 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto">
         {children}
       </div>
     </div>,
@@ -53,6 +53,9 @@ export default function SuperAdminSchedulePage() {
   const [modalActivity2, setModalActivity2] = useState("");
   const [savingModal, setSavingModal] = useState(false);
   const [toastShown, setToastShown] = useState(false);
+  // Chevron rotation state for modal selects
+  const [mainSelectOpen, setMainSelectOpen] = useState(false);
+  const [altSelectOpen, setAltSelectOpen] = useState(false);
   
   // Add Activity modal states
   const [addActivityModalOpen, setAddActivityModalOpen] = useState(false);
@@ -1039,8 +1042,12 @@ export default function SuperAdminSchedulePage() {
                         </div>
                         {/* Day cells */}
                         {selectedClassInfo.days.map((day) => (
-                          <div key={day} className="px-2 py-3 border-r last:border-r-0 border-gray-200 min-h-[60px] flex items-center">
-                            <div className="font-medium">
+                          <div
+                            key={day}
+                            className="px-2 py-3 border-r last:border-r-0 border-gray-200 min-h-[60px] flex items-center cursor-pointer hover:bg-blue-50 transition-colors"
+                            onClick={() => openEditModal(day, row)}
+                          >
+                            <div className="font-medium w-full flex items-center justify-between">
                               {(Array.isArray(row[day]) && row[day].length > 0)
                                 ? [...new Set(row[day].map(x => x && x.name ? x.name : '').filter(Boolean))].join(' / ')
                                 : '-'}
@@ -1097,7 +1104,7 @@ export default function SuperAdminSchedulePage() {
         setModalOpen(false);
         closeModal();
       }}>
-        <div className="mb-4 bg-[#232c67] text-white p-4 rounded-t-lg -mt-8 -mx-8">
+        <div className="mb-4 bg-[#232c67] text-white p-4 rounded-t-xl -mx-4 sm:-mx-8 sticky top-0 z-10">
           <h3 className="text-xl font-bold text-white mb-1">Edit Schedule Item</h3>
           <p className="text-[#a8b0e0] text-sm">Update the schedule details for this time slot</p>
         </div>
@@ -1295,48 +1302,60 @@ export default function SuperAdminSchedulePage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Main {modalType === 'subject' ? 'Subject' : 'Routine'} <span className="text-red-500">*</span>
                 </label>
-                <select
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors"
-                  required
-                  value={modalActivity1}
-                  onChange={e => setModalActivity1(e.target.value)}
-                  disabled={editMode ? false : (modalType === 'subject' ? availableSubjects.length === 0 : availableRoutines.length === 0)}
-                >
-                  <option value="">Select {modalType === 'subject' ? 'Subject' : 'Routine'}</option>
-                  {(modalType === 'subject' ? availableSubjects : availableRoutines).length === 0 && (
-                    <option value="" disabled>{loading ? 'Loading...' : `No ${modalType === 'subject' ? 'subjects' : 'routines'} available`}</option>
-                  )}
-                  {(modalType === 'subject' ? availableSubjects : availableRoutines).map(opt => (
-                    <option key={modalType === 'subject' ? opt.subject_id : opt.routine_id} value={String(modalType === 'subject' ? opt.subject_id : opt.routine_id)}>
-                      {modalType === 'subject' ? opt.subject_name : opt.routine_name}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-4 pr-10 py-3 text-sm focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors appearance-none"
+                    required
+                    value={modalActivity1}
+                    onChange={e => setModalActivity1(e.target.value)}
+                    onFocus={() => setMainSelectOpen(true)}
+                    onBlur={() => setMainSelectOpen(false)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') setMainSelectOpen(false); }}
+                    disabled={editMode ? false : (modalType === 'subject' ? availableSubjects.length === 0 : availableRoutines.length === 0)}
+                  >
+                    <option value="">Select {modalType === 'subject' ? 'Subject' : 'Routine'}</option>
+                    {(modalType === 'subject' ? availableSubjects : availableRoutines).length === 0 && (
+                      <option value="" disabled>{loading ? 'Loading...' : `No ${modalType === 'subject' ? 'subjects' : 'routines'} available`}</option>
+                    )}
+                    {(modalType === 'subject' ? availableSubjects : availableRoutines).map(opt => (
+                      <option key={modalType === 'subject' ? opt.subject_id : opt.routine_id} value={String(modalType === 'subject' ? opt.subject_id : opt.routine_id)}>
+                        {modalType === 'subject' ? opt.subject_name : opt.routine_name}
+                      </option>
+                    ))}
+                  </select>
+                  <FaChevronDown className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-transform ${mainSelectOpen ? 'rotate-180' : ''}`} />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Alternative {modalType === 'subject' ? 'Subject' : 'Routine'} (optional)
                 </label>
-                <select
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors"
-                  value={modalActivity2}
-                  onChange={e => setModalActivity2(e.target.value)}
-                  disabled={editMode ? false : (modalType === 'subject' ? availableSubjects.length === 0 : availableRoutines.length === 0)}
-                >
-                  <option value="">None</option>
-                  {(modalType === 'subject' ? availableSubjects : availableRoutines)
-                    .filter(opt => String(modalActivity1) !== String(modalType === 'subject' ? opt.subject_id : opt.routine_id))
-                    .length === 0 && (
-                    <option value="" disabled>{loading ? 'Loading...' : `No ${modalType === 'subject' ? 'subjects' : 'routines'} available`}</option>
-                  )}
-                  {(modalType === 'subject' ? availableSubjects : availableRoutines)
-                    .filter(opt => String(modalActivity1) !== String(modalType === 'subject' ? opt.subject_id : opt.routine_id))
-                    .map(opt => (
-                      <option key={modalType === 'subject' ? opt.subject_id : opt.routine_id} value={String(modalType === 'subject' ? opt.subject_id : opt.routine_id)}>
-                        {modalType === 'subject' ? opt.subject_name : opt.routine_name}
-                      </option>
-                    ))}
-                </select>
+                <div className="relative">
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-4 pr-10 py-3 text-sm focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors appearance-none"
+                    value={modalActivity2}
+                    onChange={e => setModalActivity2(e.target.value)}
+                    onFocus={() => setAltSelectOpen(true)}
+                    onBlur={() => setAltSelectOpen(false)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') setAltSelectOpen(false); }}
+                    disabled={editMode ? false : (modalType === 'subject' ? availableSubjects.length === 0 : availableRoutines.length === 0)}
+                  >
+                    <option value="">None</option>
+                    {(modalType === 'subject' ? availableSubjects : availableRoutines)
+                      .filter(opt => String(modalActivity1) !== String(modalType === 'subject' ? opt.subject_id : opt.routine_id))
+                      .length === 0 && (
+                      <option value="" disabled>{loading ? 'Loading...' : `No ${modalType === 'subject' ? 'subjects' : 'routines'} available`}</option>
+                    )}
+                    {(modalType === 'subject' ? availableSubjects : availableRoutines)
+                      .filter(opt => String(modalActivity1) !== String(modalType === 'subject' ? opt.subject_id : opt.routine_id))
+                      .map(opt => (
+                        <option key={modalType === 'subject' ? opt.subject_id : opt.routine_id} value={String(modalType === 'subject' ? opt.subject_id : opt.routine_id)}>
+                          {modalType === 'subject' ? opt.subject_name : opt.routine_name}
+                        </option>
+                      ))}
+                  </select>
+                  <FaChevronDown className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-transform ${altSelectOpen ? 'rotate-180' : ''}`} />
+                </div>
               </div>
             </div>
             {/* Buttons */}
@@ -1375,7 +1394,7 @@ export default function SuperAdminSchedulePage() {
         setAddActivityModalOpen(false);
         closeModal();
       }}>
-        <div className="mb-4 bg-[#232c67] text-white p-4 rounded-t-lg -mt-8 -mx-8">
+        <div className="mb-4 bg-[#232c67] text-white p-4 rounded-t-xl -mx-4 sm:-mx-8 sticky top-0 z-10">
           <h3 className="text-xl font-bold text-white mb-1">Manage Schedule Items</h3>
           <p className="text-[#a8b0e0] text-sm">View existing schedule items and add new ones</p>
         </div>
@@ -1657,7 +1676,7 @@ export default function SuperAdminSchedulePage() {
 
       {/* Edit Schedule Item Modal */}
       <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)}>
-        <div className="mb-4 bg-[#232c67] text-white p-4 rounded-t-lg -mt-8 -mx-8">
+        <div className="mb-4 bg-[#232c67] text-white p-4 rounded-t-xl -mx-4 sm:-mx-8 sticky top-0 z-10">
           <h3 className="text-xl font-bold text-white mb-1">Edit {editingItem?.type === 'subject' ? 'Subject' : 'Routine'}</h3>
           <p className="text-[#a8b0e0] text-sm">Update the name of this schedule item</p>
         </div>
