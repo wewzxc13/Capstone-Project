@@ -268,37 +268,24 @@ export default function AssessmentPage() {
     
     console.log('Quarter range:', startDate, 'to', endDate);
     
-    // Convert dates to Date objects for proper comparison
-    // The date input returns YYYY-MM-DD format, so we can use new Date() directly
-    const inputDate = new Date(date);
-    const startDateObj = new Date(startDate);
-    const endDateObj = new Date(endDate);
+    // Use enhanced date validation
+    const dateValidation = validateDateRange(date, startDate, endDate);
     
-    // Check if the parsed date is valid
-    if (!inputDate || isNaN(inputDate.getTime())) {
-      console.log('Invalid date parsed, setting invalid');
+    if (!dateValidation.isValid) {
+      console.log('Date validation failed:', dateValidation);
       setDateValidationStatus("invalid");
       return "invalid";
     }
     
     console.log('Original date string:', date);
-    console.log('Parsed input date:', inputDate);
-    console.log('Start date object:', startDateObj);
-    console.log('End date object:', endDateObj);
-    console.log('Input date timestamp:', inputDate.getTime());
-    console.log('Start date timestamp:', startDateObj.getTime());
-    console.log('End date timestamp:', endDateObj.getTime());
-    
-    // Check if date is within quarter range using Date objects
-    if (inputDate < startDateObj || inputDate > endDateObj) {
-      console.log('Date out of range, setting invalid');
-      console.log('Comparison result:', {
-        'inputDate < startDateObj': inputDate < startDateObj,
-        'inputDate > endDateObj': inputDate > endDateObj
-      });
-      setDateValidationStatus("invalid");
-      return "invalid";
-    }
+    console.log('Parsed input date (UTC):', dateValidation.inputDate.toISOString());
+    console.log('Start date object (UTC):', dateValidation.startDate.toISOString());
+    console.log('End date object (UTC):', dateValidation.endDate.toISOString());
+    console.log('Date validation result:', {
+      isValid: dateValidation.isValid,
+      isBeforeStart: dateValidation.isBeforeStart,
+      isAfterEnd: dateValidation.isAfterEnd
+    });
 
     // Check for duplicate dates using backend validation
     if (advisoryId && newActivitySubject && levelId) {
@@ -349,24 +336,24 @@ export default function AssessmentPage() {
     
     console.log('Quarter range:', startDate, 'to', endDate);
     
-    // Convert dates to Date objects for proper comparison
-    const inputDate = new Date(date);
-    const startDateObj = new Date(startDate);
-    const endDateObj = new Date(endDate);
+    // Use enhanced date validation
+    const dateValidation = validateDateRange(date, startDate, endDate);
     
-    // Check if the parsed date is valid
-    if (!inputDate || isNaN(inputDate.getTime())) {
-      console.log('Invalid date parsed, setting invalid');
+    if (!dateValidation.isValid) {
+      console.log('Edit - Date validation failed:', dateValidation);
       setEditDateValidationStatus("invalid");
       return "invalid";
     }
     
-    // Check if date is within quarter range using Date objects
-    if (inputDate < startDateObj || inputDate > endDateObj) {
-      console.log('Date out of range, setting invalid');
-      setEditDateValidationStatus("invalid");
-      return "invalid";
-    }
+    console.log('Edit - Original date string:', date);
+    console.log('Edit - Parsed input date (UTC):', dateValidation.inputDate.toISOString());
+    console.log('Edit - Start date object (UTC):', dateValidation.startDate.toISOString());
+    console.log('Edit - End date object (UTC):', dateValidation.endDate.toISOString());
+    console.log('Edit - Date validation result:', {
+      isValid: dateValidation.isValid,
+      isBeforeStart: dateValidation.isBeforeStart,
+      isAfterEnd: dateValidation.isAfterEnd
+    });
 
     // Check for duplicate dates using backend validation (excluding current activity)
     if (advisoryId && editActivitySubject && levelId && editActivityIndex !== null) {
@@ -468,15 +455,99 @@ export default function AssessmentPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isSubjectDropdownOpen, isScheduleDropdownOpen, isQuarterDropdownOpen]);
-  // Set default date to today in yyyy-mm-dd format
+  // Set default date to today in yyyy-mm-dd format (timezone-safe)
   const getToday = () => {
+    // Use UTC to avoid timezone issues between local and production
     const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
+    const yyyy = today.getUTCFullYear();
+    const mm = String(today.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(today.getUTCDate()).padStart(2, '0');
     const todayString = `${yyyy}-${mm}-${dd}`;
     console.log('getToday() called, returning:', todayString);
     return todayString;
+  };
+
+  // Timezone-safe date parsing function
+  const parseDateSafe = (dateStr) => {
+    if (!dateStr) return null;
+    
+    // If it's already in YYYY-MM-DD format (from date input), parse it as UTC
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // Parse as UTC to avoid timezone issues
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(Date.UTC(year, month - 1, day));
+    }
+    
+    // Handle MM/DD/YYYY format
+    if (dateStr.includes('/')) {
+      const [month, day, year] = dateStr.split('/').map(Number);
+      return new Date(Date.UTC(year, month - 1, day));
+    }
+    
+    // Fallback to regular parsing
+    return new Date(dateStr);
+  };
+
+  // Timezone-safe date comparison function
+  const compareDatesSafe = (date1, date2) => {
+    if (!date1 || !date2) return 0;
+    
+    // Normalize both dates to UTC midnight for accurate comparison
+    const d1 = new Date(date1.getTime());
+    d1.setUTCHours(0, 0, 0, 0);
+    
+    const d2 = new Date(date2.getTime());
+    d2.setUTCHours(0, 0, 0, 0);
+    
+    return d1.getTime() - d2.getTime();
+  };
+
+  // Enhanced date validation with better error handling
+  const validateDateRange = (inputDate, startDate, endDate) => {
+    try {
+      // Log environment info for debugging
+      console.log('=== DATE VALIDATION DEBUG ===');
+      console.log('Environment:', {
+        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
+        timezone: typeof window !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'unknown',
+        currentTime: new Date().toISOString(),
+        currentTimeLocal: typeof window !== 'undefined' ? new Date().toString() : 'server'
+      });
+      console.log('Input parameters:', { inputDate, startDate, endDate });
+      
+      const parsedInput = parseDateSafe(inputDate);
+      const parsedStart = parseDateSafe(startDate);
+      const parsedEnd = parseDateSafe(endDate);
+      
+      if (!parsedInput || !parsedStart || !parsedEnd) {
+        console.log('Date parsing failed:', {
+          parsedInput: parsedInput ? parsedInput.toISOString() : 'null',
+          parsedStart: parsedStart ? parsedStart.toISOString() : 'null',
+          parsedEnd: parsedEnd ? parsedEnd.toISOString() : 'null'
+        });
+        return { isValid: false, reason: 'invalid_date_format' };
+      }
+      
+      const isBeforeStart = compareDatesSafe(parsedInput, parsedStart) < 0;
+      const isAfterEnd = compareDatesSafe(parsedInput, parsedEnd) > 0;
+      
+      const result = {
+        isValid: !isBeforeStart && !isAfterEnd,
+        isBeforeStart,
+        isAfterEnd,
+        inputDate: parsedInput,
+        startDate: parsedStart,
+        endDate: parsedEnd
+      };
+      
+      console.log('Validation result:', result);
+      console.log('=== END DATE VALIDATION DEBUG ===');
+      
+      return result;
+    } catch (error) {
+      console.error('Date validation error:', error);
+      return { isValid: false, reason: 'validation_error', error: error.message };
+    }
   };
   const [newActivityDate, setNewActivityDate] = useState(getToday()); // Default to today
   const [newActivityName, setNewActivityName] = useState(""); // Default to blank
@@ -849,33 +920,60 @@ export default function AssessmentPage() {
     return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
-  // Helper to parse date strings consistently (handles MM/DD/YYYY format)
+  // Helper to parse date strings consistently (handles MM/DD/YYYY format) - DEPRECATED, use parseDateSafe
   function parseDate(dateStr) {
     if (!dateStr) return null;
     
     if (dateStr.includes('/')) {
-      // Parse MM/DD/YYYY format
+      // Parse MM/DD/YYYY format using UTC to avoid timezone issues
       const [month, day, year] = dateStr.split('/');
-      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
     } else {
-      // Handle other formats (YYYY-MM-DD, etc.)
-      return new Date(dateStr);
+      // Handle other formats (YYYY-MM-DD, etc.) - use timezone-safe parsing
+      return parseDateSafe(dateStr);
     }
   }
 
-  // Helper to get quarter date ranges
+  // Helper to get quarter date ranges (timezone-safe)
   const getQuarterDateRanges = () => {
-    if (!quarters || quarters.length === 0) return { startDate: null, endDate: null };
+    if (!quarters || quarters.length === 0) {
+      // Fallback to current school year if quarters are not available
+      const currentYear = new Date().getUTCFullYear();
+      const fallbackStart = `${currentYear}-08-01`; // August 1st
+      const fallbackEnd = `${currentYear + 1}-04-30`; // April 30th next year
+      
+      console.log('No quarters data available, using fallback dates:', { fallbackStart, fallbackEnd });
+      return { startDate: fallbackStart, endDate: fallbackEnd };
+    }
     
     const quarter1 = quarters.find(q => q.quarter_id === 1);
     const quarter4 = quarters.find(q => q.quarter_id === 4);
     
-    if (!quarter1 || !quarter4) return { startDate: null, endDate: null };
+    if (!quarter1 || !quarter4) {
+      // Fallback if quarters 1 and 4 are not found
+      const currentYear = new Date().getUTCFullYear();
+      const fallbackStart = `${currentYear}-08-01`;
+      const fallbackEnd = `${currentYear + 1}-04-30`;
+      
+      console.log('Quarters 1 or 4 not found, using fallback dates:', { fallbackStart, fallbackEnd });
+      return { startDate: fallbackStart, endDate: fallbackEnd };
+    }
     
-    return {
-      startDate: quarter1.start_date,
-      endDate: quarter4.end_date
+    // Ensure dates are in YYYY-MM-DD format for consistent comparison
+    const formatDateForInput = (dateStr) => {
+      if (!dateStr) return null;
+      const date = parseDateSafe(dateStr);
+      if (!date) return null;
+      return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
     };
+    
+    const result = {
+      startDate: formatDateForInput(quarter1.start_date),
+      endDate: formatDateForInput(quarter4.end_date)
+    };
+    
+    console.log('Quarter date ranges:', result);
+    return result;
   };
 
   // Open modal for activity details (view mode)
