@@ -6,7 +6,7 @@ import { FaPaperPlane, FaSearch, FaArrowLeft, FaUser, FaUsers, FaTimes, FaEdit, 
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useUser } from "../../Context/UserContext";
 import { toast } from "react-toastify";
-import { API } from '@/config/api';
+import { API, uploadsAPI } from '@/config/api';
 
 function getInitials(name) {
   if (!name) return "?";
@@ -1855,7 +1855,7 @@ export default function ParentMessagesPage() {
       return (
         <div className="relative">
           <img
-            src={photo.startsWith('http') ? photo : `/php/Uploads/${photo}`}
+            src={photo.startsWith('http') ? photo : uploadsAPI.getUploadURL(photo)}
             alt="User"
             className={`${size} rounded-full object-cover border border-gray-200 shadow-sm ${roleAvatarRingClasses(role)}`}
             onError={(e) => {
@@ -2774,7 +2774,7 @@ export default function ParentMessagesPage() {
                                           return (
                                             <>
                                               <img
-                                                src={photo.startsWith('http') ? photo : `/php/Uploads/${photo}`}
+                                                src={photo.startsWith('http') ? photo : uploadsAPI.getUploadURL(photo)}
                                                 alt="Sender"
                                                 className="w-full h-full rounded-full object-cover"
                                                 onError={(e) => {

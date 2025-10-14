@@ -8,7 +8,7 @@ import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useUser } from "../../Context/UserContext";
 import { useModal } from "../../Context/ModalContext";
 import fullAddress from '../../../data/full_misamis_oriental_psgc.json';
-import { API } from '@/config/api';
+import { API, uploadsAPI } from '@/config/api';
 
 // --- VALIDATION LOGIC (copied and adapted from SuperAdminSection/ViewOwnUser) ---
 const validators = {
@@ -182,17 +182,8 @@ function getPhotoUrl(filename) {
     return filename;
   }
   
-  // If it's a filename, construct the full backend URL
-  // Try multiple possible backend paths
-  const possiblePaths = [
-    `/php/Uploads/${filename}`,
-    `http://localhost/backend/Uploads/${filename}`,
-    `http://localhost/capstone-project/Uploads/${filename}`,
-    `/php/Uploads/${filename}`
-  ];
-  
-  // For now, return the first path, but you can implement logic to test which one works
-  return possiblePaths[0];
+  // Use centralized upload URL configuration
+  return uploadsAPI.getUploadURL(filename);
 }
 // --- END VALIDATION LOGIC ---
 

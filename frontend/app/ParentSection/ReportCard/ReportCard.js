@@ -12,7 +12,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "../../Context/UserContext";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { API } from '@/config/api';
+import { API, uploadsAPI } from '@/config/api';
 
 export default function StudentProgress({ formData: initialFormData }) {
   const { getUserPhoto, getStudentPhoto, updateAnyUserPhoto, updateAnyStudentPhoto, initializeAllUsersPhotos } = useUser();
@@ -101,14 +101,8 @@ export default function StudentProgress({ formData: initialFormData }) {
       return filename;
     }
     
-    // If it already starts with /php/Uploads/, return as is
-    if (filename.startsWith('/php/Uploads/')) {
-      console.log('🔍 getPhotoUrl: Already has /php/Uploads/ prefix:', filename);
-      return filename;
-    }
-    
-    // If it's a filename, construct the full backend URL
-    const fullUrl = `/php/Uploads/${filename}`;
+    // Use centralized upload URL configuration
+    const fullUrl = uploadsAPI.getUploadURL(filename);
     console.log('🔍 getPhotoUrl: Converting filename to full URL:', {
       filename: filename,
       fullUrl: fullUrl

@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { FaUser, FaPhone, FaEnvelope, FaTimes, FaEdit, FaCrop, FaCheck, FaUndo } from "react-icons/fa";
 import { useUser } from "../../Context/UserContext";
 import { useModal } from "../../Context/ModalContext";
-import { API } from '@/config/api';
+import { API, uploadsAPI } from '@/config/api';
 
 
 // Helper to capitalize first letter of each word
@@ -133,17 +133,8 @@ function getPhotoUrl(filename) {
     return filename;
   }
   
-  // If it's a filename, construct the full backend URL
-  // Try multiple possible backend paths
-  const possiblePaths = [
-    `/php/Uploads/${filename}`,
-    `http://localhost/backend/Uploads/${filename}`,
-    `http://localhost/capstone-project/Uploads/${filename}`,
-    `/php/Uploads/${filename}`
-  ];
-  
-  // For now, return the first path, but you can implement logic to test which one works
-  return possiblePaths[0];
+  // Use centralized upload URL configuration
+  return uploadsAPI.getUploadURL(filename);
 }
 
 // --- END VALIDATION LOGIC ---

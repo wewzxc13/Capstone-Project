@@ -1373,7 +1373,7 @@ export default function AssessmentPage() {
                                   <thead className={`bg-[#232c67] text-white border-b border-[#1a1f4d] ${students.length > 6 ? "sticky top-0 z-10" : ""}`}>
                   <tr>
                     <th
-                      className={`sticky top-0 left-0 text-left px-6 py-3 font-semibold text-white z-20 bg-[#232c67] md:w-[30%] ${mobileNameWidthClass}`}
+                      className={`sticky top-0 left-0 text-left px-3 py-3 font-semibold text-white z-20 bg-[#232c67] md:w-[25%] ${mobileNameWidthClass}`}
                     >
                       Student Name
                     </th>
@@ -1405,8 +1405,8 @@ export default function AssessmentPage() {
                     {desktopActivities.map((act, idx) => (
                       <th
                         key={`desktop-${act.activity_id}`}
-                        className="hidden md:table-cell sticky top-0 px-4 py-3 whitespace-nowrap font-medium text-white bg-[#232c67] border-l border-[#1a1f4d] text-center cursor-pointer relative group hover:bg-[#2b3572] transition-colors z-10"
-                        style={{ width: `${70 / desktopActivities.length}%` }}
+                        className="hidden md:table-cell sticky top-0 px-3 py-3 whitespace-nowrap font-medium text-white bg-[#232c67] border-l border-[#1a1f4d] text-center cursor-pointer relative group hover:bg-[#2b3572] transition-colors z-10"
+                        style={{ width: `${75 / desktopActivities.length}%` }}
                         onClick={() => openActivityModal(activities.indexOf(act))}
                       >
                         <div className="flex flex-col items-center">
@@ -1438,9 +1438,9 @@ export default function AssessmentPage() {
                     return (
                       <tr key={sIdx} className="hover:bg-gray-50 transition-colors">
                         <td
-                          className={`sticky left-0 bg-white px-6 font-medium whitespace-nowrap z-0 border-r border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'} md:w-[30%] ${mobileNameWidthClass}`}
+                          className={`sticky left-0 bg-white px-3 font-medium whitespace-nowrap z-0 border-r border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'} md:w-[25%] ${mobileNameWidthClass}`}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             {(() => {
                               // Get real-time photo from UserContext, fallback to student.photo if not available
                               const realTimePhoto = getStudentPhoto(student.student_id) || student.photo;
@@ -1451,7 +1451,7 @@ export default function AssessmentPage() {
                                     <img
                                       src={realTimePhoto}
                                       alt="Profile"
-                                      className="w-8 h-8 rounded-full object-cover shadow-sm shrink-0"
+                                      className="w-6 h-6 rounded-full object-cover shadow-sm shrink-0"
                                       onError={(e) => {
                                         e.target.style.display = 'none';
                                         if (e.target.nextSibling) {
@@ -1460,20 +1460,20 @@ export default function AssessmentPage() {
                                       }}
                                     />
                                     {/* Fallback icon that shows when photo fails to load */}
-                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0 hidden">
-                                      <FaUser className="text-sm text-blue-600" />
+                                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center shrink-0 hidden">
+                                      <FaUser className="text-xs text-blue-600" />
                                     </div>
                                   </>
                                 );
                               } else {
                                 return (
-                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                                    <FaUser className="text-sm text-blue-600" />
+                                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
+                                    <FaUser className="text-xs text-blue-600" />
                                   </div>
                                 );
                               }
                             })()}
-                            <div className="font-medium text-gray-900 flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 flex-1 min-w-0 text-sm">
                               <span className="hidden md:inline truncate">
                                 {name}
                               </span>
@@ -1502,7 +1502,7 @@ export default function AssessmentPage() {
                         ))}
                         {/* Desktop: show paginated activities */}
                         {desktopActivities.map((act) => (
-                          <td key={`desktop-${act.activity_id}`} className={`hidden md:table-cell px-4 text-center border-l border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'}`} style={{ width: `${70 / desktopActivities.length}%` }}>
+                          <td key={`desktop-${act.activity_id}`} className={`hidden md:table-cell px-3 text-center border-l border-gray-200 ${students.length > 6 ? 'py-2' : 'py-3'}`} style={{ width: `${75 / desktopActivities.length}%` }}>
                             <div
                               className={`w-8 h-8 rounded-lg border border-gray-300 flex justify-center items-center mx-auto text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
                                 getTrackingShape(student.student_id, act.activity_id) ? "bg-white" : "bg-gray-100"

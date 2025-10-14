@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { FaCalendarAlt, FaUser } from "react-icons/fa";
 import { useUser } from "../../Context/UserContext";
-import { API } from '@/config/api';
+import { API, uploadsAPI } from '@/config/api';
 
 // Helper function to construct full photo URL from filename
 function getPhotoUrl(filename) {
@@ -20,7 +20,7 @@ function getPhotoUrl(filename) {
   }
   
   // If it's a filename, construct the full backend URL
-  return API.uploads.getUploadURL(filename);
+  return uploadsAPI.getUploadURL(filename);
 }
 
 function groupByTime(schedule, days) {

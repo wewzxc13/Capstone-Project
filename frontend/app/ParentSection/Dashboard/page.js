@@ -25,10 +25,24 @@ import {
 import Link from "next/link";
 import { Line } from "react-chartjs-2";
 import '../../../lib/chart-config.js';
+import { userAPI, meetingAPI } from '../../../config/api.js';
 
 const Dashboard = () => {
-  // API base goes through Next.js rewrite for LAN and localhost
-  const API_BASE_URL = '/php';
+  // Use centralized API configuration
+  const getApiUrl = (endpoint) => {
+    // Check if we're in production (Vercel)
+    const isProduction = typeof window !== 'undefined' && 
+      (window.location.hostname.includes('vercel.app') || 
+       window.location.hostname.includes('learnersville.online'));
+    
+    if (isProduction) {
+      // For production, use the full backend URL
+      return `https://learnersville.online/backend-ville/${endpoint}`;
+    } else {
+      // For local development, use the Next.js rewrite
+      return `/php/${endpoint}`;
+    }
+  };
     
   const [parentData, setParentData] = useState(null);
   const [students, setStudents] = useState([]);
@@ -70,7 +84,7 @@ const Dashboard = () => {
         const parentId = localStorage.getItem('userId') || '23'; // Fallback to test ID
         
         // Fetch parent students data
-        const response = await fetch(`${API_BASE_URL}/Users/get_parent_students.php?parent_id=${parentId}`);
+        const response = await fetch(getApiUrl(`Users/get_parent_students.php?parent_id=${parentId}`));
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -156,7 +170,7 @@ const Dashboard = () => {
         const parentId = localStorage.getItem('userId');
         
         // Use the same API as calendar page with parent_only=1 parameter
-        const response = await fetch(`${API_BASE_URL}/Meeting/get_meetings_details.php?user_id=${parentId}&parent_only=1`);
+        const response = await fetch(getApiUrl(`Meeting/get_meetings_details.php?user_id=${parentId}&parent_only=1`));
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -247,7 +261,7 @@ const Dashboard = () => {
         const parentId = localStorage.getItem('userId');
         if (!parentId) return;
         
-        const response = await fetch(`${API_BASE_URL}/Users/get_parent_children_risk.php?parent_id=${parentId}`);
+        const response = await fetch(getApiUrl(`Users/get_parent_children_risk.php?parent_id=${parentId}`));
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -284,7 +298,7 @@ const Dashboard = () => {
         }
         
         console.log('Fetching progress data for parent ID:', parentId);
-        const response = await fetch(`${API_BASE_URL}/Users/get_parent_children_progress.php?parent_id=${parentId}`);
+        const response = await fetch(getApiUrl(`Users/get_parent_children_progress.php?parent_id=${parentId}`));
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
