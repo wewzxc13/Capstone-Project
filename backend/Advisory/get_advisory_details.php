@@ -334,9 +334,20 @@ try {
             $parents = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
         
+        // Remove any duplicate parents by user_id to ensure unique parents
+        $unique_parents = [];
+        $seen_parent_ids = [];
+        foreach ($parents as $parent) {
+            if (!in_array($parent['user_id'], $seen_parent_ids)) {
+                $unique_parents[] = $parent;
+                $seen_parent_ids[] = $parent['user_id'];
+            }
+        }
+        $parents = $unique_parents;
+        
         // Debug: Log parents found
         error_log("Parents found in database: " . count($parents));
-        error_log("Parent data: " . json_encode($parents));
+        error_log("Unique parent data: " . json_encode($parents));
         
         // Add photo field to parents
         foreach ($parents as &$parent) {
