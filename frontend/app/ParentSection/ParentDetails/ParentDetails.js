@@ -185,6 +185,13 @@ function getPhotoUrl(filename) {
   // Clean filename - remove any path prefixes that might have been stored incorrectly
   const cleanFilename = filename.includes('/') ? filename.split('/').pop() : filename;
   
+  // Debug logging for photo URL construction
+  console.log('Photo URL Debug:', {
+    originalFilename: filename,
+    cleanFilename: cleanFilename,
+    finalUrl: uploadsAPI.getUploadURL(cleanFilename)
+  });
+  
   // Use centralized upload URL configuration
   return uploadsAPI.getUploadURL(cleanFilename);
 }
