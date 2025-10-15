@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Advisory Details API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        select, button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            border-left-color: #28a745;
+            background-color: #d4edda;
+            color: #155724;
+        }
+        pre {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test Advisory Details API</h1>
+        
+        <div class="info">
+            <strong>📋 Test Instructions:</strong>
+            <ul>
+                <li>Select a class level (Discoverer=1, Explorer=2, Adventurer=3)</li>
+                <li>Click "Test API" to fetch advisory details</li>
+                <li>View the response to check for duplicate parent user_ids</li>
+                <li>Look for the new debug logs in the response</li>
+            </ul>
+        </div>
+
+        <form id="testForm">
+            <div class="form-group">
+                <label for="levelId">Select Class Level:</label>
+                <select id="levelId" required>
+                    <option value="">Choose a class level...</option>
+                    <option value="1">Discoverer (Level 1)</option>
+                    <option value="2">Explorer (Level 2)</option>
+                    <option value="3">Adventurer (Level 3)</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="testBtn">🧪 Test API</button>
+        </form>
+
+        <div id="result" class="result" style="display: none;">
+            <h3>📊 API Response:</h3>
+            <div id="responseContent"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('testForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const levelId = document.getElementById('levelId').value;
+            const testBtn = document.getElementById('testBtn');
+            const result = document.getElementById('result');
+            const responseContent = document.getElementById('responseContent');
+            
+            if (!levelId) {
+                alert('Please select a class level');
+                return;
+            }
+            
+            // Show loading state
+            testBtn.disabled = true;
+            testBtn.textContent = '🔄 Testing...';
+            result.style.display = 'block';
+            result.className = 'result';
+            responseContent.innerHTML = '<div class="loading">⏳ Fetching advisory details...</div>';
+            
+            try {
+                const response = await fetch('get_advisory_details.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        level_id: parseInt(levelId)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Check for duplicates
+                const parents = data.parents || [];
+                const parentIds = parents.map(p => p.user_id);
+                const uniqueIds = [...new Set(parentIds)];
+                const hasDuplicates = parentIds.length !== uniqueIds.length;
+                
+                // Display results
+                result.className = hasDuplicates ? 'result error' : 'result success';
+                
+                let html = `
+                    <div style="margin-bottom: 20px;">
+                        <strong>📈 Response Status:</strong> ${response.ok ? '✅ Success' : '❌ Error'}<br>
+                        <strong>🏫 Level ID:</strong> ${levelId}<br>
+                        <strong>👨‍🏫 Advisory Found:</strong> ${data.advisory ? '✅ Yes' : '❌ No'}<br>
+                        <strong>👨‍👩‍👧‍👦 Parents Count:</strong> ${parents.length}<br>
+                        <strong>🔍 Duplicates Found:</strong> ${hasDuplicates ? '❌ YES' : '✅ NO'}<br>
+                `;
+                
+                if (hasDuplicates) {
+                    const duplicates = parentIds.filter((id, index) => parentIds.indexOf(id) !== index);
+                    html += `<strong>🔄 Duplicate User IDs:</strong> ${[...new Set(duplicates)].join(', ')}<br>`;
+                }
+                
+                html += `</div>`;
+                
+                if (data.advisory) {
+                    html += `
+                        <div style="margin-bottom: 15px;">
+                            <strong>🏫 Advisory Details:</strong><br>
+                            • Advisory ID: ${data.advisory.advisory_id}<br>
+                            • Lead Teacher: ${data.advisory.lead_teacher_name || 'Not assigned'}<br>
+                            • Assistant Teacher: ${data.advisory.assistant_teacher_name || 'Not assigned'}<br>
+                            • Total Students: ${data.advisory.total_students || 0}<br>
+                        </div>
+                    `;
+                }
+                
+                html += `<strong>📋 Full Response:</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                responseContent.innerHTML = html;
+                
+            } catch (error) {
+                result.className = 'result error';
+                responseContent.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Error:</strong> ${error.message}<br>
+                        <strong>💡 Tip:</strong> Make sure your XAMPP server is running and the PHP file is accessible.
+                    </div>
+                `;
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = '🧪 Test API';
+            }
+        });
+    </script>
+</body>
+</html>

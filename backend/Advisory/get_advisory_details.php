@@ -302,7 +302,8 @@ try {
     }
     
     // Debug: Log parent_id information
-    error_log("Parent IDs found in students: " . json_encode($parent_ids));
+    error_log("Parent IDs found in students (raw): " . json_encode($parent_ids));
+    error_log("Parent IDs found in students (unique): " . json_encode(array_values(array_unique($parent_ids))));
     error_log("Students with parent_id: " . json_encode(array_filter($students, function($s) { return $s['parent_id']; })));
     error_log("Students without parent_id: " . json_encode(array_filter($students, function($s) { return !$s['parent_id']; })));
     
@@ -336,11 +337,31 @@ try {
             $placeholders = str_repeat('?,', count($parent_ids) - 1) . '?';
             $stmt = $conn->prepare("SELECT * FROM tbl_users WHERE user_id IN ($placeholders) AND user_status = 'Active'");
             $stmt->execute($parent_ids);
-            $parents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $raw_parents = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             // Debug: Log raw parents returned from database
-            error_log("Raw parents returned from database: " . count($parents));
-            error_log("Raw parent data: " . json_encode($parents));
+            error_log("Raw parents returned from database: " . count($raw_parents));
+            error_log("Raw parent user_ids: " . json_encode(array_column($raw_parents, 'user_id')));
+            error_log("Query was for parent_ids: " . json_encode($parent_ids));
+            error_log("Raw parent data: " . json_encode($raw_parents));
+            
+            
+            // IMMEDIATE deduplication right after database fetch
+            $parents = [];
+            $seen_user_ids = [];
+            foreach ($raw_parents as $parent) {
+                $user_id = (string)$parent['user_id'];
+                if (!isset($seen_user_ids[$user_id])) {
+                    $parents[] = $parent;
+                    $seen_user_ids[$user_id] = true;
+                    error_log("Added parent: user_id=" . $user_id . ", name=" . $parent['user_firstname'] . " " . $parent['user_lastname']);
+                } else {
+                    error_log("SKIPPED duplicate parent from database: user_id=" . $user_id);
+                }
+            }
+            
+            error_log("Parents after immediate deduplication: " . count($parents));
+            
         }
         
     // Remove any duplicate parents by user_id to ensure unique parents
@@ -354,46 +375,33 @@ try {
             error_log("WARNING: Duplicate parent user_id " . $parent['user_id'] . " found and removed");
         }
     }
+    
+    
     $parents = $unique_parents;
     
-    // Final verification: Ensure we have exactly the parents we need based on students
-    $required_parent_ids = [];
-    foreach ($students as $student) {
-        if ($student['parent_id'] && !in_array($student['parent_id'], $required_parent_ids)) {
-            $required_parent_ids[] = $student['parent_id'];
-        }
-    }
+    // REMOVED: The problematic "missing parent" logic that was causing duplicates
+    // The parents array should already contain all necessary parents from the initial query
+    error_log("Parents after initial fetch and deduplication: " . count($parents) . " parents");
+    error_log("Parent user_ids: " . json_encode(array_column($parents, 'user_id')));
     
-    // Check if we're missing any parents
-    $current_parent_ids = array_column($parents, 'user_id');
-    $missing_parent_ids = array_diff($required_parent_ids, $current_parent_ids);
-    
-    if (!empty($missing_parent_ids)) {
-        error_log("WARNING: Missing parents for student parents: " . json_encode($missing_parent_ids));
-        
-        // Fetch missing parents
-        $missing_placeholders = str_repeat('?,', count($missing_parent_ids) - 1) . '?';
-        $missing_stmt = $conn->prepare("SELECT * FROM tbl_users WHERE user_id IN ($missing_placeholders) AND user_status = 'Active'");
-        $missing_stmt->execute($missing_parent_ids);
-        $missing_parents = $missing_stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Add missing parents to our list
-        foreach ($missing_parents as $missing_parent) {
-            $parents[] = $missing_parent;
-            error_log("Added missing parent: user_id=" . $missing_parent['user_id'] . ", name=" . $missing_parent['user_firstname'] . " " . $missing_parent['user_lastname']);
-        }
-    }
-    
-    // Final deduplication to be absolutely sure
+    // Final deduplication to be absolutely sure - use array keys for better performance
     $final_unique_parents = [];
-    $final_seen_ids = [];
+    $seen_user_ids = [];
+    
     foreach ($parents as $parent) {
-        if (!in_array($parent['user_id'], $final_seen_ids)) {
+        $user_id = (string)$parent['user_id']; // Convert to string for consistent comparison
+        if (!isset($seen_user_ids[$user_id])) {
             $final_unique_parents[] = $parent;
-            $final_seen_ids[] = $parent['user_id'];
+            $seen_user_ids[$user_id] = true;
+        } else {
+            error_log("WARNING: Final deduplication removed duplicate parent user_id: " . $user_id);
         }
     }
+    
+    
     $parents = $final_unique_parents;
+    error_log("Final parents count after deduplication: " . count($parents));
+    error_log("Final parent user_ids: " . json_encode(array_column($parents, 'user_id')));
         
         // Debug: Log parents found
         error_log("Parents found in database: " . count($parents));
@@ -404,8 +412,9 @@ try {
             error_log("Unique parent: user_id=" . $parent['user_id'] . ", name=" . $parent['user_firstname'] . " " . $parent['user_lastname']);
         }
         
-        // Add photo field to parents
-        foreach ($parents as &$parent) {
+        // Add photo field to parents (without reference to avoid issues)
+        $parents_with_photos = [];
+        foreach ($parents as $parent) {
             if ($parent['user_photo']) {
                 $parent['photo'] = strpos($parent['user_photo'], '/php/Uploads/') === 0 ? 
                     $parent['user_photo'] : 
@@ -413,7 +422,9 @@ try {
             } else {
                 $parent['photo'] = '/php/Uploads/default_parent.png';
             }
+            $parents_with_photos[] = $parent;
         }
+        $parents = $parents_with_photos;
         
         // Create a lookup array for parent information
         $parent_lookup = [];
@@ -470,6 +481,18 @@ try {
     error_log("- Parents count: " . count($parents));
     error_log("- Students data: " . json_encode($students));
     error_log("- Parents data: " . json_encode($parents));
+    
+    // Final verification and debugging
+    $parent_ids_in_response = array_column($parents, 'user_id');
+    $student_parent_ids = array_column($students, 'parent_id');
+    $expected_parent_ids = array_unique(array_filter($student_parent_ids));
+    
+    $unique_parent_ids = array_unique($parent_ids_in_response);
+    $has_duplicates = count($parent_ids_in_response) !== count($unique_parent_ids);
+    $missing_parents = array_diff($expected_parent_ids, $unique_parent_ids);
+    
+    // Final debug logging
+    error_log("Final response for advisory_id $advisory_id: " . count($parents) . " unique parents");
     
     echo json_encode([
         'advisory' => $advisory,
