@@ -343,18 +343,57 @@ try {
             error_log("Raw parent data: " . json_encode($parents));
         }
         
-        // Remove any duplicate parents by user_id to ensure unique parents
-        $unique_parents = [];
-        $seen_parent_ids = [];
-        foreach ($parents as $parent) {
-            if (!in_array($parent['user_id'], $seen_parent_ids)) {
-                $unique_parents[] = $parent;
-                $seen_parent_ids[] = $parent['user_id'];
-            } else {
-                error_log("WARNING: Duplicate parent user_id " . $parent['user_id'] . " found and removed");
-            }
+    // Remove any duplicate parents by user_id to ensure unique parents
+    $unique_parents = [];
+    $seen_parent_ids = [];
+    foreach ($parents as $parent) {
+        if (!in_array($parent['user_id'], $seen_parent_ids)) {
+            $unique_parents[] = $parent;
+            $seen_parent_ids[] = $parent['user_id'];
+        } else {
+            error_log("WARNING: Duplicate parent user_id " . $parent['user_id'] . " found and removed");
         }
-        $parents = $unique_parents;
+    }
+    $parents = $unique_parents;
+    
+    // Final verification: Ensure we have exactly the parents we need based on students
+    $required_parent_ids = [];
+    foreach ($students as $student) {
+        if ($student['parent_id'] && !in_array($student['parent_id'], $required_parent_ids)) {
+            $required_parent_ids[] = $student['parent_id'];
+        }
+    }
+    
+    // Check if we're missing any parents
+    $current_parent_ids = array_column($parents, 'user_id');
+    $missing_parent_ids = array_diff($required_parent_ids, $current_parent_ids);
+    
+    if (!empty($missing_parent_ids)) {
+        error_log("WARNING: Missing parents for student parents: " . json_encode($missing_parent_ids));
+        
+        // Fetch missing parents
+        $missing_placeholders = str_repeat('?,', count($missing_parent_ids) - 1) . '?';
+        $missing_stmt = $conn->prepare("SELECT * FROM tbl_users WHERE user_id IN ($missing_placeholders) AND user_status = 'Active'");
+        $missing_stmt->execute($missing_parent_ids);
+        $missing_parents = $missing_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Add missing parents to our list
+        foreach ($missing_parents as $missing_parent) {
+            $parents[] = $missing_parent;
+            error_log("Added missing parent: user_id=" . $missing_parent['user_id'] . ", name=" . $missing_parent['user_firstname'] . " " . $missing_parent['user_lastname']);
+        }
+    }
+    
+    // Final deduplication to be absolutely sure
+    $final_unique_parents = [];
+    $final_seen_ids = [];
+    foreach ($parents as $parent) {
+        if (!in_array($parent['user_id'], $final_seen_ids)) {
+            $final_unique_parents[] = $parent;
+            $final_seen_ids[] = $parent['user_id'];
+        }
+    }
+    $parents = $final_unique_parents;
         
         // Debug: Log parents found
         error_log("Parents found in database: " . count($parents));

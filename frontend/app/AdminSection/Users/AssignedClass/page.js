@@ -160,18 +160,31 @@ export default function AssignedClassPage() {
             // Build a unified, unique parents list using both API parents and student->parent mapping
             try {
               const uniqueById = new Map();
-              // Seed from backend parents
-              (fetchedParents || []).forEach((p) => {
-                if (p && p.user_id && !uniqueById.has(String(p.user_id))) {
-                  uniqueById.set(String(p.user_id), p);
+              
+              // First, collect all required parent IDs from students
+              const requiredParentIds = new Set();
+              (fetchedStudents || []).forEach((s) => {
+                if (s.parent_id) {
+                  requiredParentIds.add(String(s.parent_id));
                 }
               });
-              // Add any missing parents inferred from students
+              
+              // Seed from backend parents (these should be the authoritative source)
+              (fetchedParents || []).forEach((p) => {
+                if (p && p.user_id) {
+                  const pid = String(p.user_id);
+                  if (requiredParentIds.has(pid) && !uniqueById.has(pid)) {
+                    uniqueById.set(pid, p);
+                  }
+                }
+              });
+              
+              // Add any missing parents inferred from students (fallback)
               (fetchedStudents || []).forEach((s) => {
-                const pid = s.parent_id;
-                if (pid && !uniqueById.has(String(pid))) {
-                  uniqueById.set(String(pid), {
-                    user_id: pid,
+                const pid = String(s.parent_id);
+                if (pid && requiredParentIds.has(pid) && !uniqueById.has(pid)) {
+                  uniqueById.set(pid, {
+                    user_id: s.parent_id,
                     user_firstname: s.parent_firstname || '',
                     user_middlename: s.parent_middlename || '',
                     user_lastname: s.parent_lastname || '',
@@ -179,7 +192,14 @@ export default function AssignedClassPage() {
                   });
                 }
               });
-              setDerivedParents(Array.from(uniqueById.values()));
+              
+              const derivedList = Array.from(uniqueById.values());
+              console.log('Derived parents list:', derivedList);
+              console.log('Required parent IDs:', Array.from(requiredParentIds));
+              console.log('Backend parents count:', (fetchedParents || []).length);
+              console.log('Derived parents count:', derivedList.length);
+              
+              setDerivedParents(derivedList);
             } catch (e) {
               console.error('Error deriving unique parents:', e);
               setDerivedParents(fetchedParents || []);
