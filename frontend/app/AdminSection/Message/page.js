@@ -1506,8 +1506,9 @@ export default function AdminMessagesPage() {
     if (r === 3) return "Teacher";
     if (r === 4) return "Parent";
     return "User";
-  
-    function getQuickReplies(type, chat) {
+  };
+
+  function getQuickReplies(type, chat) {
       // User roles: 2=Admin, 3=Teacher, 4=Parent
       if (!chat) return [
         "Great job!",
@@ -1592,9 +1593,7 @@ export default function AdminMessagesPage() {
       }
       
     }
-  }
-
-
+  
   // SVG helpers for playful background
   const buildPuzzleSvg = (fill, rotated) =>
     `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'>` +
