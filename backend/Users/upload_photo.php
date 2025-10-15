@@ -54,8 +54,8 @@ for ($i = 0; $i < 5; $i++) {
 }
 $uniqueName = 'img_' . $shortId . '_' . $sanitizedBase . '.' . $ext;
 
-// Ensure uploads directory exists - using absolute path for XAMPP
-$uploadsDir = 'C:\\xampp\\htdocs\\capstone-project\\backend\\Uploads';
+// Ensure uploads directory exists - use relative path for production compatibility
+$uploadsDir = __DIR__ . '/../Uploads';
 if (!is_dir($uploadsDir)) {
     if (!mkdir($uploadsDir, 0775, true) && !is_dir($uploadsDir)) {
         http_response_code(500);
@@ -72,8 +72,8 @@ if (!is_writable($uploadsDir)) {
 }
 
 // Debug logging
-$debugMessage = date('Y-m-d H:i:s') . " - Upload attempt: Directory: $uploadsDir, Writable: " . (is_writable($uploadsDir) ? 'Yes' : 'No') . ", File: " . $file['name'] . ", Size: " . $file['size'] . "\n";
-file_put_contents('../SystemLogs/debug_log.txt', $debugMessage, FILE_APPEND);
+$debugMessage = date('Y-m-d H:i:s') . " - Upload attempt: Directory: $uploadsDir, Writable: " . (is_writable($uploadsDir) ? 'Yes' : 'No') . ", File: " . $file['name'] . ", Size: " . $file['size'] . ", Generated ID: $shortId\n";
+file_put_contents(__DIR__ . '/../SystemLogs/debug_log.txt', $debugMessage, FILE_APPEND);
 
 $targetPath = $uploadsDir . DIRECTORY_SEPARATOR . $uniqueName;
 
@@ -86,15 +86,18 @@ if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
 // Build public URL (not returned; frontend prefixes /php/Uploads/)
 $publicUrl = $uniqueName;
 
-// Debug logging for successful upload
-$debugMessage = date('Y-m-d H:i:s') . " - Upload successful: Target: $targetPath, URL: $publicUrl, Generated ID: $shortId\n";
-file_put_contents('../SystemLogs/debug_log.txt', $debugMessage, FILE_APPEND);
-
 // Verify file actually exists after upload
 if (!file_exists($targetPath)) {
     $errorMessage = date('Y-m-d H:i:s') . " - CRITICAL: File upload reported success but file does not exist: $targetPath\n";
-    file_put_contents('../SystemLogs/error_log.txt', $errorMessage, FILE_APPEND);
+    file_put_contents(__DIR__ . '/../SystemLogs/error_log.txt', $errorMessage, FILE_APPEND);
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'File was not saved properly']);
+    exit;
 }
+
+// Debug logging for successful upload
+$debugMessage = date('Y-m-d H:i:s') . " - Upload successful: Target: $targetPath, URL: $publicUrl, Generated ID: $shortId, File exists: " . (file_exists($targetPath) ? 'YES' : 'NO') . "\n";
+file_put_contents(__DIR__ . '/../SystemLogs/debug_log.txt', $debugMessage, FILE_APPEND);
 
 echo json_encode([
     'status' => 'success',

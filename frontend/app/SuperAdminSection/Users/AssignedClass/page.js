@@ -866,11 +866,11 @@ export default function AssignedClassPage() {
                  <FaUsers className="text-blue-600 text-xs sm:text-sm" />
                  <span className="text-xs sm:text-sm font-medium text-blue-900">
                    {(() => {
-                     const filteredParents = parents.filter(p => {
-                       const formattedName = `${p.user_lastname}, ${p.user_firstname} ${p.user_middlename || ''}`;
-                       return formattedName.toLowerCase().includes(parentSearch.toLowerCase());
-                     });
-                     return `${filteredParents.length} ${filteredParents.length === 1 ? 'Parent' : 'Parents'}`;
+                     // Show total unique parents count, not filtered count
+                     const uniqueParents = parents.filter((parent, index, self) => 
+                       index === self.findIndex(p => p.user_id === parent.user_id)
+                     );
+                     return `${uniqueParents.length} ${uniqueParents.length === 1 ? 'Parent' : 'Parents'}`;
                    })()}
                  </span>
                </div>
