@@ -429,9 +429,27 @@ try {
                 $student['parent_middlename'] = $parent['user_middlename'];
                 $student['parent_lastname'] = $parent['user_lastname'];
             } else {
-                $student['parent_firstname'] = null;
-                $student['parent_middlename'] = null;
-                $student['parent_lastname'] = null;
+                // If parent not found in lookup, try to fetch it directly
+                if ($student['parent_id']) {
+                    $stmt = $conn->prepare("SELECT user_firstname, user_middlename, user_lastname FROM tbl_users WHERE user_id = ? AND user_status = 'Active'");
+                    $stmt->execute([$student['parent_id']]);
+                    $missingParent = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($missingParent) {
+                        $student['parent_firstname'] = $missingParent['user_firstname'];
+                        $student['parent_middlename'] = $missingParent['user_middlename'];
+                        $student['parent_lastname'] = $missingParent['user_lastname'];
+                        error_log("Found missing parent for student " . $student['student_id'] . ": " . $missingParent['user_firstname'] . " " . $missingParent['user_lastname']);
+                    } else {
+                        $student['parent_firstname'] = null;
+                        $student['parent_middlename'] = null;
+                        $student['parent_lastname'] = null;
+                        error_log("WARNING: Parent not found for student " . $student['student_id'] . " with parent_id " . $student['parent_id']);
+                    }
+                } else {
+                    $student['parent_firstname'] = null;
+                    $student['parent_middlename'] = null;
+                    $student['parent_lastname'] = null;
+                }
             }
         }
     } else {

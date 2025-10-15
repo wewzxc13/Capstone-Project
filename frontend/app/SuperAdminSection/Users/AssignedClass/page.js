@@ -1022,7 +1022,19 @@ export default function AssignedClassPage() {
                             }
                           })()}
                                                                           <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 text-sm sm:text-base truncate">{parent.user_lastname}, {parent.user_firstname} {parent.user_middlename || ''}</div>
+                          <div className="font-medium text-gray-900 text-sm sm:text-base truncate">
+                            {(() => {
+                              const lastName = parent.user_lastname || '';
+                              const firstName = parent.user_firstname || '';
+                              const middleName = parent.user_middlename || '';
+                              
+                              if (!lastName && !firstName) {
+                                return 'Unknown Parent';
+                              }
+                              
+                              return `${lastName}, ${firstName} ${middleName}`.trim().replace(/,\s*$/, '');
+                            })()}
+                          </div>
                           {children.length > 0 && (
                             <div className="text-xs sm:text-sm text-gray-500 mt-1 truncate">
                               {children.length === 1 ? 'Child' : 'Children'}: {children.map((child, i) => 
