@@ -182,8 +182,11 @@ function getPhotoUrl(filename) {
     return filename;
   }
   
+  // Clean filename - remove any path prefixes that might have been stored incorrectly
+  const cleanFilename = filename.includes('/') ? filename.split('/').pop() : filename;
+  
   // Use centralized upload URL configuration
-  return uploadsAPI.getUploadURL(filename);
+  return uploadsAPI.getUploadURL(cleanFilename);
 }
 // --- END VALIDATION LOGIC ---
 
@@ -404,8 +407,10 @@ export default function ParentDetails() {
 
       // Update photo URL if a new photo was uploaded
       if (uploadedPhotoUrl !== undefined) {
-        dataToSend.user_photo = uploadedPhotoUrl;
-        console.log('Setting photo URL in dataToSend:', uploadedPhotoUrl); // Debug log
+        // Ensure we only store the filename, not a full path
+        const filename = uploadedPhotoUrl.includes('/') ? uploadedPhotoUrl.split('/').pop() : uploadedPhotoUrl;
+        dataToSend.user_photo = filename;
+        console.log('Setting photo URL in dataToSend:', filename); // Debug log
       } else if (formData.user_photo && formData.user_photo.startsWith('blob:')) {
         // If we have a preview URL but no new upload, we need to upload the preview
         try {
@@ -423,8 +428,10 @@ export default function ParentDetails() {
           const uploadJson = await uploadRes.json();
           
           if (uploadRes.ok && uploadJson.status === 'success') {
-            dataToSend.user_photo = uploadJson.url;
-            console.log('Preview photo uploaded successfully, filename:', uploadJson.url);
+            // Ensure we only store the filename, not a full path
+            const filename = uploadJson.url.includes('/') ? uploadJson.url.split('/').pop() : uploadJson.url;
+            dataToSend.user_photo = filename;
+            console.log('Preview photo uploaded successfully, filename:', filename);
           } else {
             toast.error('Failed to upload preview photo');
             return;
@@ -520,8 +527,10 @@ export default function ParentDetails() {
 
         // Update the photo in formData if a new photo was uploaded
         if (uploadedPhotoUrl !== undefined) {
-          setFormData(prev => ({ ...prev, user_photo: uploadedPhotoUrl }));
-          console.log('Updated formData with new photo filename:', uploadedPhotoUrl); // Debug log
+          // Ensure we only store the filename, not a full path
+          const filename = uploadedPhotoUrl.includes('/') ? uploadedPhotoUrl.split('/').pop() : uploadedPhotoUrl;
+          setFormData(prev => ({ ...prev, user_photo: filename }));
+          console.log('Updated formData with new photo filename:', filename); // Debug log
           
           // Clear the selectedPhoto since it's now uploaded
           setSelectedPhoto(null);
@@ -1067,10 +1076,15 @@ export default function ParentDetails() {
     const handleImageError = (event) => {
       const img = event.target;
       
-      // Hide the broken image and show fallback
-      img.style.display = 'none';
-      if (img.nextSibling) {
-        img.nextSibling.style.display = 'flex';
+      // Only handle image errors, not other errors
+      if (img.tagName === 'IMG') {
+        console.log('Image failed to load, showing fallback:', img.src);
+        
+        // Hide the broken image and show fallback
+        img.style.display = 'none';
+        if (img.nextSibling && img.nextSibling.classList.contains('hidden')) {
+          img.nextSibling.style.display = 'flex';
+        }
       }
     };
 
@@ -1107,7 +1121,7 @@ export default function ParentDetails() {
           {/* Profile Information */}
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="flex-shrink-0">
-              {formData.user_photo ? (
+              {formData.user_photo && !formData.user_photo.includes('default_') ? (
                 <>
                   <img
                     src={getPhotoUrl(formData.user_photo)}
@@ -1363,7 +1377,7 @@ export default function ParentDetails() {
               <div className="flex flex-col items-center gap-4">
                 {/* Current Photo Display with Circular Dashed Border */}
                 <div className="flex-shrink-0 relative">
-                  {formData.user_photo ? (
+                  {formData.user_photo && !formData.user_photo.includes('default_') ? (
                     <div className="relative">
                       <img
                         src={getPhotoUrl(formData.user_photo)}
@@ -1404,7 +1418,7 @@ export default function ParentDetails() {
                    )}
 
                   {/* Crop indicator overlay for editing mode */}
-                  {isEditing && formData.user_photo && (
+                  {isEditing && formData.user_photo && !formData.user_photo.includes('default_') && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
                       <FaCrop className="text-white text-sm" />
                     </div>
@@ -1428,7 +1442,7 @@ export default function ParentDetails() {
                       <div className="font-medium text-sm">Selected: {selectedPhoto.name}</div>
                       <div className="text-xs">Click photo to change or crop</div>
                     </div>
-                  ) : formData.user_photo ? (
+                  ) : formData.user_photo && !formData.user_photo.includes('default_') ? (
                     <div className="text-gray-600">
                       <div className="font-medium text-sm">Current photo uploaded</div>
                       <div className={`text-xs ${isEditing ? 'text-blue-600' : 'text-gray-500'}`}>
@@ -1451,7 +1465,7 @@ export default function ParentDetails() {
                     <div className="text-xs text-gray-500 mb-2">
                       Supported formats: JPG, PNG, GIF, WebP. Max size: 5MB.
                     </div>
-                    {formData.user_photo && (
+                    {formData.user_photo && !formData.user_photo.includes('default_') && (
                       <div className="text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
                         💡 <strong>Tip:</strong> Click on your current photo to crop/resize it
                       </div>
@@ -1519,7 +1533,7 @@ export default function ParentDetails() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {formData.user_photo && (
+              {formData.user_photo && !formData.user_photo.includes('default_') && (
                 <button
                   onClick={() => handlePhotoMenuSelect('crop')}
                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
