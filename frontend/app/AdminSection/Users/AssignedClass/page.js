@@ -866,8 +866,11 @@ export default function AssignedClassPage() {
                  <FaUsers className="text-blue-600 text-xs sm:text-sm" />
                  <span className="text-xs sm:text-sm font-medium text-blue-900">
                    {(() => {
-                     // Show total parents count from backend (including any duplicates)
-                     return `${parents.length} ${parents.length === 1 ? 'Parent' : 'Parents'}`;
+                     // Show unique parents count (deduplicated by user_id)
+                     const uniqueParents = parents.filter((parent, index, self) => 
+                       index === self.findIndex(p => p.user_id === parent.user_id)
+                     );
+                     return `${uniqueParents.length} ${uniqueParents.length === 1 ? 'Parent' : 'Parents'}`;
                    })()}
                  </span>
                </div>

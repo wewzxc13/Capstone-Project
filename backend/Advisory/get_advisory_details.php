@@ -306,6 +306,11 @@ try {
     error_log("Students with parent_id: " . json_encode(array_filter($students, function($s) { return $s['parent_id']; })));
     error_log("Students without parent_id: " . json_encode(array_filter($students, function($s) { return !$s['parent_id']; })));
     
+    // Debug: Show each student's parent_id for clarity
+    foreach ($students as $student) {
+        error_log("Student " . $student['student_id'] . " (" . $student['stud_firstname'] . " " . $student['stud_lastname'] . ") has parent_id: " . $student['parent_id']);
+    }
+    
     $parents = [];
     if (count($parent_ids) > 0) {
         // Remove duplicates from parent_ids and reindex the array
@@ -332,6 +337,10 @@ try {
             $stmt = $conn->prepare("SELECT * FROM tbl_users WHERE user_id IN ($placeholders) AND user_status = 'Active'");
             $stmt->execute($parent_ids);
             $parents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Debug: Log raw parents returned from database
+            error_log("Raw parents returned from database: " . count($parents));
+            error_log("Raw parent data: " . json_encode($parents));
         }
         
         // Remove any duplicate parents by user_id to ensure unique parents
@@ -341,6 +350,8 @@ try {
             if (!in_array($parent['user_id'], $seen_parent_ids)) {
                 $unique_parents[] = $parent;
                 $seen_parent_ids[] = $parent['user_id'];
+            } else {
+                error_log("WARNING: Duplicate parent user_id " . $parent['user_id'] . " found and removed");
             }
         }
         $parents = $unique_parents;
@@ -348,6 +359,11 @@ try {
         // Debug: Log parents found
         error_log("Parents found in database: " . count($parents));
         error_log("Unique parent data: " . json_encode($parents));
+        
+        // Debug: Log each unique parent for verification
+        foreach ($parents as $parent) {
+            error_log("Unique parent: user_id=" . $parent['user_id'] . ", name=" . $parent['user_firstname'] . " " . $parent['user_lastname']);
+        }
         
         // Add photo field to parents
         foreach ($parents as &$parent) {
