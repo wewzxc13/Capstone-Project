@@ -222,7 +222,7 @@ export default function AdminMessagesPage() {
 
         
         // Use get_users.php for conversation history (default mode)
-        const res = await fetch(API.communication.getUsers(), {
+        const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -311,7 +311,7 @@ export default function AdminMessagesPage() {
 
       
       // Use get_users.php with search=true parameter to get all active users
-      const res = await fetch(API.communication.getUsers(), {
+      const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}&search=true`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -379,7 +379,7 @@ export default function AdminMessagesPage() {
 
       
       // Use get_users.php for conversation history (default mode)
-      const res = await fetch(API.communication.getUsers(), {
+      const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -431,7 +431,7 @@ export default function AdminMessagesPage() {
 
       
       // Check if this user has any conversation history
-      const res = await fetch(API.communication.getConversation(), {
+      const res = await fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -496,7 +496,7 @@ export default function AdminMessagesPage() {
         // Refresh unread counts by calling the get_users API again
         try {
           const uid = Number(localStorage.getItem('userId'));
-          const refreshRes = await fetch(API.communication.getUsers(), {
+          const refreshRes = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
@@ -547,7 +547,7 @@ export default function AdminMessagesPage() {
       // Mark as running to prevent conflicts
       isRunningRef.current.conversation = userId;
       
-      const res = await fetch(API.communication.getConversation(), {
+      const res = await fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -629,7 +629,7 @@ export default function AdminMessagesPage() {
         console.log('loadGroups function called');
         const uid = Number(localStorage.getItem('userId')) || 0;
         console.log('loadGroups - user ID from localStorage:', uid);
-        const url = uid ? API.communication.getGroups() : API.communication.getGroups();
+        const url = `${API.communication.getGroups()}?user_id=${uid}`;
         console.log('loadGroups - API URL:', url);
         const res = await fetch(url, {
           method: 'GET',
@@ -710,7 +710,7 @@ export default function AdminMessagesPage() {
     
 
     
-    fetch(API.communication.getRecentConversations(), {
+    fetch(`${API.communication.getRecentConversations()}?user_id=${uid}`, {
       signal: controller.signal,
     })
       .then((r) => {
@@ -868,7 +868,7 @@ export default function AdminMessagesPage() {
     const uid = Number(localStorage.getItem("userId"));
     if (!uid) return;
     let isMounted = true;
-    fetch(API.communication.getArchivedConversations())
+    fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`)
       .then((r) => r.json())
       .then(async (json) => {
         if (!json?.success) return;
@@ -987,7 +987,7 @@ export default function AdminMessagesPage() {
         setIsLoadingConversations(true);
         
         // First, load the user list
-        const res = await fetch(API.communication.getUsers(), {
+        const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -1103,7 +1103,7 @@ export default function AdminMessagesPage() {
     // Store the controller reference to allow cancellation
     isRunningRef.current.controller = controller;
     
-    fetch(API.communication.getConversation(), {
+    fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${selectedChatId}`, {
       signal: controller.signal,
     })
       .then((r) => r.json())
@@ -1890,7 +1890,7 @@ export default function AdminMessagesPage() {
           const uid = Number(localStorage.getItem('userId'));
           if (!uid) return;
           
-          const res = await fetch(API.communication.getUsers(), {
+          const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
@@ -3232,7 +3232,7 @@ export default function AdminMessagesPage() {
                     // Remove from recents
                     setRecent((prev) => prev.filter((r) => r.id !== String(partnerId)));
                     // Refresh archived list
-                    fetch(API.communication.getArchivedConversations())
+                    fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`)
                       .then((r) => r.json())
                       .then((arch) => {
                         if (arch?.success) {
@@ -3311,43 +3311,47 @@ export default function AdminMessagesPage() {
                   const json = await res.json();
                   if (!json?.success) throw new Error(json?.error || 'Failed to restore');
                   // Refresh recents and archive lists
-                  fetch(API.communication.getRecentConversations()).then(r => r.json()).then(rc => {
-                    if (rc?.success) {
-                      const mapped = (rc.data || []).map((u) => {
-                        const name = [u.user_firstname, u.user_middlename, u.user_lastname].filter(Boolean).join(' ');
-                        const rawLast = u.last_message || '';
-                        const isUnsentText = typeof rawLast === 'string' && rawLast.toLowerCase().includes('unsent a message');
-                        const fromSelf = Number(u.last_sender_id || 0) === uid;
-                        const normalizedLast = isUnsentText ? (fromSelf ? 'You unsent a message' : `${name} unsent a message`) : (fromSelf && rawLast ? `You: ${rawLast}` : rawLast);
-                        return {
+                  fetch(`${API.communication.getRecentConversations()}?user_id=${uid}`)
+                    .then(r => r.json())
+                    .then(rc => {
+                      if (rc?.success) {
+                        const mapped = (rc.data || []).map((u) => {
+                          const name = [u.user_firstname, u.user_middlename, u.user_lastname].filter(Boolean).join(' ');
+                          const rawLast = u.last_message || '';
+                          const isUnsentText = typeof rawLast === 'string' && rawLast.toLowerCase().includes('unsent a message');
+                          const fromSelf = Number(u.last_sender_id || 0) === uid;
+                          const normalizedLast = isUnsentText ? (fromSelf ? 'You unsent a message' : `${name} unsent a message`) : (fromSelf && rawLast ? `You: ${rawLast}` : rawLast);
+                          return {
+                            id: String(u.user_id),
+                            name,
+                            color: roleColorClass(u.user_role),
+                            role: Number(u.user_role),
+                            unread: 0,
+                            lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
+                            lastMessage: normalizedLast,
+                            messages: [],
+                          };
+                        });
+                        setRecent(mapped);
+                      }
+                    });
+                  fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`)
+                    .then(r => r.json())
+                    .then(ar => {
+                      if (ar?.success) {
+                        const mapped = (ar.data || []).map((u) => ({
                           id: String(u.user_id),
-                          name,
+                          name: [u.user_firstname, u.user_middlename, u.user_lastname].filter(Boolean).join(' '),
                           color: roleColorClass(u.user_role),
                           role: Number(u.user_role),
                           unread: 0,
                           lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
-                          lastMessage: normalizedLast,
                           messages: [],
-                        };
-                      });
-                      setRecent(mapped);
-                    }
-                  });
-                  fetch(API.communication.getArchivedConversations()).then(r => r.json()).then(ar => {
-                    if (ar?.success) {
-                      const mapped = (ar.data || []).map((u) => ({
-                        id: String(u.user_id),
-                        name: [u.user_firstname, u.user_middlename, u.user_lastname].filter(Boolean).join(' '),
-                        color: roleColorClass(u.user_role),
-                        role: Number(u.user_role),
-                        unread: 0,
-                        lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
-                        messages: [],
-                        archived: true,
-                      }));
-                      setArchived(mapped);
-                    }
-                  });
+                          archived: true,
+                        }));
+                        setArchived(mapped);
+                      }
+                    });
                   setShowRestoreModal(false);
                   try { toast.success('Conversation restored'); } catch (e) { }
                 } catch (e) {

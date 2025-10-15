@@ -586,3 +586,9 @@ Plain Input Password: Chan@123
 Input: manongdomargareth1335@gmail.com
 Hashed DB Password: $2y$10$em/CoMFNY1tjX8/ON.1x7.zpc2Bu3VbE55C.wM2oL1mrhZY/iTQUe
 Plain Input Password: Marg@123
+2025-10-15 12:58:31 - Input: dichoskristopher@gmail.com
+2025-10-15 12:58:31 - Plain Input Password: Dichos@123
+2025-10-15 12:58:31 - Hashed DB Password: $2y$10$ojSwpBdI06wTC14JO9I2fegkCxMb67x28Nb5TYK9f5Kot749aResu
+2025-10-15 12:58:36 - Input: dichoskristopher@gmail.com
+2025-10-15 12:58:36 - Plain Input Password: Deso_1114
+2025-10-15 12:58:36 - Hashed DB Password: $2y$10$ojSwpBdI06wTC14JO9I2fegkCxMb67x28Nb5TYK9f5Kot749aResu
