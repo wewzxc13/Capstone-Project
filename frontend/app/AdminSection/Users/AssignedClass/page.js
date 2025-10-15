@@ -49,6 +49,7 @@ export default function AssignedClassPage() {
   const [selectedTab, setSelectedTab] = useState(classTabs[0].name);
   const [advisory, setAdvisory] = useState(null);
   const [parents, setParents] = useState([]);
+  const [derivedParents, setDerivedParents] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [parentSearch, setParentSearch] = useState("");
@@ -152,11 +153,40 @@ export default function AssignedClassPage() {
           if (data.advisory !== undefined) {
             
             setAdvisory(data.advisory);
-            setStudents(data.students || []);
-            setParents(data.parents || []);
+            const fetchedStudents = data.students || [];
+            const fetchedParents = data.parents || [];
+            setStudents(fetchedStudents);
+            setParents(fetchedParents);
+            // Build a unified, unique parents list using both API parents and student->parent mapping
+            try {
+              const uniqueById = new Map();
+              // Seed from backend parents
+              (fetchedParents || []).forEach((p) => {
+                if (p && p.user_id && !uniqueById.has(String(p.user_id))) {
+                  uniqueById.set(String(p.user_id), p);
+                }
+              });
+              // Add any missing parents inferred from students
+              (fetchedStudents || []).forEach((s) => {
+                const pid = s.parent_id;
+                if (pid && !uniqueById.has(String(pid))) {
+                  uniqueById.set(String(pid), {
+                    user_id: pid,
+                    user_firstname: s.parent_firstname || '',
+                    user_middlename: s.parent_middlename || '',
+                    user_lastname: s.parent_lastname || '',
+                    photo: null,
+                  });
+                }
+              });
+              setDerivedParents(Array.from(uniqueById.values()));
+            } catch (e) {
+              console.error('Error deriving unique parents:', e);
+              setDerivedParents(fetchedParents || []);
+            }
             
             // Initialize UserContext with advisory photos for real-time updates (including teacher photos)
-            initializeAdvisoryPhotos(data.students || [], data.parents || [], data.advisory);
+            initializeAdvisoryPhotos(fetchedStudents, fetchedParents, data.advisory);
         } else {
           // No advisory found for this level - this is normal for empty classes
           setAdvisory(null);
@@ -864,15 +894,13 @@ export default function AssignedClassPage() {
               <h3 className="text-base sm:text-lg font-bold text-gray-900">Parents</h3>
                              <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 rounded-full w-fit">
                  <FaUsers className="text-blue-600 text-xs sm:text-sm" />
-                 <span className="text-xs sm:text-sm font-medium text-blue-900">
-                   {(() => {
-                     // Show unique parents count (deduplicated by user_id)
-                     const uniqueParents = parents.filter((parent, index, self) => 
-                       index === self.findIndex(p => p.user_id === parent.user_id)
-                     );
-                     return `${uniqueParents.length} ${uniqueParents.length === 1 ? 'Parent' : 'Parents'}`;
-                   })()}
-                 </span>
+                <span className="text-xs sm:text-sm font-medium text-blue-900">
+                  {(() => {
+                    const list = (derivedParents && derivedParents.length > 0) ? derivedParents : parents;
+                    const uniqueCount = (list || []).filter((p, i, self) => self.findIndex(x => String(x.user_id) === String(p.user_id)) === i).length;
+                    return `${uniqueCount} ${uniqueCount === 1 ? 'Parent' : 'Parents'}`;
+                  })()}
+                </span>
                </div>
             </div>
             
@@ -912,9 +940,8 @@ export default function AssignedClassPage() {
                     <p className="text-sm sm:text-base text-gray-500">No parents match your search</p>
                   </div>
                                  ) : (
-                   // Remove duplicate parents by user_id to prevent React key conflicts
-                   // This handles cases where the backend API might return duplicate parent records
-                   parents.filter(p =>
+                  // Use derived unique parents for rendering
+                  ((derivedParents && derivedParents.length > 0) ? derivedParents : parents).filter(p =>
                      (`${p.user_lastname}, ${p.user_firstname} ${p.user_middlename || ''}`.toLowerCase().includes(parentSearch.toLowerCase()))
                    ).filter((parent, index, self) => 
                      index === self.findIndex(p => p.user_id === parent.user_id)
