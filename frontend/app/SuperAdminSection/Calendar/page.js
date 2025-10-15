@@ -1640,7 +1640,6 @@ export default function SuperAdminCalendarPage() {
                             // Refresh the invited list to show updated invitees
                             if (inviteesChanged) {
                               console.log("🔄 Invitees changed, refreshing invited list...");
-                              await testInviteeUpdate(selectedEvent.id); // Test API call
                               await fetchInvitedList(selectedEvent.id);
                               console.log("✅ Invited list refreshed after invitee changes");
                             } else {
