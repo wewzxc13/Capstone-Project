@@ -1,4 +1,5 @@
 <?php
+// Production version of photo upload with proper path handling
 // Include CORS configuration
 include_once 'cors_config.php';
 
@@ -45,17 +46,14 @@ if (!in_array($ext, $allowedExt, true)) {
 $baseName = pathinfo($originalName, PATHINFO_FILENAME);
 $sanitizedBase = preg_replace('/[^a-zA-Z0-9_-]/', '_', $baseName);
 
-// Generate shorter unique identifier (5 characters instead of long format)
-// Use a more reliable method to ensure consistency
-$chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-$shortId = '';
-for ($i = 0; $i < 5; $i++) {
-    $shortId .= $chars[random_int(0, strlen($chars) - 1)];
-}
+// Generate consistent unique identifier using timestamp + random
+$timestamp = time();
+$randomPart = substr(str_shuffle('abcdefghijklmnopqrstuvwxyz0123456789'), 0, 3);
+$shortId = $randomPart . substr($timestamp, -2); // Last 2 digits of timestamp + 3 random chars
 $uniqueName = 'img_' . $shortId . '_' . $sanitizedBase . '.' . $ext;
 
-// Ensure uploads directory exists - using absolute path for XAMPP
-$uploadsDir = 'C:\\xampp\\htdocs\\capstone-project\\backend\\Uploads';
+// Use relative path for production (Namecheap hosting)
+$uploadsDir = __DIR__ . '/../Uploads';
 if (!is_dir($uploadsDir)) {
     if (!mkdir($uploadsDir, 0775, true) && !is_dir($uploadsDir)) {
         http_response_code(500);
@@ -72,10 +70,13 @@ if (!is_writable($uploadsDir)) {
 }
 
 // Debug logging
-$debugMessage = date('Y-m-d H:i:s') . " - Upload attempt: Directory: $uploadsDir, Writable: " . (is_writable($uploadsDir) ? 'Yes' : 'No') . ", File: " . $file['name'] . ", Size: " . $file['size'] . "\n";
-file_put_contents('../SystemLogs/debug_log.txt', $debugMessage, FILE_APPEND);
+$debugMessage = date('Y-m-d H:i:s') . " - Upload attempt: Directory: $uploadsDir, Writable: " . (is_writable($uploadsDir) ? 'Yes' : 'No') . ", File: " . $file['name'] . ", Size: " . $file['size'] . ", Generated ID: $shortId\n";
+file_put_contents(__DIR__ . '/../SystemLogs/debug_log.txt', $debugMessage, FILE_APPEND);
 
 $targetPath = $uploadsDir . DIRECTORY_SEPARATOR . $uniqueName;
+
+// Double-check that we're using the same filename consistently
+echo "<!-- DEBUG: About to save file as: $uniqueName -->";
 
 if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
     http_response_code(500);
@@ -83,24 +84,23 @@ if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
     exit;
 }
 
-// Build public URL (not returned; frontend prefixes /php/Uploads/)
-$publicUrl = $uniqueName;
-
-// Debug logging for successful upload
-$debugMessage = date('Y-m-d H:i:s') . " - Upload successful: Target: $targetPath, URL: $publicUrl, Generated ID: $shortId\n";
-file_put_contents('../SystemLogs/debug_log.txt', $debugMessage, FILE_APPEND);
-
-// Verify file actually exists after upload
+// Verify file was actually saved
 if (!file_exists($targetPath)) {
     $errorMessage = date('Y-m-d H:i:s') . " - CRITICAL: File upload reported success but file does not exist: $targetPath\n";
-    file_put_contents('../SystemLogs/error_log.txt', $errorMessage, FILE_APPEND);
+    file_put_contents(__DIR__ . '/../SystemLogs/error_log.txt', $errorMessage, FILE_APPEND);
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'File was not saved properly']);
+    exit;
 }
+
+// Debug logging for successful upload
+$debugMessage = date('Y-m-d H:i:s') . " - Upload successful: Target: $targetPath, URL: $uniqueName, Generated ID: $shortId, File exists: " . (file_exists($targetPath) ? 'YES' : 'NO') . "\n";
+file_put_contents(__DIR__ . '/../SystemLogs/debug_log.txt', $debugMessage, FILE_APPEND);
 
 echo json_encode([
     'status' => 'success',
     'file_name' => $uniqueName,
-    'url' => $uniqueName  // Return only filename, not full URL
+    'url' => $uniqueName,  // Return only filename, not full URL
+    'debug_id' => $shortId // For debugging
 ]);
 ?>
-
-

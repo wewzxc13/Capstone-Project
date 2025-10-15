@@ -22,7 +22,7 @@ try {
     echo "Found user: $userName (ID: $userId)\n";
     echo "Current photo in database: $currentPhoto\n";
     
-    // The correct filename based on the file manager screenshot
+    // The correct filename based on the actual file in uploads folder
     $correctFilename = 'img_2arsk_DSC02412.jpg';
     
     if ($currentPhoto !== $correctFilename) {
