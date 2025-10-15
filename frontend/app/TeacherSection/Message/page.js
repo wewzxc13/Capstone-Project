@@ -26,6 +26,28 @@ function pastelColorFor(seed) {
   return `hsl(${hue}, 70%, 90%)`;
 }
 
+// Helper function to safely parse JSON responses
+async function safeJsonParse(response) {
+  // Check if response is OK
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  // Get response text
+  const text = await response.text();
+  if (!text || text.trim() === '') {
+    throw new Error('Empty response from server');
+  }
+  
+  // Try to parse JSON
+  try {
+    return JSON.parse(text);
+  } catch (parseError) {
+    console.error('Failed to parse JSON:', text);
+    throw new Error('Invalid JSON response from server');
+  }
+}
+
 // Populated from backend
 const seededChats = [];
 
@@ -33,7 +55,7 @@ const seededGroupChats = [];
 
 export default function TeacherMessagesPage() {
   const router = useRouter();
-  const { updateUnreadCounts } = useUser();
+  const { updateUnreadCounts, getUserPhoto, updateAnyUserPhoto } = useUser();
   const [chats, setChats] = useState(seededChats);
   const [groupChats, setGroupChats] = useState(seededGroupChats);
   const [selectedChatId, setSelectedChatId] = useState(chats[0]?.id || "");
@@ -222,12 +244,12 @@ export default function TeacherMessagesPage() {
 
         
         // Use get_users.php for conversation history (default mode)
-        const res = await fetch(API.communication.getUsers(), {
+        const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
         });
-        const data = await res.json();
+        const data = await safeJsonParse(res);
 
         
         if (!data?.success) throw new Error(data?.error || "Failed to fetch conversation history");
@@ -259,7 +281,6 @@ export default function TeacherMessagesPage() {
         );
         
         if (isMounted) {
-          // Merge to preserve existing loaded messages
           setChats((prev) => {
             const prevMap = new Map(prev.map(u => [u.id, u]));
             const merged = uniqueUsers.map(u => {
@@ -267,13 +288,10 @@ export default function TeacherMessagesPage() {
               if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
                 return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
               }
-              return { ...u, messages: existing?.messages || [] , messagesLoaded: existing?.messagesLoaded };
+              return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
             });
-            // Include any users that were only in prev (e.g., selected from search) but not in uniqueUsers
-            prev.forEach((p) => {
-              if (!merged.find(m => m.id === p.id)) merged.push(p);
-            });
-            return removeDuplicateUsers(merged);
+            prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
+            return merged;
           });
           dataLoadedRef.current.users = true; // Mark as loaded
           isRunningRef.current.users = false; // Mark as not running
@@ -315,11 +333,11 @@ export default function TeacherMessagesPage() {
 
       
       // Use get_users.php with search=true parameter to get all active users
-      const res = await fetch(API.communication.getUsers(), {
+      const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}&search=true`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
-      const data = await res.json();
+      const data = await safeJsonParse(res);
 
       
       if (!data?.success) throw new Error(data?.error || "Failed to fetch all users for search");
@@ -347,7 +365,18 @@ export default function TeacherMessagesPage() {
       );
       
 
-      setChats(uniqueAllUsers);
+      setChats((prev) => {
+        const prevMap = new Map(prev.map(u => [u.id, u]));
+        const merged = uniqueAllUsers.map(u => {
+          const existing = prevMap.get(u.id);
+          if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
+            return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
+          }
+          return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
+        });
+        prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
+        return merged;
+      });
       
       // Update photos for new users
       const newPhotos = {};
@@ -369,14 +398,14 @@ export default function TeacherMessagesPage() {
       const uid = Number(localStorage.getItem('userId')) || 0;
       if (!uid) return;
       
-
+     
       
       // Use get_users.php for conversation history (default mode)
-      const res = await fetch(API.communication.getUsers(), {
+      const res = await fetch(`${API.communication.getUsers()}?user_id=${uid}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
-      const data = await res.json();
+      const data = await safeJsonParse(res);
 
       
       if (!data?.success) throw new Error(data?.error || "Failed to restore conversation history");
@@ -408,19 +437,7 @@ export default function TeacherMessagesPage() {
       );
       
 
-      // Merge to preserve existing loaded messages
-      setChats((prev) => {
-        const prevMap = new Map(prev.map(u => [u.id, u]));
-        const merged = uniqueUsers.map(u => {
-          const existing = prevMap.get(u.id);
-          if (existing && Array.isArray(existing.messages) && existing.messages.length > 0) {
-            return { ...u, messages: existing.messages, messagesLoaded: existing.messagesLoaded };
-          }
-          return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
-        });
-        prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
-        return removeDuplicateUsers(merged);
-      });
+      setChats(uniqueUsers);
       
     } catch (err) {
       console.error("Error restoring conversation history:", err);
@@ -436,11 +453,11 @@ export default function TeacherMessagesPage() {
 
       
       // Check if this user has any conversation history
-      const res = await fetch(API.communication.getConversation(), {
+      const res = await fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
-      const data = await res.json();
+      const data = await safeJsonParse(res);
       
               if (data?.success && data.data && data.data.length > 0) {
           return true;
@@ -495,7 +512,7 @@ export default function TeacherMessagesPage() {
         }),
       });
       
-      const data = await res.json();
+      const data = await safeJsonParse(res);
               if (data?.success) {
         
         // Refresh unread counts by calling the get_users API again
@@ -506,7 +523,7 @@ export default function TeacherMessagesPage() {
             headers: { "Content-Type": "application/json" },
           });
           
-          const refreshData = await refreshRes.json();
+          const refreshData = await safeJsonParse(refreshRes);
           if (refreshData?.success && refreshData.data) {
             // Update the unread counts in both chats and recent arrays
             setChats((prev) => {
@@ -557,7 +574,7 @@ export default function TeacherMessagesPage() {
         headers: { "Content-Type": "application/json" },
       });
       
-      const data = await res.json();
+      const data = await safeJsonParse(res);
       
       if (data?.success && data.data && data.data.length > 0) {
         const msgs = data.data.map((m) => ({
@@ -575,7 +592,7 @@ export default function TeacherMessagesPage() {
         // Update the chats array with messages for this user
         setChats((prev) => {
           const updated = prev.map((c) => 
-            c.id === userId ? { ...c, messages: msgs, unread: 0, messagesLoaded: true } : c
+            c.id === userId ? { ...c, messages: msgs, unread: 0 } : c
           );
 
           return updated;
@@ -596,12 +613,9 @@ export default function TeacherMessagesPage() {
         
         // Add a small delay to ensure state updates are processed
         // This helps ensure the conversation is displayed in the right panel
-        
+
       } else {
-        // Mark conversation as loaded even if empty to avoid perpetual loader
-        setChats((prev) => prev.map((c) => (
-          c.id === userId ? { ...c, messages: [], messagesLoaded: true } : c
-        )));
+
       }
       
       // Mark as not running
@@ -637,6 +651,8 @@ export default function TeacherMessagesPage() {
         console.log('loadGroups function called');
         const uid = Number(localStorage.getItem('userId')) || 0;
         console.log('loadGroups - user ID from localStorage:', uid);
+        
+        // Add user_id as query parameter
         const url = `${API.communication.getGroups()}?user_id=${uid}`;
         console.log('loadGroups - API URL:', url);
         const res = await fetch(url, {
@@ -644,7 +660,9 @@ export default function TeacherMessagesPage() {
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
         });
-        const json = await res.json();
+        
+        // Use helper function for safe JSON parsing
+        const json = await safeJsonParse(res);
         console.log('Groups API response:', json);
         if (!json?.success) throw new Error(json?.error || 'Failed to fetch groups');
         const mapped = (json.data || []).map((g) => ({
@@ -718,15 +736,10 @@ export default function TeacherMessagesPage() {
     
 
     
-    fetch(`${API.communication.getRecentConversations()}?user_id=${uid}`, {
+    fetch(API.communication.getRecentConversations(), {
       signal: controller.signal,
     })
-      .then((r) => {
-        if (!r.ok) {
-          throw new Error(`HTTP error! status: ${r.status}`);
-        }
-        return r.json();
-      })
+      .then((r) => safeJsonParse(r))
       .then(async (json) => {
 
         if (!json?.success) {
@@ -773,23 +786,22 @@ export default function TeacherMessagesPage() {
             lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
             lastMessage: normalizedLast,
             messages: [],
-            photo: null, // Will be fetched separately since recent conversations API doesn't include photos
+            photo: u.user_photo || null, // Photo is now included in the API response
           };
         });
+        
         if (isMounted) {
           setRecent(mapped);
           dataLoadedRef.current.recent = true; // Mark as loaded
           isRunningRef.current.recent = false; // Mark as not running
-        }
-        
-        // For users not in userPhotos, we'll use default photos based on their role
-        // Since get_user_profile.php doesn't return photos, we'll mark them as processed
-        // Process all users to mark them as attempted, regardless of userPhotos state
-        const allUsers = mapped.filter(user => user.id);
-        if (allUsers.length > 0) {
-          allUsers.forEach(user => {
-            if (!photosFetchedRef.current.has(user.id)) {
-              photosFetchedRef.current.add(user.id);
+          
+          // Store photos in UserContext for global access
+          (json.data || []).forEach((u) => {
+            const userId = String(u.user_id);
+            if (u.user_photo) {
+              updateAnyUserPhoto(userId, u.user_photo);
+              setUserPhotos(prev => ({ ...prev, [userId]: u.user_photo }));
+              photosFetchedRef.current.add(userId);
             }
           });
         }
@@ -877,7 +889,7 @@ export default function TeacherMessagesPage() {
     if (!uid) return;
     let isMounted = true;
     fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`)
-      .then((r) => r.json())
+      .then((r) => safeJsonParse(r))
       .then(async (json) => {
         if (!json?.success) return;
         console.log('Archive API response:', json);
@@ -899,25 +911,13 @@ export default function TeacherMessagesPage() {
         if (isMounted) {
           setArchived(mapped);
           
-          // Update userPhotos state with archived user photos
-          const newPhotos = {};
+          // Store photos in UserContext for global access
           mapped.forEach(user => {
             if (user.photo) {
-              newPhotos[user.id] = user.photo;
+              updateAnyUserPhoto(user.id, user.photo);
+              setUserPhotos(prev => ({ ...prev, [user.id]: user.photo }));
             }
           });
-          
-          console.log('Archive - mapped users with photos:', mapped.map(u => ({ id: u.id, name: u.name, photo: u.photo })));
-          console.log('Archive - new photos to add:', newPhotos);
-          
-          if (Object.keys(newPhotos).length > 0) {
-            setUserPhotos(prev => {
-              const updated = { ...prev, ...newPhotos };
-              console.log('Archive - userPhotos state updated from:', prev, 'to:', updated);
-              return updated;
-            });
-            console.log('Archive - userPhotos state update triggered');
-          }
         }
         
 
@@ -1000,7 +1000,7 @@ export default function TeacherMessagesPage() {
           headers: { "Content-Type": "application/json" },
         });
         
-        const data = await res.json();
+        const data = await safeJsonParse(res);
         
         if (data?.success && data.data && data.data.length > 0) {
           const users = data.data.map((u) => {
@@ -1022,7 +1022,7 @@ export default function TeacherMessagesPage() {
             };
           });
           
-          // Set the users first, merging to preserve any loaded messages
+          // Set the users first, preserving any loaded messages
           setChats((prev) => {
             const prevMap = new Map(prev.map(u => [u.id, u]));
             const merged = users.map(u => {
@@ -1033,13 +1033,9 @@ export default function TeacherMessagesPage() {
               return { ...u, messages: existing?.messages || [], messagesLoaded: existing?.messagesLoaded };
             });
             prev.forEach((p) => { if (!merged.find(m => m.id === p.id)) merged.push(p); });
-            return removeDuplicateUsers(merged);
+            return merged;
           });
-          setRecent((prev) => {
-            // Keep existing recent ordering if present; otherwise, seed from users
-            if (prev && prev.length) return prev;
-            return users;
-          });
+          setRecent((prev) => (prev && prev.length ? prev : users));
           dataLoadedRef.current.users = true;
           
           // Don't automatically load messages here - let the user selection trigger it
@@ -1118,14 +1114,10 @@ export default function TeacherMessagesPage() {
     fetch(`${API.communication.getConversation()}?user_id=${uid}&partner_id=${selectedChatId}`, {
       signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => safeJsonParse(r))
       .then((json) => {
         if (!json?.success) {
           console.error('Failed to load conversation for user:', selectedChatId);
-          // Still mark as loaded to stop spinner
-          setChats((prev) => prev.map((c) => (
-            c.id === selectedChatId ? { ...c, messages: c.messages || [], messagesLoaded: true } : c
-          )));
           return;
         }
         
@@ -1142,7 +1134,7 @@ export default function TeacherMessagesPage() {
         // Update ONLY the messages for this specific user, preserve all other users
         setChats((prev) => {
           const updated = prev.map((c) => 
-            c.id === selectedChatId ? { ...c, messages: msgs, unread: 0, messagesLoaded: true } : c
+            c.id === selectedChatId ? { ...c, messages: msgs, unread: 0 } : c
           );
           return updated;
         });
@@ -1194,7 +1186,7 @@ export default function TeacherMessagesPage() {
     fetch(`${API.communication.getGroupMessages()}?group_id=${selectedChat.id}&user_id=${uid}`, {
       signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => safeJsonParse(r))
       .then((json) => {
         if (!json?.success) return;
         const msgs = (json.data || []).map((m) => ({
@@ -1221,8 +1213,6 @@ export default function TeacherMessagesPage() {
       .catch((err) => { if (!(err && err.name === 'AbortError')) { /* ignore */ } });
     return () => { if (!controller.signal.aborted) controller.abort(); };
   }, [selectedChat?.id, selectedType]);
-
-  // Note: No periodic polling here to mirror Super Admin behavior.
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1263,7 +1253,7 @@ export default function TeacherMessagesPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ group_id: groupId, sender_id: senderId, message_text: text }),
         })
-          .then((r) => r.json())
+          .then((r) => safeJsonParse(r))
           .then((res) => {
             if (!res?.success) throw new Error(res?.error || 'Failed to send group message');
             const sentAt = res.data?.sent_at ? new Date(res.data.sent_at) : now;
@@ -1367,7 +1357,7 @@ export default function TeacherMessagesPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sender_id: senderId, receiver_id: receiverId, message_text: text }),
         })
-          .then((r) => r.json())
+          .then((r) => safeJsonParse(r))
           .then((res) => {
             if (!res?.success) throw new Error(res?.error || "Failed to send message");
             // Optionally update sent_at with authoritative time
@@ -1517,7 +1507,7 @@ export default function TeacherMessagesPage() {
     if (r === 4) return "Parent";
     return "User";
   };
-
+ 
   function getQuickReplies(type, chat) {
     // User roles: 2=Admin, 3=Teacher, 4=Parent
     if (!chat) return [
@@ -1603,6 +1593,8 @@ export default function TeacherMessagesPage() {
     }
     
   }
+
+
   // SVG helpers for playful background
   const buildPuzzleSvg = (fill, rotated) =>
     `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'>` +
@@ -1722,10 +1714,11 @@ export default function TeacherMessagesPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: senderId })
           });
-          const data = await res.json();
+          const data = await safeJsonParse(res);
           
           if (data?.status === 'success' && data.user?.photo) {
             newPhotos[senderId] = data.user.photo;
+            updateAnyUserPhoto(senderId, data.user.photo);
           }
           
           // Mark as processed
@@ -1759,7 +1752,7 @@ export default function TeacherMessagesPage() {
             // Since we can't directly query by advisory_id, we'll use a different approach
             // We'll fetch all users and filter by role to get teachers, and use get_all_users for parents
             const usersRes = await fetch(API.user.getAllUsers());
-            const usersData = await usersRes.json();
+            const usersData = await safeJsonParse(usersRes);
             
             if (usersData?.success && usersData.data) {
               // Add all teachers (role 3) and admins (role 2) and owners (role 1)
@@ -1783,7 +1776,7 @@ export default function TeacherMessagesPage() {
           // For staff groups, fetch all teachers, admins, and owners
           try {
             const usersRes = await fetch(API.user.getAllUsers());
-            const usersData = await usersRes.json();
+            const usersData = await safeJsonParse(usersRes);
             
             if (usersData?.success && usersData.data) {
               usersData.data.forEach(user => {
@@ -1799,7 +1792,7 @@ export default function TeacherMessagesPage() {
           // For overall groups, fetch all active users
           try {
             const usersRes = await fetch(API.user.getAllUsers());
-            const usersData = await usersRes.json();
+            const usersData = await safeJsonParse(usersRes);
             
             if (usersData?.success && usersData.data) {
               usersData.data.forEach(user => {
@@ -1828,10 +1821,11 @@ export default function TeacherMessagesPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId })
           });
-          const data = await res.json();
+          const data = await safeJsonParse(res);
           
           if (data?.status === 'success' && data.user?.photo) {
             newPhotos[userId] = data.user.photo;
+            updateAnyUserPhoto(userId, data.user.photo);
           }
           
           // Mark as processed
@@ -1854,18 +1848,19 @@ export default function TeacherMessagesPage() {
 
   // Helper function to render user avatar
   const renderUserAvatar = (userId, role, size = "w-10 h-10") => {
-    const photo = userPhotos[userId];
+    // Try to get photo from UserContext first, then fall back to local state
+    const contextPhoto = getUserPhoto(userId);
+    const localPhoto = userPhotos[userId];
+    const photo = contextPhoto || localPhoto;
     
-    console.log('renderUserAvatar called for userId:', userId, 'role:', role, 'photo:', photo);
-    console.log('userPhotos state:', userPhotos);
-    console.log('All userPhotos keys:', Object.keys(userPhotos));
+    console.log('renderUserAvatar called for userId:', userId, 'role:', role, 'contextPhoto:', contextPhoto, 'localPhoto:', localPhoto);
     
     // Always show FaUser icon as fallback - either when no photo or when photo fails to load
     if (photo) {
       return (
         <div className="relative">
           <img
-            src={photo.startsWith('http') ? photo : `/php/Uploads/${photo}`}
+            src={photo.startsWith('http') ? photo : API.uploads.getUploadURL(photo)}
             alt="User"
             className={`${size} rounded-full object-cover border border-gray-200 shadow-sm ${roleAvatarRingClasses(role)}`}
             onError={(e) => {
@@ -1911,7 +1906,7 @@ export default function TeacherMessagesPage() {
             headers: { "Content-Type": "application/json" },
           });
           
-          const data = await res.json();
+          const data = await safeJsonParse(res);
           if (data?.success && data.data) {
             // Update the unread counts in both chats and recent arrays
             setChats((prev) => {
@@ -2254,7 +2249,7 @@ export default function TeacherMessagesPage() {
                                             method: "GET",
                                             headers: { "Content-Type": "application/json" },
                                           });
-                                          const data = await res.json();
+                                          const data = await safeJsonParse(res);
                                           
                                           if (data?.success && data.data && data.data.length > 0) {
                                             const msgs = data.data.map((m) => ({
@@ -2362,8 +2357,6 @@ export default function TeacherMessagesPage() {
                                     
                                     // Ensure the selected user stays selected by preventing any interference
                                     // The user list will be properly managed by the existing state
-                                    // Force-load conversation to avoid stuck state across environments
-                                    setTimeout(() => { manuallyLoadConversation(chat.id); }, 50);
 
                                   }}
                                   className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-2xl border transition shadow-sm ${isSelected ? 'bg-[#eef2ff] border-blue-500' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
@@ -2588,7 +2581,7 @@ export default function TeacherMessagesPage() {
                         <p className="font-semibold text-[#1E2A79]">{tempSelectedChat.name}</p>
                         <p className="text-xs mt-1">No messages yet. Say hello!</p>
                       </div>
-                    ) : selectedChatId && (isRunningRef.current.conversation === selectedChatId || isLoadingSpecificConversation || isLoadingConversations) ? (
+                    ) : selectedChatId && selectedType === 'user' && (isRunningRef.current.conversation === selectedChatId || isLoadingSpecificConversation || isLoadingConversations) ? (
                       <div className="flex flex-col items-center justify-center p-8">
                         <div className="w-10 h-10 rounded-full bg-[#1E2A79] text-white flex items-center justify-center font-bold mb-3">
                           <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -2719,12 +2712,44 @@ export default function TeacherMessagesPage() {
                     {!(selectedChat?.messages && selectedChat.messages.length > 0) ? (
                       <div className="flex-1 flex items-center justify-center text-center text-gray-500 relative z-10">
                         <div>
-                          <div className="mx-auto w-16 h-16 rounded-full bg-white border border-gray-300 flex items-center justify-center text-[#1E2A79] mb-3">
-                            {renderUserAvatar(selectedChat?.id, selectedChat?.role, "w-full h-full")}
+                          <div className={`mx-auto w-16 h-16 ${selectedType === 'group' ? 'rounded-xl' : 'rounded-full'} bg-white border border-gray-300 flex items-center justify-center text-[#1E2A79] mb-3 overflow-hidden`}>
+                            {selectedType === 'group' ? (
+                              <img 
+                                src={(() => {
+                                  const groupType = selectedChat?.groupType || '';
+                                  if (groupType === 'Class') {
+                                    const groupRefId = selectedChat?.groupRefId;
+                                    const groupName = selectedChat?.name;
+                                    return getClassPhoto(groupRefId, groupName);
+                                  } else {
+                                    switch (groupType.toLowerCase()) {
+                                      case 'overall':
+                                      default:
+                                        return '/assets/image/general_gc_photo.png';
+                                    }
+                                  }
+                                })()}
+                                alt={selectedChat?.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : (
+                              renderUserAvatar(selectedChat?.id, selectedChat?.role, "w-full h-full")
+                            )}
+                            {selectedType === 'group' && (
+                              <div className={`w-full h-full ${selectedChat?.color || 'bg-gray-500'} text-white flex items-center justify-center font-bold shadow-sm`} style={{display: 'none'}}>
+                                <FaUsers />
+                              </div>
+                            )}
                           </div>
                           <p className="font-semibold text-[#1E2A79]">{selectedChat?.name}</p>
                           {selectedType === 'archived' ? (
                             <div className="mt-1 text-xs">This conversation is archived.</div>
+                          ) : selectedType === 'group' ? (
+                            <p className="text-xs">No messages yet. Start the conversation!</p>
                           ) : (() => {
                             // Check if this user has conversation history by looking at the chats array
                             const hasConversationHistory = chats.some(c => c.id === selectedChat?.id && c.messages && c.messages.length > 0);
@@ -2732,18 +2757,16 @@ export default function TeacherMessagesPage() {
                             const hasRecentHistory = recent.some(r => r.id === selectedChat?.id);
                             // Check if this user has any lastMessage (indicating previous conversation)
                             const hasLastMessage = selectedChat?.lastMessage && selectedChat.lastMessage.trim() !== '';
-                            // Check if conversation is currently loading
-                            const isConversationLoading = isRunningRef.current.conversation === selectedChat?.id || isLoadingSpecificConversation;
+                            // Check if conversation is currently loading (only for user conversations)
+                            const isConversationLoading = selectedType === 'user' && (isRunningRef.current.conversation === selectedChat?.id || isLoadingSpecificConversation);
                             // Check if this user was found in the conversation history API
                             const hasConversationHistoryAPI = chats.some(c => c.id === selectedChat?.id && c.lastMessage && c.lastMessage.trim() !== '');
-                            // Has this conversation been attempted/loaded (even if empty)
-                            const isLoadedEmpty = chats.some(c => c.id === selectedChat?.id && c.messagesLoaded && (!c.messages || c.messages.length === 0));
                             // Check if this user was just selected from search results and has messages
                             const wasJustSelectedFromSearch = selectedChat?.messages && selectedChat.messages.length > 0;
                             
 
                             
-                            if (isConversationLoading && !isLoadedEmpty) {
+                            if (isConversationLoading) {
                               // Show loading state
                               return (
                                 <div className="mt-1">
@@ -2753,8 +2776,8 @@ export default function TeacherMessagesPage() {
                                   </div>
                                 </div>
                               );
-                            } else if (!isLoadedEmpty && (hasConversationHistory || hasRecentHistory || hasLastMessage || hasConversationHistoryAPI)) {
-                              // Match Super Admin: show spinner while fetching existing conversation
+                            } else if (hasConversationHistory || hasRecentHistory || hasLastMessage || hasConversationHistoryAPI) {
+                              // User has conversation history but messages aren't loaded yet - show loading state
                               return (
                                 <div className="mt-1">
                                   <div className="inline-flex items-center gap-2 text-xs text-blue-600">
@@ -2788,7 +2811,7 @@ export default function TeacherMessagesPage() {
                                           return (
                                             <>
                                               <img
-                                                src={photo.startsWith('http') ? photo : `/php/Uploads/${photo}`}
+                                                src={photo.startsWith('http') ? photo : API.uploads.getUploadURL(photo)}
                                                 alt="Sender"
                                                 className="w-full h-full rounded-full object-cover"
                                                 onError={(e) => {
@@ -2853,7 +2876,7 @@ export default function TeacherMessagesPage() {
                                             ? { group_message_id: Number(msg.id), sender_id: uid }
                                             : { message_id: Number(msg.id), sender_id: uid };
                                           fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-                                            .then((r) => r.json())
+                                            .then((r) => safeJsonParse(r))
                                             .then((res) => {
                                               if (!res?.success) throw new Error(res?.error || 'Failed to unsent');
                                               // Preserve the original message timestamp instead of using current time
@@ -2918,7 +2941,7 @@ export default function TeacherMessagesPage() {
                                               ? { group_message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() }
                                               : { message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() };
                                             fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-                                              .then((r) => r.json())
+                                              .then((r) => safeJsonParse(r))
                                               .then((res) => {
                                                 if (!res?.success) throw new Error(res?.error || 'Failed to edit');
                                                 const updatedText = editingText.trim();
@@ -2974,7 +2997,7 @@ export default function TeacherMessagesPage() {
                                               ? { group_message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() }
                                               : { message_id: Number(msg.id), sender_id: uid, message_text: editingText.trim() };
                                             fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-                                              .then((r) => r.json())
+                                              .then((r) => safeJsonParse(r))
                                               .then((res) => {
                                                 if (!res?.success) throw new Error(res?.error || 'Failed to edit');
                                                 const updatedText = editingText.trim();
@@ -3049,7 +3072,7 @@ export default function TeacherMessagesPage() {
                                                 setShowReadsForId((cur) => (cur === msg.id ? null : msg.id));
                                                 if (!readsCache[mid]) {
                                                   fetch(`${API.communication.getGroupMessageReads()}?group_message_id=${mid}`)
-                                                    .then((r) => r.json())
+                                                    .then((r) => safeJsonParse(r))
                                                     .then((res) => {
                                                       if (!res?.success) return;
                                                       setReadsCache((prev) => ({ ...prev, [mid]: res.data || [] }));
@@ -3080,7 +3103,7 @@ export default function TeacherMessagesPage() {
                                               setShowReadsForId((cur) => (cur === msg.id ? null : msg.id));
                                               if (!readsCache[mid]) {
                                                 fetch(`${API.communication.getGroupMessageReads()}?group_message_id=${mid}`)
-                                                  .then((r) => r.json())
+                                                  .then((r) => safeJsonParse(r))
                                                   .then((res) => {
                                                     if (!res?.success) return;
                                                     setReadsCache((prev) => ({ ...prev, [mid]: res.data || [] }));
@@ -3245,7 +3268,7 @@ export default function TeacherMessagesPage() {
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ user_id: uid, partner_id: partnerId })
                     });
-                    const json = await res.json();
+                    const json = await safeJsonParse(res);
                     if (!json?.success) throw new Error(json?.error || 'Failed to archive');
                     // Clear from active chat view
                     setChats((prev) => prev.map((c) => (c.id === selectedChat?.id ? { ...c, messages: [], lastMessage: '', lastMessageAt: null } : c)));
@@ -3253,7 +3276,7 @@ export default function TeacherMessagesPage() {
                     setRecent((prev) => prev.filter((r) => r.id !== String(partnerId)));
                     // Refresh archived list
                     fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`)
-                      .then((r) => r.json())
+                      .then((r) => safeJsonParse(r))
                       .then((arch) => {
                         if (arch?.success) {
                           const mapped = (arch.data || []).map((u) => {
@@ -3267,9 +3290,18 @@ export default function TeacherMessagesPage() {
                               lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
                               messages: [],
                               archived: true,
+                              photo: u.user_photo || null,
                             };
                           });
                           setArchived(mapped);
+                          
+                          // Store photos in UserContext for global access
+                          (arch.data || []).forEach((u) => {
+                            if (u.user_photo) {
+                              updateAnyUserPhoto(String(u.user_id), u.user_photo);
+                              setUserPhotos(prev => ({ ...prev, [String(u.user_id)]: u.user_photo }));
+                            }
+                          });
                         }
                       });
                     setShowArchiveModal(false);
@@ -3328,10 +3360,10 @@ export default function TeacherMessagesPage() {
                   const res = await fetch(API.communication.unarchiveConversation(), {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: uid, partner_id: partnerId })
                   });
-                  const json = await res.json();
+                  const json = await safeJsonParse(res);
                   if (!json?.success) throw new Error(json?.error || 'Failed to restore');
                   // Refresh recents and archive lists
-                  fetch(`${API.communication.getRecentConversations()}?user_id=${uid}`).then(r => r.json()).then(rc => {
+                  fetch(API.communication.getRecentConversations()).then(r => safeJsonParse(r)).then(rc => {
                     if (rc?.success) {
                       const mapped = (rc.data || []).map((u) => {
                         const name = [u.user_firstname, u.user_middlename, u.user_lastname].filter(Boolean).join(' ');
@@ -3348,12 +3380,21 @@ export default function TeacherMessagesPage() {
                           lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
                           lastMessage: normalizedLast,
                           messages: [],
+                          photo: u.user_photo || null,
                         };
                       });
                       setRecent(mapped);
+                      
+                      // Store photos in UserContext for global access
+                      (rc.data || []).forEach((u) => {
+                        if (u.user_photo) {
+                          updateAnyUserPhoto(String(u.user_id), u.user_photo);
+                          setUserPhotos(prev => ({ ...prev, [String(u.user_id)]: u.user_photo }));
+                        }
+                      });
                     }
                   });
-                  fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`).then(r => r.json()).then(ar => {
+                  fetch(`${API.communication.getArchivedConversations()}?user_id=${uid}`).then(r => safeJsonParse(r)).then(ar => {
                     if (ar?.success) {
                       const mapped = (ar.data || []).map((u) => ({
                         id: String(u.user_id),
@@ -3364,8 +3405,17 @@ export default function TeacherMessagesPage() {
                         lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
                         messages: [],
                         archived: true,
+                        photo: u.user_photo || null,
                       }));
                       setArchived(mapped);
+                      
+                      // Store photos in UserContext for global access
+                      (ar.data || []).forEach((u) => {
+                        if (u.user_photo) {
+                          updateAnyUserPhoto(String(u.user_id), u.user_photo);
+                          setUserPhotos(prev => ({ ...prev, [String(u.user_id)]: u.user_photo }));
+                        }
+                      });
                     }
                   });
                   setShowRestoreModal(false);
