@@ -84,6 +84,13 @@ function formatName(firstName, middleName, lastName) {
   return parts.join(', ');
 }
 
+// Normalize potentially string IDs from API to numbers for consistent comparisons
+function toNumber(value) {
+  if (value === null || value === undefined) return NaN;
+  const n = Number(String(value).trim());
+  return Number.isNaN(n) ? NaN : n;
+}
+
 // Helper function to compare arrays for equality
 function arraysEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -279,7 +286,7 @@ export default function SuperAdminCalendarPage() {
           // Teachers - API already filters for active users only
           const rawTeachers = data.users?.Teacher || [];
           const teacherData = rawTeachers.map(u => ({ 
-            id: u.id, 
+            id: toNumber(u.id), 
             name: u.name, 
             firstName: u.firstName,
             middleName: u.middleName,
@@ -296,19 +303,21 @@ export default function SuperAdminCalendarPage() {
           // Map active students by parent_id
           const studentsByParentId = {};
           students.forEach(student => {
-            if (student.parent_id) {
-              if (!studentsByParentId[student.parent_id]) {
-                studentsByParentId[student.parent_id] = [];
+            const pid = toNumber(student.parent_id);
+            if (pid) {
+              if (!studentsByParentId[pid]) {
+                studentsByParentId[pid] = [];
               }
-              studentsByParentId[student.parent_id].push(student);
+              studentsByParentId[pid].push({ ...student, parent_id: pid, student_id: toNumber(student.student_id) });
             }
           });
 
           // Only active parents with at least one linked active student
           const parentsWithStudents = parents
+            .map(p => ({ ...p, id: toNumber(p.id) }))
             .filter(parent => studentsByParentId[parent.id])
             .map(parent => ({
-              id: parent.id,
+              id: toNumber(parent.id),
               name: parent.name,
               firstName: parent.firstName,
               middleName: parent.middleName,
@@ -360,18 +369,31 @@ export default function SuperAdminCalendarPage() {
         const advisoryData = await advisoryRes.json();
         console.log("Advisory data response:", advisoryData);
         if (advisoryData.status === "success") {
-          setAdvisoryData(advisoryData.advisories || []);
+          // Normalize numeric fields to numbers to avoid strict-equality mismatches in production
+          const normalizedAdvisories = (advisoryData.advisories || []).map(adv => ({
+            ...adv,
+            advisory_id: toNumber(adv.advisory_id),
+            level_id: toNumber(adv.level_id),
+            lead_teacher_id: toNumber(adv.lead_teacher_id),
+            assistant_teacher_id: toNumber(adv.assistant_teacher_id),
+            students: (adv.students || []).map(s => ({
+              ...s,
+              student_id: toNumber(s.student_id),
+              parent_id: toNumber(s.parent_id)
+            }))
+          }));
+          setAdvisoryData(normalizedAdvisories);
           console.log("Set advisory data:", advisoryData.advisories);
           
           // Extract students from advisory data - only active students
           const allStudents = [];
           
-          advisoryData.advisories?.forEach(advisory => {
+          normalizedAdvisories?.forEach(advisory => {
             // Add students from this advisory
             if (advisory.students) {
               advisory.students.forEach(student => {
                 // API already filters for active students, just avoid duplicates
-                if (!allStudents.find(s => s.student_id === student.student_id)) {
+                if (!allStudents.find(s => toNumber(s.student_id) === toNumber(student.student_id))) {
                   allStudents.push(student);
                 }
               });
@@ -468,8 +490,8 @@ export default function SuperAdminCalendarPage() {
         console.log('Looking for student_id:', selectedEvent.student_id);
         
         // Get parent and student details from the available data
-        const parent = parents.find(p => String(p.id) === String(selectedEvent.parent_id));
-        const student = advisoryStudents.find(s => String(s.student_id) === String(selectedEvent.student_id));
+        const parent = parents.find(p => toNumber(p.id) === toNumber(selectedEvent.parent_id));
+        const student = advisoryStudents.find(s => toNumber(s.student_id) === toNumber(selectedEvent.student_id));
         
         console.log('Found parent:', parent);
         console.log('Found student:', student);
@@ -497,8 +519,8 @@ export default function SuperAdminCalendarPage() {
           let students = [];
           if (creator?.role === 'Teacher' && data.parents && data.parents.length > 0) {
             // Get student data for the invited parents
-            const parentIds = data.parents.map(p => p.user_id);
-            students = advisoryStudents.filter(s => parentIds.includes(s.parent_id));
+            const parentIds = data.parents.map(p => toNumber(p.user_id));
+            students = advisoryStudents.filter(s => parentIds.includes(toNumber(s.parent_id)));
           }
           
           const newInvitedList = {
@@ -759,24 +781,25 @@ export default function SuperAdminCalendarPage() {
     
     newSelectedLevels.forEach(levelId => {
       // Find all advisories for this level
-      const levelAdvisories = advisoryData.filter(adv => adv.level_id === levelId);
+      const levelAdvisories = advisoryData.filter(adv => toNumber(adv.level_id) === toNumber(levelId));
       console.log(`Found levelAdvisories for level ${levelId}:`, levelAdvisories);
       
       levelAdvisories.forEach(advisory => {
         // Add lead teacher
         if (advisory.lead_teacher_id) {
-          allAdvisorTeacherIds.push(advisory.lead_teacher_id);
+          allAdvisorTeacherIds.push(toNumber(advisory.lead_teacher_id));
         }
         // Add assistant teacher
         if (advisory.assistant_teacher_id) {
-          allAdvisorTeacherIds.push(advisory.assistant_teacher_id);
+          allAdvisorTeacherIds.push(toNumber(advisory.assistant_teacher_id));
         }
         
         // Add students' parent IDs
         const studentsInAdvisory = advisory.students || [];
         studentsInAdvisory.forEach(student => {
-          if (student.parent_id && !allParentIdsWithChildrenInAdvisory.includes(student.parent_id)) {
-            allParentIdsWithChildrenInAdvisory.push(student.parent_id);
+          const pid = toNumber(student.parent_id);
+          if (pid && !allParentIdsWithChildrenInAdvisory.includes(pid)) {
+            allParentIdsWithChildrenInAdvisory.push(pid);
           }
         });
       });
@@ -788,13 +811,13 @@ export default function SuperAdminCalendarPage() {
     // Update teachers - check those who are advisors for any selected level
     setTeachers(teachers.map(teacher => ({
       ...teacher,
-      checked: allAdvisorTeacherIds.includes(parseInt(teacher.id))
+      checked: allAdvisorTeacherIds.includes(toNumber(teacher.id))
     })));
 
     // Update parents - check those whose children are in any selected level's advisories
     setParents(parents.map(parent => ({
       ...parent,
-      checked: allParentIdsWithChildrenInAdvisory.includes(parseInt(parent.id))
+      checked: allParentIdsWithChildrenInAdvisory.includes(toNumber(parent.id))
     })));
   };
 
@@ -2010,8 +2033,8 @@ export default function SuperAdminCalendarPage() {
                               {(() => {
                                 const discovererTeachers = teachers.filter(t => {
                                   const isDiscovererAdvisor = advisoryData.some(adv => 
-                                    adv.level_id === 1 && 
-                                    (adv.lead_teacher_id === parseInt(t.id) || adv.assistant_teacher_id === parseInt(t.id))
+                                    toNumber(adv.level_id) === 1 && 
+                                    (toNumber(adv.lead_teacher_id) === toNumber(t.id) || toNumber(adv.assistant_teacher_id) === toNumber(t.id))
                                   );
                                   if (!isDiscovererAdvisor) return false;
                                   if (!inviteSelectSearch.trim()) return true;
@@ -2050,8 +2073,8 @@ export default function SuperAdminCalendarPage() {
                               {(() => {
                                 const explorerTeachers = teachers.filter(t => {
                                   const isExplorerAdvisor = advisoryData.some(adv => 
-                                    adv.level_id === 2 && 
-                                    (adv.lead_teacher_id === parseInt(t.id) || adv.assistant_teacher_id === parseInt(t.id))
+                                    toNumber(adv.level_id) === 2 && 
+                                    (toNumber(adv.lead_teacher_id) === toNumber(t.id) || toNumber(adv.assistant_teacher_id) === toNumber(t.id))
                                   );
                                   if (!isExplorerAdvisor) return false;
                                   if (!inviteSelectSearch.trim()) return true;
@@ -2090,8 +2113,8 @@ export default function SuperAdminCalendarPage() {
                               {(() => {
                                 const adventurerTeachers = teachers.filter(t => {
                                   const isAdventurerAdvisor = advisoryData.some(adv => 
-                                    adv.level_id === 3 && 
-                                    (adv.lead_teacher_id === parseInt(t.id) || adv.assistant_teacher_id === parseInt(t.id))
+                                    toNumber(adv.level_id) === 3 && 
+                                    (toNumber(adv.lead_teacher_id) === toNumber(t.id) || toNumber(adv.assistant_teacher_id) === toNumber(t.id))
                                   );
                                   if (!isAdventurerAdvisor) return false;
                                   if (!inviteSelectSearch.trim()) return true;
@@ -2130,7 +2153,7 @@ export default function SuperAdminCalendarPage() {
                               {(() => {
                                 const nonAdvisoryTeachers = teachers.filter(t => {
                                   const isAnyAdvisor = advisoryData.some(adv => 
-                                    (adv.lead_teacher_id === parseInt(t.id) || adv.assistant_teacher_id === parseInt(t.id))
+                                    (toNumber(adv.lead_teacher_id) === toNumber(t.id) || toNumber(adv.assistant_teacher_id) === toNumber(t.id))
                                   );
                                   if (isAnyAdvisor) return false;
                                   if (!inviteSelectSearch.trim()) return true;
@@ -2260,10 +2283,10 @@ export default function SuperAdminCalendarPage() {
                           {(() => {
                             const discovererParents = parents.filter(p => {
                               const hasDiscovererChild = advisoryData.some(adv => 
-                                adv.level_id === 1 && 
+                                toNumber(adv.level_id) === 1 && 
                                 adv.students && 
                                 adv.students.some(student => 
-                                  student.parent_id === parseInt(p.id)
+                                  toNumber(student.parent_id) === toNumber(p.id)
                                 )
                               );
                               if (!hasDiscovererChild) return false;
@@ -2303,10 +2326,10 @@ export default function SuperAdminCalendarPage() {
                           {(() => {
                             const explorerParents = parents.filter(p => {
                               const hasExplorerChild = advisoryData.some(adv => 
-                                adv.level_id === 2 && 
+                                toNumber(adv.level_id) === 2 && 
                                 adv.students && 
                                 adv.students.some(student => 
-                                  student.parent_id === parseInt(p.id)
+                                  toNumber(student.parent_id) === toNumber(p.id)
                                 )
                               );
                               if (!hasExplorerChild) return false;
@@ -2346,10 +2369,10 @@ export default function SuperAdminCalendarPage() {
                           {(() => {
                             const adventurerParents = parents.filter(p => {
                               const hasAdventurerChild = advisoryData.some(adv => 
-                                adv.level_id === 3 && 
+                                toNumber(adv.level_id) === 3 && 
                                 adv.students && 
                                 adv.students.some(student => 
-                                  student.parent_id === parseInt(p.id)
+                                  toNumber(student.parent_id) === toNumber(p.id)
                                 )
                               );
                               if (!hasAdventurerChild) return false;
@@ -2514,7 +2537,7 @@ export default function SuperAdminCalendarPage() {
                     if (isCreatedByTeacher) {
                       // For meetings created by teachers: show advisory teachers
                       const meetingAdvisory = selectedEvent?.advisory_id 
-                        ? advisoryData.find(adv => adv.advisory_id === selectedEvent.advisory_id)
+                        ? advisoryData.find(adv => toNumber(adv.advisory_id) === toNumber(selectedEvent.advisory_id))
                         : null;
                       
                       if (!meetingAdvisory) {
@@ -2527,8 +2550,8 @@ export default function SuperAdminCalendarPage() {
                       }
                       
                       // Get the lead teacher and assistant teacher from the advisory
-                      const leadTeacher = teachers.find(t => parseInt(t.id) === meetingAdvisory.lead_teacher_id);
-                      const assistantTeacher = teachers.find(t => parseInt(t.id) === meetingAdvisory.assistant_teacher_id);
+                      const leadTeacher = teachers.find(t => toNumber(t.id) === toNumber(meetingAdvisory.lead_teacher_id));
+                      const assistantTeacher = teachers.find(t => toNumber(t.id) === toNumber(meetingAdvisory.assistant_teacher_id));
                       
                       if (!leadTeacher && !assistantTeacher) {
                         return (
@@ -2558,7 +2581,7 @@ export default function SuperAdminCalendarPage() {
                       return (
                         <div className="space-y-2">
                           {filteredTeachers.map(teacher => {
-                            const isCreator = teacher && meetingCreator && parseInt(teacher.id) === parseInt(selectedEvent.created_by);
+                            const isCreator = teacher && meetingCreator && toNumber(teacher.id) === toNumber(selectedEvent.created_by);
                             const teacherName = formatName(teacher.firstName, teacher.middleName, teacher.lastName);
                             
                             return (
@@ -2612,14 +2635,14 @@ export default function SuperAdminCalendarPage() {
                           {allFilteredTeachers.map(t => {
                             // Determine the teacher's level/role
                             const teacherAdvisory = advisoryData.find(adv => 
-                              adv.lead_teacher_id === parseInt(t.user_id) || adv.assistant_teacher_id === parseInt(t.user_id)
+                              toNumber(adv.lead_teacher_id) === toNumber(t.user_id) || toNumber(adv.assistant_teacher_id) === toNumber(t.user_id)
                             );
                             
                             let role = 'Non Advisory';
                             if (teacherAdvisory) {
                               const levelNames = { 1: 'Discoverer', 2: 'Explorer', 3: 'Adventurer' };
                               role = levelNames[teacherAdvisory.level_id] || 'Advisory';
-                              if (teacherAdvisory.lead_teacher_id === parseInt(t.user_id)) {
+                              if (toNumber(teacherAdvisory.lead_teacher_id) === toNumber(t.user_id)) {
                                 role += ' (Lead)';
                               } else {
                                 role += ' (Assistant)';
@@ -2687,7 +2710,7 @@ export default function SuperAdminCalendarPage() {
                         
                         // Also check if any associated student names match the search
                         const hasMatchingStudent = invitedList.students?.some(s => {
-                          if (s.parent_id === parseInt(p.user_id) || s.parent_id === parseInt(p.id)) {
+                          if (toNumber(s.parent_id) === toNumber(p.user_id) || toNumber(s.parent_id) === toNumber(p.id)) {
                             const studentName = `${s.stud_firstname} ${s.stud_middlename} ${s.stud_lastname}`.toLowerCase();
                             return studentName.includes(inviteViewSearch.toLowerCase());
                           }
@@ -2711,7 +2734,7 @@ export default function SuperAdminCalendarPage() {
                           {filteredParents.map(p => {
                             // Find the corresponding student for this parent
                             const student = invitedList.students?.find(s => 
-                              s.parent_id === parseInt(p.user_id) || s.parent_id === parseInt(p.id)
+                              toNumber(s.parent_id) === toNumber(p.user_id) || toNumber(s.parent_id) === toNumber(p.id)
                             );
                             
                             return (
@@ -2752,7 +2775,7 @@ export default function SuperAdminCalendarPage() {
                         
                         // Also check if any associated student names match the search
                         const hasMatchingStudent = invitedList.students?.some(s => {
-                          if (s.parent_id === parseInt(p.user_id) || s.parent_id === parseInt(p.id)) {
+                          if (toNumber(s.parent_id) === toNumber(p.user_id) || toNumber(s.parent_id) === toNumber(p.id)) {
                             const studentName = `${s.stud_firstname} ${s.stud_middlename} ${s.stud_lastname}`.toLowerCase();
                             return studentName.includes(inviteViewSearch.toLowerCase());
                           }
@@ -2781,7 +2804,7 @@ export default function SuperAdminCalendarPage() {
                             {allFilteredParents.map(p => {
                               // Find the corresponding student for this parent
                               const student = invitedList.students?.find(s => 
-                                s.parent_id === parseInt(p.user_id) || s.parent_id === parseInt(p.id)
+                                toNumber(s.parent_id) === toNumber(p.user_id) || toNumber(s.parent_id) === toNumber(p.id)
                               );
                               
                               return (
@@ -2809,7 +2832,7 @@ export default function SuperAdminCalendarPage() {
                           {allFilteredParents.map(p => {
                             // Determine the parent's child level
                             const parentAdvisory = advisoryData.find(adv => 
-                              adv.students && adv.students.some(student => student.parent_id === parseInt(p.user_id))
+                              adv.students && adv.students.some(student => toNumber(student.parent_id) === toNumber(p.user_id))
                             );
                             
                             let childLevel = 'Unknown';
