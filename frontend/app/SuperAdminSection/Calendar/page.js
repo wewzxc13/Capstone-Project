@@ -224,6 +224,7 @@ export default function SuperAdminCalendarPage() {
   }, [isStatusDropdownOpen]);
   // Add state to track if invite list has been loaded for the current meeting
   const [inviteListLoaded, setInviteListLoaded] = useState(false);
+  const [inviteModalRefresh, setInviteModalRefresh] = useState(0);
   // Add userId state for SSR safety
   const [userId, setUserId] = useState(null);
   // Add state for class advisory functionality
@@ -1527,22 +1528,24 @@ export default function SuperAdminCalendarPage() {
                         className="bg-[#232c67] text-white px-3 py-1.5 rounded-full text-xs font-semibold w-full mb-6 flex items-center justify-center gap-1.5"
                         style={{minWidth: '120px'}} type="button"
                         onClick={async () => {
-                          console.log('🔍 Edit Invite List clicked for meeting:', selectedEvent?.id);
-                          console.log('📊 Current inviteListLoaded state:', inviteListLoaded);
-                          console.log('👥 Current invitedList state:', invitedList);
+                          console.log('🔍 [PRODUCTION DEBUG] Edit Invite List clicked for meeting:', selectedEvent?.id);
+                          console.log('📊 [PRODUCTION DEBUG] Current inviteListLoaded state:', inviteListLoaded);
+                          console.log('👥 [PRODUCTION DEBUG] Current invitedList state:', invitedList);
+                          console.log('👥 [PRODUCTION DEBUG] Current teachers state:', teachers.map(t => ({ id: t.id, name: t.name, checked: t.checked })));
+                          console.log('👥 [PRODUCTION DEBUG] Current parents state:', parents.map(p => ({ id: p.id, name: p.name, checked: p.checked })));
                           
                           if (selectedEvent && !inviteListLoaded) {
-                            console.log('🔄 Fetching invited list...');
+                            console.log('🔄 [PRODUCTION DEBUG] Fetching invited list...');
                             await fetchInvitedList(selectedEvent.id);
                             
                             // After fetching, update teachers and parents checked state
-                            console.log('✅ Updating teachers and parents with fetched data');
+                            console.log('✅ [PRODUCTION DEBUG] Updating teachers and parents with fetched data');
                             setTeachers(prevTeachers => {
                               const updated = prevTeachers.map(t => ({
                                 ...t,
                                 checked: (invitedList.teachers || []).some(inv => String(inv.user_id) === String(t.id))
                               }));
-                              console.log('👨‍🏫 Updated teachers:', updated.map(t => ({ id: t.id, name: t.name, checked: t.checked })));
+                              console.log('👨‍🏫 [PRODUCTION DEBUG] Updated teachers:', updated.map(t => ({ id: t.id, name: t.name, checked: t.checked })));
                               return updated;
                             });
                             
@@ -1551,7 +1554,7 @@ export default function SuperAdminCalendarPage() {
                                 ...p,
                                 checked: (invitedList.parents || []).some(inv => String(inv.user_id) === String(p.id))
                               }));
-                              console.log('👨‍👩‍👧‍👦 Updated parents:', updated.map(p => ({ id: p.id, name: p.name, checked: p.checked })));
+                              console.log('👨‍👩‍👧‍👦 [PRODUCTION DEBUG] Updated parents:', updated.map(p => ({ id: p.id, name: p.name, checked: p.checked })));
                               return updated;
                             });
                             
@@ -1559,11 +1562,14 @@ export default function SuperAdminCalendarPage() {
                             
                             // Force a small delay to ensure state updates are processed
                             setTimeout(() => {
-                              console.log('🔄 Opening invite modal after state updates');
+                              console.log('🔄 [PRODUCTION DEBUG] Opening invite modal after state updates');
+                              setInviteModalRefresh(prev => prev + 1);
                               setShowInviteSelectModal(true);
-                            }, 50);
+                            }, 100);
                           } else {
-                            console.log('📋 Using cached invite list data');
+                            console.log('📋 [PRODUCTION DEBUG] Using cached invite list data');
+                            console.log('📋 [PRODUCTION DEBUG] Teachers state before opening modal:', teachers.map(t => ({ id: t.id, name: t.name, checked: t.checked })));
+                            console.log('📋 [PRODUCTION DEBUG] Parents state before opening modal:', parents.map(p => ({ id: p.id, name: p.name, checked: p.checked })));
                             setShowInviteSelectModal(true);
                           }
                         }}
@@ -1823,18 +1829,23 @@ export default function SuperAdminCalendarPage() {
                             
                             // Fetch and auto-fill the invited list
                             try {
-                              console.log('🔍 Fetching invited list for meeting:', selectedEvent.id);
+                              console.log('🔍 [PRODUCTION DEBUG] Fetching invited list for meeting:', selectedEvent.id);
+                              console.log('🔍 [PRODUCTION DEBUG] Current teachers state before fetch:', teachers.map(t => ({ id: t.id, name: t.name, checked: t.checked })));
+                              console.log('🔍 [PRODUCTION DEBUG] Current parents state before fetch:', parents.map(p => ({ id: p.id, name: p.name, checked: p.checked })));
+                              
                               const res = await fetch(API.meeting.getNotificationRecipients(selectedEvent.id));
                               const data = await res.json();
-                              console.log('📋 Fetched invited list response:', data);
+                              console.log('📋 [PRODUCTION DEBUG] API Response:', data);
                               
                               if (data.status === 'success') {
                                 // Get the invited user IDs
-                                const invitedTeacherIds = (data.teachers || []).map(t => t.user_id);
-                                const invitedParentIds = (data.parents || []).map(p => p.user_id);
+                                const invitedTeacherIds = (data.teachers || []).map(t => String(t.user_id));
+                                const invitedParentIds = (data.parents || []).map(p => String(p.user_id));
                                 
-                                console.log('👥 Invited teacher IDs:', invitedTeacherIds);
-                                console.log('👥 Invited parent IDs:', invitedParentIds);
+                                console.log('👥 [PRODUCTION DEBUG] Invited teacher IDs (as strings):', invitedTeacherIds);
+                                console.log('👥 [PRODUCTION DEBUG] Invited parent IDs (as strings):', invitedParentIds);
+                                console.log('👥 [PRODUCTION DEBUG] Current teacher IDs (as strings):', teachers.map(t => String(t.id)));
+                                console.log('👥 [PRODUCTION DEBUG] Current parent IDs (as strings):', parents.map(p => String(p.id)));
                                 
                                 // Store original invitees for comparison
                                 setOriginalInvitees({
@@ -1844,34 +1855,57 @@ export default function SuperAdminCalendarPage() {
                                 
                                 // Update teachers checkboxes with proper state management
                                 setTeachers(prevTeachers => {
-                                  const updatedTeachers = prevTeachers.map(teacher => ({
-                                    ...teacher,
-                                    checked: invitedTeacherIds.includes(teacher.id)
-                                  }));
-                                  console.log('✅ Updated teachers with checked status:', updatedTeachers.map(t => ({ id: t.id, name: t.name, checked: t.checked })));
+                                  const updatedTeachers = prevTeachers.map(teacher => {
+                                    const isChecked = invitedTeacherIds.includes(String(teacher.id));
+                                    console.log(`🔍 [PRODUCTION DEBUG] Teacher ${teacher.name} (ID: ${teacher.id}) - should be checked: ${isChecked}`);
+                                    return {
+                                      ...teacher,
+                                      checked: isChecked
+                                    };
+                                  });
+                                  console.log('✅ [PRODUCTION DEBUG] Updated teachers with checked status:', updatedTeachers.map(t => ({ id: t.id, name: t.name, checked: t.checked })));
                                   return updatedTeachers;
                                 });
                                 
                                 // Update parents checkboxes with proper state management
                                 setParents(prevParents => {
-                                  const updatedParents = prevParents.map(parent => ({
-                                    ...parent,
-                                    checked: invitedParentIds.includes(parent.id)
-                                  }));
-                                  console.log('✅ Updated parents with checked status:', updatedParents.map(p => ({ id: p.id, name: p.name, checked: p.checked })));
+                                  const updatedParents = prevParents.map(parent => {
+                                    const isChecked = invitedParentIds.includes(String(parent.id));
+                                    console.log(`🔍 [PRODUCTION DEBUG] Parent ${parent.name} (ID: ${parent.id}) - should be checked: ${isChecked}`);
+                                    return {
+                                      ...parent,
+                                      checked: isChecked
+                                    };
+                                  });
+                                  console.log('✅ [PRODUCTION DEBUG] Updated parents with checked status:', updatedParents.map(p => ({ id: p.id, name: p.name, checked: p.checked })));
                                   return updatedParents;
                                 });
                                 
-                                // Force a re-render by updating a state that triggers UI refresh
+                                // Force multiple re-renders to ensure UI updates
                                 setTimeout(() => {
-                                  console.log('🔄 Forcing UI refresh after state updates');
+                                  console.log('🔄 [PRODUCTION DEBUG] First timeout - forcing UI refresh');
                                   setInviteListLoaded(false);
+                                }, 50);
+                                
+                                setTimeout(() => {
+                                  console.log('🔄 [PRODUCTION DEBUG] Second timeout - setting loaded to true');
                                   setInviteListLoaded(true);
-                                  
-                                  // Additional state update to ensure UI reflects changes
-                                  setTeachers(prev => [...prev]);
-                                  setParents(prev => [...prev]);
                                 }, 100);
+                                
+                                setTimeout(() => {
+                                  console.log('🔄 [PRODUCTION DEBUG] Third timeout - final state refresh');
+                                  setTeachers(prev => {
+                                    console.log('🔄 [PRODUCTION DEBUG] Final teachers state:', prev.map(t => ({ id: t.id, name: t.name, checked: t.checked })));
+                                    return [...prev];
+                                  });
+                                  setParents(prev => {
+                                    console.log('🔄 [PRODUCTION DEBUG] Final parents state:', prev.map(p => ({ id: p.id, name: p.name, checked: p.checked })));
+                                    return [...prev];
+                                  });
+                                  // Force modal refresh
+                                  setInviteModalRefresh(prev => prev + 1);
+                                  console.log('🔄 [PRODUCTION DEBUG] Forced modal refresh');
+                                }, 200);
                                 
                                 // Reset class level selections and "All" checkbox
                                 setSelectedLevels([]);
@@ -1941,7 +1975,7 @@ export default function SuperAdminCalendarPage() {
       )}
       {/* Invite modal for add/edit mode */}
       {showInviteSelectModal && (
-        <div key={`invite-modal-${selectedEvent?.id}-${teachers.length}-${parents.length}`} className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-[9999]">
+        <div key={`invite-modal-${selectedEvent?.id}-${teachers.length}-${parents.length}-${inviteModalRefresh}`} className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-[9999]">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-lg overflow-hidden">
             <div className="bg-[#232c67] px-6 py-3 border-b border-gray-200">
               <div className="flex items-center justify-between">
