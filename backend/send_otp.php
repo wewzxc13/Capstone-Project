@@ -70,12 +70,120 @@ try {
     $mail->setFrom('clarinochristian924@gmail.com', 'LearnersVille OTP');
     $mail->addAddress($email);
     $mail->isHTML(true);
-    $mail->Subject = 'Your OTP Code';
-    $mail->Body = "
-        <h2>OTP Verification</h2>
-        <p>Your OTP code is: <strong>$otp_code</strong></p>
-        <p>This code will expire in <strong>5 minutes</strong>.</p>
+    $mail->Subject = "Your Learners' Ville verification code: $otp_code";
+    
+    // Create robust HTML email template with better compatibility
+    $html_body = '
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>OTP Verification</title>
+        <!--[if mso]>
+        <noscript>
+            <xml>
+                <o:OfficeDocumentSettings>
+                    <o:PixelsPerInch>96</o:PixelsPerInch>
+                </o:OfficeDocumentSettings>
+            </xml>
+        </noscript>
+        <![endif]-->
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: Arial, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
+            <tr>
+                <td align="center">
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px;">
+                        <!-- Header with Logo -->
+                        <tr>
+                            <td style="padding: 40px 30px 30px 30px; text-align: left;">
+                                <table width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td width="60" style="vertical-align: middle;">
+                                            <img src="https://learnersville.vercel.app/assets/image/villelogo.png" alt="Learners Ville Logo" width="50" height="50" style="display: block; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+                                        </td>
+                                        <td style="vertical-align: middle; padding-left: 15px;">
+                                            <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #2196F3; font-family: Arial, sans-serif;">Learners\' Ville</h1>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        
+                        <!-- Verification Message -->
+                        <tr>
+                            <td style="padding: 0 30px 20px 30px;">
+                                <p style="margin: 0; font-size: 16px; color: #333333; font-family: Arial, sans-serif;">Your Learners\' Ville verification code is:</p>
+                            </td>
+                        </tr>
+                        
+                        <!-- OTP Code Display -->
+                        <tr>
+                            <td style="padding: 0 30px 20px 30px;">
+                                <table width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td style="background-color: #E3F2FD; border-radius: 12px; padding: 25px; text-align: center; border: 2px solid #2196F3;">
+                                            <p style="margin: 0; font-size: 36px; font-weight: bold; color: #1565C0; letter-spacing: 4px; font-family: \'Courier New\', monospace;">' . implode(' ', str_split($otp_code)) . '</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        
+                        <!-- Warning Message -->
+                        <tr>
+                            <td style="padding: 0 30px 20px 30px;">
+                                <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.5; font-family: Arial, sans-serif;">This code will expire in 5 minutes and can only be used once. Never share this code with anyone.</p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Support Section -->
+                        <tr>
+                            <td style="padding: 0 30px 30px 30px;">
+                                <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.6; font-family: Arial, sans-serif;">
+                                    If you believe you are getting this email in error or want to close your Learners\' Ville account, please visit our 
+                                    <a href="mailto:support@learnersville.com" style="color: #1976D2; text-decoration: none; font-weight: bold;">support center</a>. 
+                                    To learn more about Learners\' Ville, please visit 
+                                    <a href="https://learnersville.vercel.app" style="color: #1976D2; text-decoration: none; font-weight: bold;">learnersville.vercel.app</a>.
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #e9ecef; text-align: center;">
+                                <p style="margin: 0 0 5px 0; font-size: 12px; font-weight: bold; color: #495057; font-family: Arial, sans-serif;">Learners\' Ville</p>
+                                <p style="margin: 0; font-size: 12px; color: #6c757d; line-height: 1.4; font-family: Arial, sans-serif;">
+                                    6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines<br>
+                                    Learn. Explore. Discover.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>';
+    
+    // Create plain text version for better compatibility
+    $text_body = "
+    LEARNERS' VILLE
+    
+    Your Learners' Ville verification code is: " . implode(' ', str_split($otp_code)) . "
+    
+    This code will expire in 5 minutes and can only be used once. Never share this code with anyone.
+    
+    If you believe you are getting this email in error or want to close your Learners' Ville account, please visit our support center. To learn more about Learners' Ville, please visit learnersville.vercel.app.
+    
+    Learners' Ville
+    6-18 st. Barangay Nazareth, Cagayan de Oro, Philippines
+    Learn. Explore. Discover.
     ";
+    
+    $mail->Body = $html_body;
+    $mail->AltBody = $text_body;
 
     $mail->send();
 
