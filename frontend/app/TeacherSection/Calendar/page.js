@@ -426,7 +426,7 @@ export default function TeacherCalendarPage() {
   };
 
   // When entering edit mode, pre-fill parent/student and temp values for invite modal
-  const handleEditClick = () => {
+  const handleEditClick = async () => {
     setEditMode(true);
     setEditEventData({
       title: selectedEvent.title,
@@ -454,7 +454,50 @@ export default function TeacherCalendarPage() {
     console.log('Available advisory parents:', advisoryParents);
     console.log('Available advisory students:', advisoryStudents);
     
+    // For group meetings (admin-created), fetch the invited list
+    if (!parentId && !studentId) {
+      try {
+        console.log('Fetching invited list for group meeting...');
+        const res = await fetch(API.meeting.getNotificationRecipients(selectedEvent.id));
+        const data = await res.json();
+        console.log('Fetched invited list response:', data);
+        
+        if (data.status === 'success') {
+          // Get the invited user IDs
+          const invitedTeacherIds = (data.teachers || []).map(t => t.user_id);
+          const invitedParentIds = (data.parents || []).map(p => p.user_id);
+          
+          // Update the teachers and parents arrays to mark invited ones as checked
+          setTeachers(prevTeachers => 
+            prevTeachers.map(teacher => ({
+              ...teacher,
+              checked: invitedTeacherIds.includes(teacher.id)
+            }))
+          );
+          
+          setParents(prevParents => 
+            prevParents.map(parent => ({
+              ...parent,
+              checked: invitedParentIds.includes(parent.id)
+            }))
+          );
+          
+          console.log('Updated teachers and parents with invited status');
+        } else {
+          console.log('Failed to fetch invited list:', data.message);
+        }
+      } catch (err) {
+        console.log('Error fetching invited list:', err);
+      }
+    }
+    
     setInviteListLoaded(false);
+    
+    // Trigger validation after state updates
+    setTimeout(() => {
+      validateEditFields();
+    }, 100);
+    
     toast.info("Edit mode activated");
   };
 
@@ -527,7 +570,11 @@ export default function TeacherCalendarPage() {
     }
 
     // Invite validation (for teacher: require parent and student selection)
-    if (!selectedParentId || !selectedStudentId) {
+    // Check both current state and selectedEvent data for edit mode
+    const currentParentId = selectedParentId || selectedEvent?.parent_id;
+    const currentStudentId = selectedStudentId || selectedEvent?.student_id;
+    
+    if (!currentParentId || !currentStudentId) {
       newValidation.invite = "Please select a parent and student to invite.";
       valid = false;
     }
@@ -595,7 +642,11 @@ export default function TeacherCalendarPage() {
       }
     }
     // Invite validation (for teacher: require parent and student selection)
-    if (!selectedParentId || !selectedStudentId) {
+    // Check both current state and selectedEvent data for edit mode
+    const currentParentId = selectedParentId || selectedEvent?.parent_id;
+    const currentStudentId = selectedStudentId || selectedEvent?.student_id;
+    
+    if (!currentParentId || !currentStudentId) {
       newValidation.invite = 'Please select a parent and student to invite.';
       valid = false;
     }
@@ -607,7 +658,7 @@ export default function TeacherCalendarPage() {
   useEffect(() => {
     if (editMode) validateEditFields();
     // eslint-disable-next-line
-  }, [editEventData, teachers, parents, editMode]);
+  }, [editEventData, selectedParentId, selectedStudentId, editMode]);
 
   // Function to handle saving edited event
   const handleSaveEdit = async () => {
@@ -1363,7 +1414,7 @@ export default function TeacherCalendarPage() {
                       !modalDay || !modalMonth || !modalYear ||
                       !newEventStartTime || !newEventEndTime ||
                       !!validation.date || !!validation.time || !!validation.invite ||
-                      !selectedParentId || !selectedStudentId
+                      !(selectedParentId || selectedEvent?.parent_id) || !(selectedStudentId || selectedEvent?.student_id)
                     }
                   >
                 <FaPlus className="w-3 h-3" />
@@ -1491,7 +1542,7 @@ export default function TeacherCalendarPage() {
                     <button
                       onClick={handleSaveEdit}
                       className="px-4 sm:px-6 py-3 sm:py-2.5 bg-[#232c67] hover:bg-[#1a1f4d] text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 touch-manipulation active:scale-95 min-h-[44px] w-full sm:w-auto justify-center"
-                      disabled={!!validation.date || !!validation.time || !!validation.invite}
+                      disabled={!!validation.date || !!validation.time || !!validation.invite || !(selectedParentId || selectedEvent?.parent_id) || !(selectedStudentId || selectedEvent?.student_id)}
                     >
                       <FaSave className="w-3 h-3" />
                       Save Changes

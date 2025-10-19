@@ -1599,20 +1599,45 @@ export default function AdminCalendarPage() {
                         className="bg-[#232c67] text-white px-3 py-1.5 rounded-full text-xs font-semibold w-full mb-6 flex items-center justify-center gap-1.5"
                         style={{minWidth: '120px'}} type="button"
                         onClick={async () => {
+                          console.log('🔍 Edit Invite List clicked for meeting:', selectedEvent?.id);
+                          console.log('📊 Current inviteListLoaded state:', inviteListLoaded);
+                          console.log('👥 Current invitedList state:', invitedList);
+                          
                           if (selectedEvent && !inviteListLoaded) {
+                            console.log('🔄 Fetching invited list...');
                             await fetchInvitedList(selectedEvent.id);
+                            
                             // After fetching, update teachers and parents checked state
-                            setTeachers(prevTeachers => prevTeachers.map(t => ({
-                              ...t,
-                              checked: (invitedList.teachers || []).some(inv => String(inv.user_id) === String(t.id))
-                            })));
-                            setParents(prevParents => prevParents.map(p => ({
-                              ...p,
-                              checked: (invitedList.parents || []).some(inv => String(inv.user_id) === String(p.id))
-                            })));
+                            console.log('✅ Updating teachers and parents with fetched data');
+                            setTeachers(prevTeachers => {
+                              const updated = prevTeachers.map(t => ({
+                                ...t,
+                                checked: (invitedList.teachers || []).some(inv => String(inv.user_id) === String(t.id))
+                              }));
+                              console.log('👨‍🏫 Updated teachers:', updated.map(t => ({ id: t.id, name: t.name, checked: t.checked })));
+                              return updated;
+                            });
+                            
+                            setParents(prevParents => {
+                              const updated = prevParents.map(p => ({
+                                ...p,
+                                checked: (invitedList.parents || []).some(inv => String(inv.user_id) === String(p.id))
+                              }));
+                              console.log('👨‍👩‍👧‍👦 Updated parents:', updated.map(p => ({ id: p.id, name: p.name, checked: p.checked })));
+                              return updated;
+                            });
+                            
                             setInviteListLoaded(true);
+                            
+                            // Force a small delay to ensure state updates are processed
+                            setTimeout(() => {
+                              console.log('🔄 Opening invite modal after state updates');
+                              setShowInviteSelectModal(true);
+                            }, 50);
+                          } else {
+                            console.log('📋 Using cached invite list data');
+                            setShowInviteSelectModal(true);
                           }
-                          setShowInviteSelectModal(true);
                         }}
                       >
                         <FaEdit className="w-2.5 h-2.5" />
@@ -1867,12 +1892,18 @@ export default function AdminCalendarPage() {
                             
                             // Fetch and auto-fill the invited list
                             try {
+                              console.log('🔍 Fetching invited list for meeting:', selectedEvent.id);
                               const res = await fetch(API.meeting.getNotificationRecipients(selectedEvent.id));
                               const data = await res.json();
+                              console.log('📋 Fetched invited list response:', data);
+                              
                               if (data.status === 'success') {
                                 // Get the invited user IDs
                                 const invitedTeacherIds = (data.teachers || []).map(t => t.user_id);
                                 const invitedParentIds = (data.parents || []).map(p => p.user_id);
+                                
+                                console.log('👥 Invited teacher IDs:', invitedTeacherIds);
+                                console.log('👥 Invited parent IDs:', invitedParentIds);
                                 
                                 // Store original invitees for comparison
                                 setOriginalInvitees({
@@ -1880,21 +1911,36 @@ export default function AdminCalendarPage() {
                                   parents: invitedParentIds
                                 });
                                 
-                                // Update teachers checkboxes
-                                setTeachers(prevTeachers => 
-                                  prevTeachers.map(teacher => ({
+                                // Update teachers checkboxes with proper state management
+                                setTeachers(prevTeachers => {
+                                  const updatedTeachers = prevTeachers.map(teacher => ({
                                     ...teacher,
                                     checked: invitedTeacherIds.includes(teacher.id)
-                                  }))
-                                );
+                                  }));
+                                  console.log('✅ Updated teachers with checked status:', updatedTeachers.map(t => ({ id: t.id, name: t.name, checked: t.checked })));
+                                  return updatedTeachers;
+                                });
                                 
-                                // Update parents checkboxes
-                                setParents(prevParents => 
-                                  prevParents.map(parent => ({
+                                // Update parents checkboxes with proper state management
+                                setParents(prevParents => {
+                                  const updatedParents = prevParents.map(parent => ({
                                     ...parent,
                                     checked: invitedParentIds.includes(parent.id)
-                                  }))
-                                );
+                                  }));
+                                  console.log('✅ Updated parents with checked status:', updatedParents.map(p => ({ id: p.id, name: p.name, checked: p.checked })));
+                                  return updatedParents;
+                                });
+                                
+                                // Force a re-render by updating a state that triggers UI refresh
+                                setTimeout(() => {
+                                  console.log('🔄 Forcing UI refresh after state updates');
+                                  setInviteListLoaded(false);
+                                  setInviteListLoaded(true);
+                                  
+                                  // Additional state update to ensure UI reflects changes
+                                  setTeachers(prev => [...prev]);
+                                  setParents(prev => [...prev]);
+                                }, 100);
                                 
                                 // Reset class level selections and "All" checkbox
                                 setSelectedLevels([]);
@@ -1964,7 +2010,7 @@ export default function AdminCalendarPage() {
       )}
       {/* Invite modal for add/edit mode */}
       {showInviteSelectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-[9999]">
+        <div key={`invite-modal-${selectedEvent?.id}-${teachers.length}-${parents.length}`} className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-[9999]">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-lg overflow-hidden">
             <div className="bg-[#232c67] px-6 py-3 border-b border-gray-200">
               <div className="flex items-center justify-between">
