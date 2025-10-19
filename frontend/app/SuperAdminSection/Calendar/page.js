@@ -619,7 +619,15 @@ export default function SuperAdminCalendarPage() {
         setNewEventAgenda("");
         toast.success("Meeting created and notifications sent!");
       } else {
-        toast.error("Failed to create meeting: " + (data.message || "Unknown error") + (data.error ? ("\n" + data.error) : ""));
+        // Handle overlap conflicts specifically
+        if (data.conflicts && Array.isArray(data.conflicts)) {
+          const conflictDetails = data.conflicts.map(conflict => 
+            `${conflict.title} (${new Date(conflict.start).toLocaleString()} - ${new Date(conflict.end).toLocaleString()})`
+          ).join('\n');
+          toast.error(`Meeting time conflicts with existing meeting(s):\n${conflictDetails}`);
+        } else {
+          toast.error("Failed to create meeting: " + (data.message || "Unknown error") + (data.error ? ("\n" + data.error) : ""));
+        }
       }
     } catch (err) {
       toast.error("Error connecting to server: " + err.message);
@@ -1661,7 +1669,15 @@ export default function SuperAdminCalendarPage() {
                               toast.success("Meeting updated successfully! All invitees have been notified.");
                             }
                           } else {
-                            toast.error("Failed to update meeting: " + (data.message || "Unknown error"));
+                            // Handle overlap conflicts specifically
+                            if (data.conflicts && Array.isArray(data.conflicts)) {
+                              const conflictDetails = data.conflicts.map(conflict => 
+                                `${conflict.title} (${new Date(conflict.start).toLocaleString()} - ${new Date(conflict.end).toLocaleString()})`
+                              ).join('\n');
+                              toast.error(`Meeting time conflicts with existing meeting(s):\n${conflictDetails}`);
+                            } else {
+                              toast.error("Failed to update meeting: " + (data.message || "Unknown error"));
+                            }
                           }
                         } catch (err) {
                           toast.error("Error connecting to server: " + err.message);

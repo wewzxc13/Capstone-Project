@@ -35,6 +35,36 @@ if (
 try {
     $conn->beginTransaction();
 
+    // Check for meeting overlap before creating
+    $overlapCheck = $conn->prepare("
+        SELECT meeting_id, meeting_title, meeting_start, meeting_end 
+        FROM tbl_meetings 
+        WHERE meeting_status != 'Cancelled' 
+        AND (
+            (? < meeting_end AND ? > meeting_start)
+        )
+    ");
+    $overlapCheck->execute([$start, $end]);
+    $overlappingMeetings = $overlapCheck->fetchAll(PDO::FETCH_ASSOC);
+    
+    if (!empty($overlappingMeetings)) {
+        $conn->rollBack();
+        http_response_code(409); // Conflict status code
+        echo json_encode([
+            'status' => 'error', 
+            'message' => 'Meeting time conflicts with existing meeting(s)',
+            'conflicts' => array_map(function($meeting) {
+                return [
+                    'id' => $meeting['meeting_id'],
+                    'title' => $meeting['meeting_title'],
+                    'start' => $meeting['meeting_start'],
+                    'end' => $meeting['meeting_end']
+                ];
+            }, $overlappingMeetings)
+        ]);
+        exit;
+    }
+
     // 1. Insert into tbl_meetings
     $stmt = $conn->prepare("
         INSERT INTO tbl_meetings (

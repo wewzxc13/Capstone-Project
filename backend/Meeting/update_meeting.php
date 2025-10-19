@@ -141,7 +141,39 @@ try {
         }
     }
 
-    // 3. Update tbl_meetings
+    // 3. Check for meeting overlap before updating (exclude current meeting)
+    $overlapCheck = $conn->prepare("
+        SELECT meeting_id, meeting_title, meeting_start, meeting_end 
+        FROM tbl_meetings 
+        WHERE meeting_status != 'Cancelled' 
+        AND meeting_id != ?
+        AND (
+            (? < meeting_end AND ? > meeting_start)
+        )
+    ");
+    $overlapCheck->execute([$meeting_id, $start, $end]);
+    $overlappingMeetings = $overlapCheck->fetchAll(PDO::FETCH_ASSOC);
+    
+    if (!empty($overlappingMeetings)) {
+        $conn->rollBack();
+        ob_clean();
+        http_response_code(409); // Conflict status code
+        echo json_encode([
+            'status' => 'error', 
+            'message' => 'Meeting time conflicts with existing meeting(s)',
+            'conflicts' => array_map(function($meeting) {
+                return [
+                    'id' => $meeting['meeting_id'],
+                    'title' => $meeting['meeting_title'],
+                    'start' => $meeting['meeting_start'],
+                    'end' => $meeting['meeting_end']
+                ];
+            }, $overlappingMeetings)
+        ]);
+        exit;
+    }
+
+    // 4. Update tbl_meetings
 
     
     if ($parent_id && $student_id) {
@@ -174,7 +206,7 @@ try {
         ]);
     }
 
-    // 4. Update notification message for existing notification
+    // 5. Update notification message for existing notification
     // Get the latest notification for this meeting
     $stmt = $conn->prepare("SELECT notification_id FROM tbl_notifications WHERE meeting_id = ? ORDER BY created_at DESC, notification_id DESC LIMIT 1");
     $stmt->execute([$meeting_id]);
@@ -188,7 +220,7 @@ try {
         $stmt = $conn->prepare("UPDATE tbl_notifications SET notif_message = ?, created_at = NOW() WHERE notification_id = ?");
         $stmt->execute([$notif_message, $notification_id]);
         
-        // 5. Get current recipients to compare with new recipients
+        // 6. Get current recipients to compare with new recipients
         $stmt = $conn->prepare("SELECT user_id, recipient_type FROM tbl_notification_recipients WHERE notification_id = ?");
         $stmt->execute([$notification_id]);
         $current_recipients = $stmt->fetchAll(PDO::FETCH_ASSOC);

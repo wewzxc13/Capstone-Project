@@ -410,7 +410,15 @@ export default function TeacherCalendarPage() {
         setNewEventAgenda("");
         toast.success("Meeting created and notifications sent!");
       } else {
-        toast.error("Failed to create meeting: " + (data.message || "Unknown error") + (data.error ? ("\n" + data.error) : ""));
+        // Handle overlap conflicts specifically
+        if (data.conflicts && Array.isArray(data.conflicts)) {
+          const conflictDetails = data.conflicts.map(conflict => 
+            `${conflict.title} (${new Date(conflict.start).toLocaleString()} - ${new Date(conflict.end).toLocaleString()})`
+          ).join('\n');
+          toast.error(`Meeting time conflicts with existing meeting(s):\n${conflictDetails}`);
+        } else {
+          toast.error("Failed to create meeting: " + (data.message || "Unknown error") + (data.error ? ("\n" + data.error) : ""));
+        }
       }
     } catch (err) {
       toast.error("Error connecting to server: " + err.message);
@@ -730,7 +738,15 @@ export default function TeacherCalendarPage() {
         setTempSelectedParentId(null);
         setTempSelectedStudentId(null);
       } else {
-        toast.error("Failed to update meeting: " + (data.message || "Unknown error") + (data.error ? ("\n" + data.error) : ""));
+        // Handle overlap conflicts specifically
+        if (data.conflicts && Array.isArray(data.conflicts)) {
+          const conflictDetails = data.conflicts.map(conflict => 
+            `${conflict.title} (${new Date(conflict.start).toLocaleString()} - ${new Date(conflict.end).toLocaleString()})`
+          ).join('\n');
+          toast.error(`Meeting time conflicts with existing meeting(s):\n${conflictDetails}`);
+        } else {
+          toast.error("Failed to update meeting: " + (data.message || "Unknown error") + (data.error ? ("\n" + data.error) : ""));
+        }
       }
     } catch (err) {
       toast.error("Error connecting to server: " + err.message);
