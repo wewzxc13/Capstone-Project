@@ -6,7 +6,7 @@ import { FaUser, FaArrowLeft, FaCheckCircle, FaExclamationCircle, FaTimes, FaUse
 import ReactCountryFlag from "react-country-flag";
 import ProtectedRoute from "../../../Context/ProtectedRoute";
 import { useRouter } from "next/navigation";
-import fullAddress from '../../../../data/full_misamis_oriental_psgc.json';
+import fullAddress from '../../../../data/northern_mindanao_psgc.json';
 import { API } from '@/config/api';
 
 
@@ -247,6 +247,32 @@ const validators = {
     return { isValid: true, message: "" };
   },
 
+  // Custom province validation - first letter capital, can contain numbers
+  customProvince: (value) => {
+    if (!value) return { isValid: false, message: "" };
+    const provinceRegex = /^[A-Z][a-zA-Z0-9\s]*$/;
+    if (!provinceRegex.test(value)) {
+      return { isValid: false, message: "First letter must be capital, letters, numbers and spaces allowed" };
+    }
+    if (value.length < 2) {
+      return { isValid: false, message: "Province must be at least 2 characters" };
+    }
+    return { isValid: true, message: "" };
+  },
+
+  // Custom city validation - first letter capital, can contain numbers
+  customCity: (value) => {
+    if (!value) return { isValid: false, message: "" };
+    const cityRegex = /^[A-Z][a-zA-Z0-9\s]*$/;
+    if (!cityRegex.test(value)) {
+      return { isValid: false, message: "First letter must be capital, letters, numbers and spaces allowed" };
+    }
+    if (value.length < 2) {
+      return { isValid: false, message: "City must be at least 2 characters" };
+    }
+    return { isValid: true, message: "" };
+  },
+
   // Required field validation
   required: (value) => {
     if (!value || value.trim() === "") {
@@ -258,7 +284,7 @@ const validators = {
 
 
 
-// Custom Dropdown Component
+// Custom Dropdown Component with "Other" option support
 const CustomDropdown = ({ 
   name, 
   value, 
@@ -267,15 +293,21 @@ const CustomDropdown = ({
   placeholder, 
   disabled = false, 
   error = false,
-  className = ""
+  className = "",
+  allowOther = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [customValue, setCustomValue] = useState('');
+  const [customError, setCustomError] = useState('');
   const dropdownRef = useRef(null);
+  const textInputRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+        setShowTextInput(false);
       }
     };
 
@@ -283,39 +315,144 @@ const CustomDropdown = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (showTextInput && textInputRef.current) {
+      textInputRef.current.focus();
+    }
+  }, [showTextInput]);
+
   const handleSelect = (optionValue) => {
-    onChange({ target: { name, value: optionValue } });
-    setIsOpen(false);
+    if (optionValue === 'OTHER') {
+      setShowTextInput(true);
+      setCustomValue('');
+    } else {
+      onChange({ target: { name, value: optionValue } });
+      setIsOpen(false);
+      setShowTextInput(false);
+    }
   };
 
-  const selectedOption = options.find(opt => opt.value === value);
-  const displayValue = selectedOption ? selectedOption.label : '';
+  const handleCustomInput = (e) => {
+    let value = e.target.value;
+    
+    // Auto-capitalize first letter
+    if (value.length > 0) {
+      value = value.charAt(0).toUpperCase() + value.slice(1);
+    }
+    
+    setCustomValue(value);
+    
+    // Validate the input
+    if (name === 'provinceCode') {
+      const validation = validators.customProvince(value);
+      setCustomError(validation.isValid ? '' : validation.message);
+    } else if (name === 'cityCode') {
+      const validation = validators.customCity(value);
+      setCustomError(validation.isValid ? '' : validation.message);
+    }
+  };
+
+  const handleCustomSubmit = () => {
+    if (customValue.trim() && !customError) {
+      onChange({ target: { name, value: customValue.trim() } });
+      setIsOpen(false);
+      setShowTextInput(false);
+      setCustomError('');
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCustomSubmit();
+    } else if (e.key === 'Escape') {
+      setShowTextInput(false);
+      setCustomValue('');
+    }
+  };
+
+  // Check if current value is a custom value (not in predefined options)
+  const isCustomValue = value && !options.find(opt => opt.value === value);
+  const displayValue = isCustomValue ? value : (options.find(opt => opt.value === value)?.label || '');
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={disabled}
-        className={`w-full p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 border-2 bg-white text-left ${
-          error 
-            ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500' 
-            : value && value !== ""
-              ? 'border-green-500 bg-green-50 focus:border-green-500 focus:ring-green-500'
-              : 'border-gray-300 focus:border-[#232c67] focus:ring-[#232c67]'
-        } ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'cursor-pointer'}`}
-      >
-        <span className={displayValue ? 'text-gray-900' : 'text-gray-500'}>
-          {displayValue || placeholder}
-        </span>
-        <FaChevronDown 
-          className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 transition-transform ${
-            isOpen ? 'rotate-180' : ''
-          }`} 
-        />
-      </button>
+      {showTextInput ? (
+        <div>
+          <div className="flex gap-2 items-center relative z-50">
+            <input
+              ref={textInputRef}
+              type="text"
+              value={customValue}
+              onChange={handleCustomInput}
+              onKeyDown={handleKeyPress}
+              placeholder={`Enter ${name === 'provinceCode' ? 'province' : 'city'} name`}
+              className={`flex-1 p-2 rounded-lg border-2 bg-white focus:outline-none focus:ring-2 caret-[#232c67] relative z-10 ${
+                customError 
+                  ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500' 
+                  : customValue && !customError
+                    ? 'border-green-500 bg-green-50 focus:border-green-500 focus:ring-green-500'
+                    : 'border-[#232c67] focus:border-[#232c67] focus:ring-[#232c67]'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={handleCustomSubmit}
+              disabled={!!customError || !customValue.trim()}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center min-w-[45px] font-semibold shadow-lg relative z-50 ${
+                customError || !customValue.trim()
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 hover:bg-green-700 hover:shadow-xl'
+              } text-white`}
+              title="Confirm"
+            >
+              <FaCheckCircle className="text-base" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowTextInput(false);
+                setCustomValue('');
+                setCustomError('');
+              }}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center min-w-[45px] font-semibold shadow-lg hover:shadow-xl relative z-50"
+              title="Cancel"
+            >
+              <FaTimes className="text-base" />
+            </button>
+          </div>
+          {customError && (
+            <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <FaTimes />
+              {customError}
+            </div>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          disabled={disabled}
+          className={`w-full p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 border-2 bg-white text-left ${
+            error 
+              ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500' 
+              : value && value !== ""
+                ? 'border-green-500 bg-green-50 focus:border-green-500 focus:ring-green-500'
+                : 'border-gray-300 focus:border-[#232c67] focus:ring-[#232c67]'
+          } ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'cursor-pointer'}`}
+        >
+          <span className={displayValue ? 'text-gray-900' : 'text-gray-500'}>
+            {displayValue || placeholder}
+          </span>
+          <FaChevronDown 
+            className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 transition-transform ${
+              isOpen ? 'rotate-180' : ''
+            }`} 
+          />
+        </button>
+      )}
       
-      {isOpen && (
+      {isOpen && !showTextInput && (
         <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
           {options.map((option) => (
             <button
@@ -331,6 +468,18 @@ const CustomDropdown = ({
               {option.label}
             </button>
           ))}
+          {allowOther && (
+            <button
+              type="button"
+              onClick={() => handleSelect('OTHER')}
+              className="w-full px-3 py-2 text-left transition-colors text-gray-600 hover:bg-gray-100 border-t border-gray-200"
+            >
+              <span className="flex items-center gap-2">
+                <span className="text-sm">✏️</span>
+                Other (Type custom)
+              </span>
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -736,8 +885,13 @@ export default function AddUserPage() {
       dataToSend.user_type = userType.toLowerCase();
       
       // Extract address names from codes for backend
-      const province = addressData.provinces.find(p => p.code === formData.provinceCode)?.name;
-      const city = addressData.cities[formData.provinceCode]?.find(c => c.code === formData.cityCode)?.name;
+      // Check if provinceCode is a custom value (not in predefined options)
+      const provinceOption = addressData.provinces.find(p => p.code === formData.provinceCode);
+      const province = provinceOption ? provinceOption.name : formData.provinceCode;
+      
+      // Check if cityCode is a custom value (not in predefined options)
+      const cityOption = addressData.cities[formData.provinceCode]?.find(c => c.code === formData.cityCode);
+      const city = cityOption ? cityOption.name : formData.cityCode;
       
       dataToSend.country = formData.country;
       dataToSend.province = province;
@@ -1071,7 +1225,7 @@ function getInputClassName(fieldName, formData, validationErrors) {
                 if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
                   age = age - 1;
                 }
-                return `${age} years old (18-100 years allowed)`;
+                return `${age} years old`;
               })()}
             </div>
           )}
@@ -1167,6 +1321,7 @@ function getInputClassName(fieldName, formData, validationErrors) {
             placeholder="Select Province"
             disabled={!formData.country}
             error={!!validationErrors.provinceCode}
+            allowOther={true}
             className={getInputClassName('provinceCode', formData, validationErrors).replace('w-full p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 border-2 bg-white', '')}
           />
           {formData.provinceCode && validationErrors.provinceCode && (
@@ -1189,6 +1344,7 @@ function getInputClassName(fieldName, formData, validationErrors) {
             placeholder="Select City"
             disabled={!formData.provinceCode}
             error={!!validationErrors.cityCode}
+            allowOther={true}
             className={getInputClassName('cityCode', formData, validationErrors).replace('w-full p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 border-2 bg-white', '')}
           />
           {formData.cityCode && validationErrors.cityCode && (
