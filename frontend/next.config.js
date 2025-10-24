@@ -49,12 +49,19 @@ const nextConfig = {
   },
   async rewrites() {
     const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN || "http://localhost";
-    return [
-      {
-        source: "/php/:path*",
-        destination: `${BACKEND_ORIGIN}/capstone-project/backend/:path*`,
-      },
-    ];
+    
+    // Only add rewrites for local development
+    // In production (Vercel), we use direct external API calls
+    if (process.env.NODE_ENV === 'development') {
+      return [
+        {
+          source: "/php/:path*",
+          destination: `${BACKEND_ORIGIN}/capstone-project/backend/:path*`,
+        },
+      ];
+    }
+    
+    return [];
   },
 };
 

@@ -1,68 +1,87 @@
 /**
- * Centralized API Configuration
- * 
- * This file contains all API endpoints used throughout the application.
- * Update the environment variables in .env.local to change the base URL.
- * 
- * Environment Variables (Optional):
- * - NEXT_PUBLIC_API_BASE_URL: Base URL for the API (default: http://localhost)
- * - NEXT_PUBLIC_BACKEND_PATH: Path to backend (default: /capstone-project/backend)
- * 
- * For production deployment, create a .env.local file with:
- * NEXT_PUBLIC_API_BASE_URL=https://learnersville.online
- * NEXT_PUBLIC_BACKEND_PATH=/backend-ville
- * 
- * For local development (default):
- * NEXT_PUBLIC_API_BASE_URL=http://localhost
- * NEXT_PUBLIC_BACKEND_PATH=/capstone-project/backend
- */
+* Centralized API Configuration
+* 
+* This file contains all API endpoints used throughout the application.
+* Update the environment variables in .env.local to change the base URL.
+* 
+* Environment Variables (Optional):
+* - NEXT_PUBLIC_API_BASE_URL: Base URL for the API (default: https://learnersville.online)
+* - NEXT_PUBLIC_BACKEND_PATH: Path to backend (default: /backend-ville)
+* 
+* Production (default):
+* NEXT_PUBLIC_API_BASE_URL=https://learnersville.online
+* NEXT_PUBLIC_BACKEND_PATH=/backend-ville
+* 
+* For local development, create a .env.local file with:
+* NEXT_PUBLIC_API_BASE_URL=http://localhost
+* NEXT_PUBLIC_BACKEND_PATH=/capstone-project/backend
+*/
 
 import axios from 'axios';
 
-// API Base Configuration - Defaults to localhost for development
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost';
-const BACKEND_PATH = process.env.NEXT_PUBLIC_BACKEND_PATH || '/capstone-project/backend';
+// API Base Configuration - Now defaults to production (Namecheap hosting)
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://learnersville.online';
+const BACKEND_PATH = process.env.NEXT_PUBLIC_BACKEND_PATH || '/backend-ville';
 
 // Full API URL
 export const API_URL = `${API_BASE_URL}${BACKEND_PATH}`;
 
+// Determine if we're using production or local development
+// Check both the API URL and if we're NOT on localhost
+const isProduction = API_BASE_URL.includes('learnersville.online') || 
+                     (typeof window !== 'undefined' && !window.location.hostname.includes('localhost'));
+
 // Helper function to detect if we're in production at runtime
 const isProductionEnvironment = () => {
-  // Check if API_BASE_URL is set to production
-  return API_BASE_URL.includes('learnersville.online');
+  // Server-side: check environment variable
+  if (typeof window === 'undefined') {
+    return API_BASE_URL.includes('learnersville.online');
+  }
+  
+  // Client-side: check actual hostname
+  const hostname = window.location.hostname;
+  return hostname.includes('vercel.app') || 
+         hostname.includes('learnersville.online') ||
+         (!hostname.includes('localhost') && !hostname.includes('127.0.0.1'));
 };
 
-// Initial check (for server-side rendering)
-const isProduction = API_BASE_URL.includes('learnersville.online');
-
 const getEndpoint = (path) => {
+  // Dynamic production check at runtime (not module load time)
+  const isDynamicProduction = typeof window !== 'undefined' && 
+                               (window.location.hostname.includes('vercel.app') || 
+                                window.location.hostname.includes('learnersville.online') ||
+                                !window.location.hostname.includes('localhost'));
+  
   // Use the helper function for runtime detection
   const isProd = isProductionEnvironment();
-  
+
   // Debug logging
   if (typeof window !== 'undefined') {
-    // console.log('[API Debug] getEndpoint called:', {
-    //   path,
-    //   hostname: window.location.hostname,
-    //   isProd,
-    //   isProduction,
-    //   API_BASE_URL,
-    //   API_URL,
-    //   decision: isProd ? 'PRODUCTION BACKEND' : 'LOCAL DEVELOPMENT'
-    // });
+    console.log('[API Debug] getEndpoint called:', {
+      path,
+      hostname: window.location.hostname,
+      isProd,
+      isProduction,
+      isDynamicProduction,
+      API_BASE_URL,
+      API_URL,
+      decision: isProd ? 'PRODUCTION BACKEND' : 'LOCAL DEVELOPMENT'
+    });
   }
-  
+
   // For production (Vercel or Namecheap), use direct backend URL
-  if (isProd) {
-    // Remove leading slash if present to avoid double slashes
-    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-    const endpoint = `${API_URL}/${cleanPath}`;
-    // console.log('[API] ✅ Production endpoint:', endpoint);
-    return endpoint;
+  if (isProduction || isDynamicProduction) {
+    if (isProd) {
+      // Remove leading slash if present to avoid double slashes
+      const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+      const endpoint = `${API_URL}/${cleanPath}`;
+      console.log('[API] ✅ Production endpoint:', endpoint);
+      return endpoint;
+    }
   }
-  
+
   // For local development, use Next.js rewrites (/php/ -> /capstone-project/backend/)
-  // console.log('[API] 🏠 Local development endpoint:', path);
+  console.log('[API] 🏠 Local development endpoint:', path);
   if (path.startsWith('/php/')) {
     return path;
   }
@@ -70,8 +89,8 @@ const getEndpoint = (path) => {
 };
 
 /**
- * Axios instance with default configuration
- */
+* Axios instance with default configuration
+*/
 export const apiClient = axios.create({
   timeout: 30000, // 30 seconds
   headers: {
@@ -118,8 +137,8 @@ apiClient.interceptors.response.use(
 );
 
 /**
- * Authentication API Endpoints
- */
+* Authentication API Endpoints
+*/
 export const authAPI = {
   login: () => getEndpoint('login.php'),
   signup: () => getEndpoint('signup.php'),
@@ -133,8 +152,8 @@ export const authAPI = {
 };
 
 /**
- * User Management API Endpoints
- */
+* User Management API Endpoints
+*/
 export const userAPI = {
   getAllUsers: () => getEndpoint('Users/get_all_users.php'),
   getUserDetails: () => getEndpoint('Users/get_user_details.php'),
@@ -165,21 +184,21 @@ export const userAPI = {
 };
 
 /**
- * Assessment API Endpoints
- */
+* Assessment API Endpoints
+*/
 export const assessmentAPI = {
   // Visual Feedback
   getVisualFeedback: () => getEndpoint('Assessment/get_visual_feedback.php'),
   createVisualFeedback: () => getEndpoint('Assessment/create_visual_feedback.php'),
   updateVisualFeedback: () => getEndpoint('Assessment/update_visual_feedback.php'),
-  
+
   // Risk Levels
   getRiskLevels: () => getEndpoint('Assessment/get_risk_levels.php'),
-  
+
   // Subjects
   getSubjectsByAdvisory: (advisoryId) => 
     getEndpoint(`Assessment/get_subjects_by_advisory.php?advisory_id=${advisoryId}`),
-  
+
   // Progress Cards
   getStudentProgressCards: (studentId, advisoryId) => 
     getEndpoint(`Assessment/get_student_progress_cards.php?student_id=${studentId}&advisory_id=${advisoryId}`),
@@ -187,41 +206,41 @@ export const assessmentAPI = {
   updateProgressCard: () => getEndpoint('Assessment/update_progress_card.php'),
   deleteProgressCard: () => getEndpoint('Assessment/delete_progress_card.php'),
   finalizeProgressCard: () => getEndpoint('Assessment/finalize_progress_card.php'),
-  
+
   // Quarter Feedback
   getStudentQuarterFeedback: (studentId) => 
     getEndpoint(`Assessment/get_student_quarter_feedback.php?student_id=${studentId}`),
-  
+
   // Quarters
   getQuarters: () => getEndpoint('Assessment/get_quarters.php'),
-  
+
   // Comments
   getComments: (studentId) => 
     getEndpoint(`Assessment/get_comments.php?student_id=${studentId}`),
   createComment: () => getEndpoint('Assessment/create_comment.php'),
   updateComment: () => getEndpoint('Assessment/update_comment.php'),
   deleteComment: () => getEndpoint('Assessment/delete_comment.php'),
-  
+
   // Overall Progress
   getOverallProgress: (studentId, advisoryId) => 
     getEndpoint(`Assessment/get_overall_progress.php?student_id=${studentId}&advisory_id=${advisoryId}`),
   insertOverallProgress: () => getEndpoint('Assessment/insert_overall_progress.php'),
   updateOverallProgress: () => getEndpoint('Assessment/update_overall_progress.php'),
-  
+
   // Subject Overall Progress
   getSubjectOverallProgress: (studentId, advisoryId) => 
     getEndpoint(`Assessment/get_subject_overall_progress.php?student_id=${studentId}&advisory_id=${advisoryId}`),
   insertSubjectOverallProgress: () => getEndpoint('Assessment/insert_subject_overall_progress.php'),
   updateSubjectOverallProgress: () => getEndpoint('Assessment/update_subject_overall_progress.php'),
-  
+
   // Milestone Interpretation
   getMilestoneInterpretation: (studentId) => 
     getEndpoint(`Assessment/get_milestone_interpretation.php?student_id=${studentId}`),
   updateMilestoneInterpretation: () => getEndpoint('Assessment/update_milestone_interpretation.php'),
-  
+
   // Risk Status
   getStudentRiskStatus: () => getEndpoint('Assessment/get_student_risk_status.php'),
-  
+
   // Activity Management
   checkDuplicateActivity: () => getEndpoint('Assessment/check_duplicate_activity.php'),
   getAssessmentTable: () => getEndpoint('Assessment/get_assessment_table.php'),
@@ -230,13 +249,13 @@ export const assessmentAPI = {
   saveRating: () => getEndpoint('Assessment/save_rating.php'),
   updateQuarterFeedback: () => getEndpoint('Assessment/update_quarter_feedback.php'),
   getStudentsAtRiskCount: () => getEndpoint('Assessment/get_students_at_risk_count.php'),
-  
+
   // Notifications
   getProgressCardNotifications: () => getEndpoint('Assessment/get_progress_card_notifications.php'),
   getOverallProgressNotifications: () => getEndpoint('Assessment/get_overall_progress_notifications.php'),
   getParentProgressNotifications: () => getEndpoint('Assessment/get_parent_progress_notifications.php'),
   getParentOverallProgressNotifications: () => getEndpoint('Assessment/get_parent_overall_progress_notifications.php'),
-  
+
   // Reports & Analytics
   getAllClassesQuarterlyPerformance: () => getEndpoint('Assessment/get_all_classes_quarterly_performance.php'),
   getAllClassesQuarterlyPerformanceAverages: () => getEndpoint('Assessment/get_all_classes_quarterly_performance_averages.php'),
@@ -244,7 +263,7 @@ export const assessmentAPI = {
   getSubjectPerformanceData: () => getEndpoint('Assessment/get_subject_performance_data.php'),
   getAdvisorySubjectAverages: (teacherId) => getEndpoint(`Assessment/get_advisory_subject_averages.php?teacher_id=${teacherId}`),
   getClassQuarterlyPerformance: (teacherId) => getEndpoint(`Assessment/get_class_quarterly_performance.php?teacher_id=${teacherId}`),
-  
+
   // Configuration
   getDetailedActivityData: () => getEndpoint('Assessment/get_detailed_activity_data.php'),
   getShapes: () => getEndpoint('Assessment/get_shapes.php'),
@@ -252,8 +271,8 @@ export const assessmentAPI = {
 };
 
 /**
- * Advisory/Class Management API Endpoints
- */
+* Advisory/Class Management API Endpoints
+*/
 export const advisoryAPI = {
   getAdvisoryDetails: () => getEndpoint('Advisory/get_advisory_details.php'),
   getAllAdvisoryDetails: () => getEndpoint('Advisory/get_all_advisory_details.php'),
@@ -267,22 +286,22 @@ export const advisoryAPI = {
   listTeachersWithoutAdvisory: () => getEndpoint('Advisory/list_teachers_without_advisory.php'),
   getStudentLevels: () => getEndpoint('Advisory/get_student_levels.php'),
   fixAdvisoryAssignments: () => getEndpoint('Advisory/fix_advisory_assignments.php'),
-  
+
   // Attendance
   getAttendance: () => getEndpoint('Advisory/get_attendance.php'),
   createAttendance: () => getEndpoint('Advisory/create_attendance.php'),
   updateAttendance: () => getEndpoint('Advisory/update_attendance.php'),
   getAttendanceReportData: () => getEndpoint('Advisory/get_attendance_report_data.php'),
   getInactiveStudentsCount: () => getEndpoint('Advisory/get_inactive_students_count.php'),
-  
+
   // Student Assignment
   autoAssignStudents: () => getEndpoint('Advisory/auto_assign_students.php'),
   updateAdvisoryCounts: () => getEndpoint('Advisory/update_advisory_counts.php'),
 };
 
 /**
- * Communication/Messaging API Endpoints
- */
+* Communication/Messaging API Endpoints
+*/
 export const communicationAPI = {
   // Direct Messages
   getUsers: () => getEndpoint('Communication/get_users.php'),
@@ -292,7 +311,7 @@ export const communicationAPI = {
   editMessage: () => getEndpoint('Communication/edit_message.php'),
   unsentMessage: () => getEndpoint('Communication/unsent_message.php'),
   markMessagesRead: () => getEndpoint('Communication/mark_messages_read.php'),
-  
+
   // Group Messages
   getGroups: () => getEndpoint('Communication/get_groups.php'),
   getGroupMessages: () => getEndpoint('Communication/get_group_messages.php'),
@@ -300,8 +319,7 @@ export const communicationAPI = {
   editGroupMessage: () => getEndpoint('Communication/edit_group_message.php'),
   unsentGroupMessage: () => getEndpoint('Communication/unsent_group_message.php'),
   getGroupMessageReads: () => getEndpoint('Communication/get_group_message_reads.php'),
-  markGroupMessagesRead: () => getEndpoint('Communication/mark_group_messages_read.php'),
-  
+
   // Archive
   archiveConversation: () => getEndpoint('Communication/archive_conversation.php'),
   unarchiveConversation: () => getEndpoint('Communication/unarchive_conversation.php'),
@@ -309,8 +327,8 @@ export const communicationAPI = {
 };
 
 /**
- * Notification API Endpoints
- */
+* Notification API Endpoints
+*/
 export const notificationAPI = {
   getNotifications: () => getEndpoint('Notifications/get_notifications.php'),
   getNotificationsWithReadStatus: () => getEndpoint('Notifications/get_notifications_with_read_status.php'),
@@ -324,8 +342,8 @@ export const notificationAPI = {
 };
 
 /**
- * Meeting API Endpoints
- */
+* Meeting API Endpoints
+*/
 export const meetingAPI = {
   getMeetings: () => getEndpoint('Meeting/get_meetings.php'),
   getMeetingsDetails: () => getEndpoint('Meeting/get_meetings_details.php'),
@@ -339,8 +357,8 @@ export const meetingAPI = {
 };
 
 /**
- * Schedule API Endpoints
- */
+* Schedule API Endpoints
+*/
 export const scheduleAPI = {
   getSchedule: () => getEndpoint('Schedule/get_schedule.php'),
   getTeacherSchedule: () => getEndpoint('Schedule/get_teacher_schedule.php'),
@@ -359,8 +377,8 @@ export const scheduleAPI = {
 };
 
 /**
- * System Logs API Endpoints
- */
+* System Logs API Endpoints
+*/
 export const logsAPI = {
   createSystemLog: () => getEndpoint('Logs/create_system_log.php'),
   getSystemLogs: () => getEndpoint('Logs/get_system_logs.php'),
@@ -371,36 +389,44 @@ export const logsAPI = {
 };
 
 /**
- * External APIs
- */
+* External APIs
+*/
 export const externalAPI = {
   getClientIP: () => 'https://api.ipify.org?format=json',
 };
 
 /**
- * File Upload URLs
- */
+* File Upload URLs
+*/
 export const uploadsAPI = {
   getUploadURL: (filename) => {
+    // Dynamic production check - check if we're on Vercel or production domain
+    const isDynamic = typeof window !== 'undefined' && 
+                      (window.location.hostname.includes('vercel.app') || 
+                       window.location.hostname.includes('learnersville.online') ||
+                       !window.location.hostname.includes('localhost'));
+    
     // Use the same helper function for consistency
     const isProd = isProductionEnvironment();
-    
+
     const finalUrl = isProd
       ? `${API_URL}/Uploads/${filename}`
       : `/php/Uploads/${filename}`;
-    
+
     // Debug logging
     if (typeof window !== 'undefined') {
-      // console.log('[API] getUploadURL:', {
-      //   filename,
-      //   hostname: window.location.hostname,
-      //   isProd,
-      //   API_URL,
-      //   finalUrl,
-      //   decision: isProd ? '✅ PRODUCTION' : '🏠 LOCAL'
-      // });
+      console.log('[API] getUploadURL:', {
+        filename,
+        hostname: window.location.hostname,
+        isProduction,
+        isDynamic,
+        isProd,
+        API_URL,
+        finalUrl,
+        decision: isProd ? '✅ PRODUCTION' : '🏠 LOCAL'
+      });
     }
-    
+
     return finalUrl;
   },
   // Alternative paths for different server configurations
@@ -412,8 +438,8 @@ export const uploadsAPI = {
 };
 
 /**
- * Utility function to handle API requests with error handling
- */
+* Utility function to handle API requests with error handling
+*/
 export const apiRequest = async (
   endpoint,
   options
@@ -434,8 +460,8 @@ export const apiRequest = async (
 };
 
 /**
- * Export all API endpoints as a single object for easy access
- */
+* Export all API endpoints as a single object for easy access
+*/
 export const API = {
   auth: authAPI,
   user: userAPI,
@@ -448,9 +474,6 @@ export const API = {
   logs: logsAPI,
   external: externalAPI,
   uploads: uploadsAPI,
-  isProductionEnvironment: isProductionEnvironment,
-  API_URL: API_URL,
 };
 
 export default API;
-
