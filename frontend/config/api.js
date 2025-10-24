@@ -26,11 +26,6 @@ const BACKEND_PATH = process.env.NEXT_PUBLIC_BACKEND_PATH || '/backend-ville';
 // Full API URL
 export const API_URL = `${API_BASE_URL}${BACKEND_PATH}`;
 
-// Determine if we're using production or local development
-// Check both the API URL and if we're NOT on localhost
-const isProduction = API_BASE_URL.includes('learnersville.online') || 
-                     (typeof window !== 'undefined' && !window.location.hostname.includes('localhost'));
-
 // Helper function to detect if we're in production at runtime
 const isProductionEnvironment = () => {
   // Server-side: check environment variable
@@ -46,12 +41,6 @@ const isProductionEnvironment = () => {
 };
 
 const getEndpoint = (path) => {
-  // Dynamic production check at runtime (not module load time)
-  const isDynamicProduction = typeof window !== 'undefined' && 
-                               (window.location.hostname.includes('vercel.app') || 
-                                window.location.hostname.includes('learnersville.online') ||
-                                !window.location.hostname.includes('localhost'));
-  
   // Use the helper function for runtime detection
   const isProd = isProductionEnvironment();
 
@@ -61,8 +50,6 @@ const getEndpoint = (path) => {
       path,
       hostname: window.location.hostname,
       isProd,
-      isProduction,
-      isDynamicProduction,
       API_BASE_URL,
       API_URL,
       decision: isProd ? 'PRODUCTION BACKEND' : 'LOCAL DEVELOPMENT'
@@ -70,14 +57,12 @@ const getEndpoint = (path) => {
   }
 
   // For production (Vercel or Namecheap), use direct backend URL
-  if (isProduction || isDynamicProduction) {
-    if (isProd) {
-      // Remove leading slash if present to avoid double slashes
-      const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-      const endpoint = `${API_URL}/${cleanPath}`;
-      console.log('[API] ✅ Production endpoint:', endpoint);
-      return endpoint;
-    }
+  if (isProd) {
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    const endpoint = `${API_URL}/${cleanPath}`;
+    console.log('[API] ✅ Production endpoint:', endpoint);
+    return endpoint;
   }
 
   // For local development, use Next.js rewrites (/php/ -> /capstone-project/backend/)
@@ -400,12 +385,6 @@ export const externalAPI = {
 */
 export const uploadsAPI = {
   getUploadURL: (filename) => {
-    // Dynamic production check - check if we're on Vercel or production domain
-    const isDynamic = typeof window !== 'undefined' && 
-                      (window.location.hostname.includes('vercel.app') || 
-                       window.location.hostname.includes('learnersville.online') ||
-                       !window.location.hostname.includes('localhost'));
-    
     // Use the same helper function for consistency
     const isProd = isProductionEnvironment();
 
@@ -418,8 +397,6 @@ export const uploadsAPI = {
       console.log('[API] getUploadURL:', {
         filename,
         hostname: window.location.hostname,
-        isProduction,
-        isDynamic,
         isProd,
         API_URL,
         finalUrl,
@@ -474,6 +451,9 @@ export const API = {
   logs: logsAPI,
   external: externalAPI,
   uploads: uploadsAPI,
+  getEndpoint: getEndpoint, // Export the getEndpoint function
+  isProductionEnvironment: isProductionEnvironment, // Export the environment detection function
+  API_URL: API_URL, // Export the API URL constant
 };
 
 export default API;
