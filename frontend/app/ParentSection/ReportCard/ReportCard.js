@@ -15,10 +15,13 @@ import html2canvas from 'html2canvas';
 import { API, uploadsAPI } from '@/config/api';
 
 export default function StudentProgress({ formData: initialFormData }) {
-  const { getUserPhoto, getStudentPhoto, updateAnyUserPhoto, updateAnyStudentPhoto, initializeAllUsersPhotos } = useUser();
+  const { getUserPhoto, getStudentPhoto, updateAnyUserPhoto, updateAnyStudentPhoto, initializeAllUsersPhotos, normalizePhotoUrl } = useUser();
   const [activeTab, setActiveTab] = useState("Assessment");
   const router = useRouter();
   const auth = useAuth();
+  
+  // Ref to store current photo data for error handling
+  const currentPhotoDataRef = useRef({});
 
   // State for parent's children
   const [students, setStudents] = useState([]);
@@ -88,32 +91,29 @@ export default function StudentProgress({ formData: initialFormData }) {
     { id: 5, name: 'Final' },
   ];
 
-  // Helper function to construct full photo URL from filename
-  function getPhotoUrl(filename) {
-    if (!filename) {
-      console.log('🔍 getPhotoUrl: No filename provided');
-      return null;
-    }
-    
-    // If it's already a full URL (like a blob URL for preview), return as is
-    if (filename.startsWith('http://') || filename.startsWith('https://') || filename.startsWith('blob:')) {
-      console.log('🔍 getPhotoUrl: Already a full URL:', filename);
-      return filename;
-    }
-    
-    // Use centralized upload URL configuration
-    const fullUrl = uploadsAPI.getUploadURL(filename);
-    console.log('🔍 getPhotoUrl: Converting filename to full URL:', {
-      filename: filename,
-      fullUrl: fullUrl
-    });
-    return fullUrl;
-  }
 
   // Global error handler for images to prevent 404 errors in Network tab
   useEffect(() => {
     const handleImageError = (event) => {
+      // Only handle image errors
+      if (event.target.tagName !== 'IMG') {
+        return;
+      }
+      
       const img = event.target;
+      
+      // Log the error for debugging with better error information
+      console.error('Image failed to load:', {
+        src: img?.src || 'unknown',
+        alt: img?.alt || 'unknown',
+        error: event?.type || 'unknown',
+        target: img?.tagName || 'unknown',
+        naturalWidth: img?.naturalWidth || 0,
+        naturalHeight: img?.naturalHeight || 0,
+        eventTarget: event?.target ? 'present' : 'missing',
+        eventType: event?.type || 'no-type',
+        timestamp: new Date().toISOString()
+      });
       
       // Hide the broken image and show fallback
       img.style.display = 'none';
@@ -2556,36 +2556,46 @@ export default function StudentProgress({ formData: initialFormData }) {
                     if (directPhoto) {
                       return (
                         <img
-                          src={getPhotoUrl(directPhoto)}
+                          src={normalizePhotoUrl(directPhoto)}
                           alt="Profile"
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            console.log('Direct photo failed to load for student:', s.name, 'Photo URL:', getPhotoUrl(directPhoto));
+                            console.error('Direct photo failed to load for student:', s.name, {
+                              photoUrl: normalizePhotoUrl(directPhoto),
+                              src: e.target?.src || 'unknown',
+                              alt: e.target?.alt || 'unknown',
+                              error: e.type || 'unknown'
+                            });
                             e.target.style.display = 'none';
                             if (e.target.nextSibling) {
                               e.target.nextSibling.style.display = 'flex';
                             }
                           }}
                           onLoad={() => {
-                            console.log('Direct photo loaded successfully for student:', s.name, 'Photo URL:', getPhotoUrl(directPhoto));
+                            console.log('Direct photo loaded successfully for student:', s.name, 'Photo URL:', normalizePhotoUrl(directPhoto));
                           }}
                         />
                       );
                     } else if (realTimePhoto) {
                       return (
                         <img
-                          src={getPhotoUrl(realTimePhoto)}
+                          src={normalizePhotoUrl(realTimePhoto)}
                           alt="Profile"
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            console.log('Real-time photo failed to load for student:', s.name, 'Photo URL:', getPhotoUrl(realTimePhoto));
+                            console.error('Real-time photo failed to load for student:', s.name, {
+                              photoUrl: normalizePhotoUrl(realTimePhoto),
+                              src: e.target?.src || 'unknown',
+                              alt: e.target?.alt || 'unknown',
+                              error: e.type || 'unknown'
+                            });
                             e.target.style.display = 'none';
                             if (e.target.nextSibling) {
                               e.target.nextSibling.style.display = 'flex';
                             }
                           }}
                           onLoad={() => {
-                            console.log('Real-time photo loaded successfully for student:', s.name, 'Photo URL:', getPhotoUrl(realTimePhoto));
+                            console.log('Real-time photo loaded successfully for student:', s.name, 'Photo URL:', normalizePhotoUrl(realTimePhoto));
                           }}
                         />
                       );
@@ -2634,14 +2644,29 @@ export default function StudentProgress({ formData: initialFormData }) {
               });
               
               if (realTimePhoto) {
-                const finalPhotoUrl = getPhotoUrl(realTimePhoto);
+                const finalPhotoUrl = normalizePhotoUrl(realTimePhoto);
+                
+                // Store current photo data in ref for error handling
+                currentPhotoDataRef.current = {
+                  studentName: selectedStudent?.name || 'unknown',
+                  originalPhoto: realTimePhoto || 'unknown',
+                  finalUrl: finalPhotoUrl || 'unknown',
+                  studentId: selectedStudent?.id || 'unknown'
+                };
+                
+                // Debug: Verify ref data is stored correctly
+                console.log('📝 REF DATA STORED:', currentPhotoDataRef.current);
+                
                 console.log('🔍 BLUE HEADER PHOTO DEBUG:', {
                   studentId: selectedStudent.id,
                   studentName: selectedStudent.name,
                   realTimePhoto: realTimePhoto,
                   finalPhotoUrl: finalPhotoUrl,
                   realTimePhotoType: typeof realTimePhoto,
-                  realTimePhotoLength: realTimePhoto ? realTimePhoto.length : 0
+                  realTimePhotoLength: realTimePhoto ? realTimePhoto.length : 0,
+                  selectedStudentExists: selectedStudent ? 'yes' : 'no',
+                  realTimePhotoExists: realTimePhoto ? 'yes' : 'no',
+                  finalPhotoUrlExists: finalPhotoUrl ? 'yes' : 'no'
                 });
                 
                 return (
@@ -2651,12 +2676,26 @@ export default function StudentProgress({ formData: initialFormData }) {
                       alt="Profile"
                       className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover shadow-sm border-2 sm:border-4 border-white"
                       onError={(e) => {
-                        console.log('❌ BLUE HEADER PHOTO FAILED:', {
-                          student: selectedStudent.name,
-                          originalPhoto: realTimePhoto,
-                          finalUrl: finalPhotoUrl,
-                          error: e
-                        });
+                        // Get current photo data from ref
+                        const photoData = currentPhotoDataRef.current || {};
+                        const imgSrc = e.target?.src || 'unknown';
+                        const imgAlt = e.target?.alt || 'unknown';
+                        const errorType = e.type || 'unknown';
+                        
+                        // Fallback data if ref is empty
+                        const fallbackData = {
+                          student: photoData.studentName || 'unknown',
+                          originalPhoto: photoData.originalPhoto || 'unknown',
+                          finalUrl: photoData.finalUrl || 'unknown',
+                          src: imgSrc,
+                          alt: imgAlt,
+                          error: errorType,
+                          studentId: photoData.studentId || 'unknown',
+                          refDataExists: Object.keys(photoData).length > 0 ? 'yes' : 'no',
+                          timestamp: new Date().toISOString()
+                        };
+                        
+                        console.error('❌ BLUE HEADER PHOTO FAILED:', fallbackData);
                         e.target.style.display = 'none';
                         if (e.target.nextSibling) {
                           e.target.nextSibling.style.display = 'flex';
@@ -2704,7 +2743,7 @@ export default function StudentProgress({ formData: initialFormData }) {
            <div className="flex flex-col gap-2 w-full sm:w-[60%]">
              {/* First row - Schedule, Gender, Handedness, Date of Birth */}
              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-               <span className="text-white text-sm sm:text-base font-bold">
+               <span className="text-white text-xs sm:text-sm font-bold">
                  <span className="text-white">Schedule:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -2713,7 +2752,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                    )}
                  </span>
                </span>
-               <span className="text-white text-sm sm:text-base font-bold">
+               <span className="text-white text-xs sm:text-sm font-bold">
                  <span className="text-white">Gender:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -2722,7 +2761,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                    )}
                  </span>
                </span>
-               <span className="text-white text-sm sm:text-base font-bold">
+               <span className="text-white text-xs sm:text-sm font-bold">
                  <span className="text-white">Handedness:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -2731,7 +2770,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                    )}
                  </span>
                </span>
-               <span className="text-white text-sm sm:text-base font-bold">
+               <span className="text-white text-xs sm:text-sm font-bold">
                  <span className="text-white">Date of Birth:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -2744,7 +2783,7 @@ export default function StudentProgress({ formData: initialFormData }) {
              
              {/* Second row - Lead Teacher and Assistant Teacher */}
              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-               <span className="text-white text-sm sm:text-base font-bold">
+               <span className="text-white text-xs sm:text-sm font-bold">
                  <span className="text-white">Lead Teacher:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -2753,7 +2792,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                    )}
                  </span>
                </span>
-               <span className="text-white text-sm sm:text-base font-bold">
+               <span className="text-white text-xs sm:text-sm font-bold">
                  <span className="text-white">Assistant Teacher:</span> <span className="font-normal ml-2">
                    {studentDetailsLoading ? (
                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

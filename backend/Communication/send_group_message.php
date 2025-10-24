@@ -40,6 +40,10 @@ try {
     $stmt->execute([$groupId, $senderId, $text]);
     $id = (int)$conn->lastInsertId();
 
+    // Automatically mark the sender as having read their own message
+    $readStmt = $conn->prepare("INSERT INTO tbl_comm_group_read (group_message_id, user_id, read_at) VALUES (?, ?, NOW())");
+    $readStmt->execute([$id, $senderId]);
+
     $row = $conn->prepare("SELECT group_message_id, group_id, sender_id, message_text, sent_at, is_unsent FROM tbl_comm_group_message WHERE group_message_id = ?");
     $row->execute([$id]);
     $msg = $row->fetch(PDO::FETCH_ASSOC);

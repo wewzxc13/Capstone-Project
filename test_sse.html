@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSE Test</title>
+</head>
+<body>
+    <h1>SSE Connection Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="messages"></div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const messagesDiv = document.getElementById('messages');
+        
+        // Test the SSE endpoint
+        const userId = 1; // Replace with actual user ID
+        const sseUrl = `http://localhost/capstone-project/backend/Communication/sse_messages.php?user_id=${userId}&last_check=2024-01-01`;
+        
+        console.log('Testing SSE URL:', sseUrl);
+        
+        const eventSource = new EventSource(sseUrl);
+        
+        eventSource.onopen = () => {
+            statusDiv.innerHTML = '✅ SSE Connection Opened';
+            statusDiv.style.color = 'green';
+        };
+        
+        eventSource.onmessage = (event) => {
+            console.log('SSE Message:', event.data);
+            messagesDiv.innerHTML += '<div>' + event.data + '</div>';
+        };
+        
+        eventSource.onerror = (error) => {
+            console.error('SSE Error:', error);
+            statusDiv.innerHTML = '❌ SSE Connection Error: ' + JSON.stringify(error);
+            statusDiv.style.color = 'red';
+        };
+        
+        // Close after 10 seconds for testing
+        setTimeout(() => {
+            eventSource.close();
+            statusDiv.innerHTML += '<br>🔚 Connection closed after 10 seconds';
+        }, 10000);
+    </script>
+</body>
+</html>

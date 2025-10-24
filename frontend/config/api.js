@@ -5,39 +5,31 @@
  * Update the environment variables in .env.local to change the base URL.
  * 
  * Environment Variables (Optional):
- * - NEXT_PUBLIC_API_BASE_URL: Base URL for the API (default: https://learnersville.online)
- * - NEXT_PUBLIC_BACKEND_PATH: Path to backend (default: /backend-ville)
+ * - NEXT_PUBLIC_API_BASE_URL: Base URL for the API (default: http://localhost)
+ * - NEXT_PUBLIC_BACKEND_PATH: Path to backend (default: /capstone-project/backend)
  * 
- * Production (default):
+ * For production deployment, create a .env.local file with:
  * NEXT_PUBLIC_API_BASE_URL=https://learnersville.online
  * NEXT_PUBLIC_BACKEND_PATH=/backend-ville
  * 
- * For local development, create a .env.local file with:
+ * For local development (default):
  * NEXT_PUBLIC_API_BASE_URL=http://localhost
  * NEXT_PUBLIC_BACKEND_PATH=/capstone-project/backend
  */
 
 import axios from 'axios';
 
-// API Base Configuration - Now defaults to production (Namecheap hosting)
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://learnersville.online';
-const BACKEND_PATH = process.env.NEXT_PUBLIC_BACKEND_PATH || '/backend-ville';
+// API Base Configuration - Defaults to localhost for development
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost';
+const BACKEND_PATH = process.env.NEXT_PUBLIC_BACKEND_PATH || '/capstone-project/backend';
 
 // Full API URL
 export const API_URL = `${API_BASE_URL}${BACKEND_PATH}`;
 
 // Helper function to detect if we're in production at runtime
 const isProductionEnvironment = () => {
-  // Server-side: check environment variable
-  if (typeof window === 'undefined') {
-    return API_BASE_URL.includes('learnersville.online');
-  }
-  
-  // Client-side: check actual hostname
-  const hostname = window.location.hostname;
-  return hostname.includes('vercel.app') || 
-         hostname.includes('learnersville.online') ||
-         (!hostname.includes('localhost') && !hostname.includes('127.0.0.1'));
+  // Check if API_BASE_URL is set to production
+  return API_BASE_URL.includes('learnersville.online');
 };
 
 // Initial check (for server-side rendering)
@@ -49,15 +41,15 @@ const getEndpoint = (path) => {
   
   // Debug logging
   if (typeof window !== 'undefined') {
-    console.log('[API Debug] getEndpoint called:', {
-      path,
-      hostname: window.location.hostname,
-      isProd,
-      isProduction,
-      API_BASE_URL,
-      API_URL,
-      decision: isProd ? 'PRODUCTION BACKEND' : 'LOCAL DEVELOPMENT'
-    });
+    // console.log('[API Debug] getEndpoint called:', {
+    //   path,
+    //   hostname: window.location.hostname,
+    //   isProd,
+    //   isProduction,
+    //   API_BASE_URL,
+    //   API_URL,
+    //   decision: isProd ? 'PRODUCTION BACKEND' : 'LOCAL DEVELOPMENT'
+    // });
   }
   
   // For production (Vercel or Namecheap), use direct backend URL
@@ -65,12 +57,12 @@ const getEndpoint = (path) => {
     // Remove leading slash if present to avoid double slashes
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
     const endpoint = `${API_URL}/${cleanPath}`;
-    console.log('[API] ✅ Production endpoint:', endpoint);
+    // console.log('[API] ✅ Production endpoint:', endpoint);
     return endpoint;
   }
   
   // For local development, use Next.js rewrites (/php/ -> /capstone-project/backend/)
-  console.log('[API] 🏠 Local development endpoint:', path);
+  // console.log('[API] 🏠 Local development endpoint:', path);
   if (path.startsWith('/php/')) {
     return path;
   }
@@ -308,6 +300,7 @@ export const communicationAPI = {
   editGroupMessage: () => getEndpoint('Communication/edit_group_message.php'),
   unsentGroupMessage: () => getEndpoint('Communication/unsent_group_message.php'),
   getGroupMessageReads: () => getEndpoint('Communication/get_group_message_reads.php'),
+  markGroupMessagesRead: () => getEndpoint('Communication/mark_group_messages_read.php'),
   
   // Archive
   archiveConversation: () => getEndpoint('Communication/archive_conversation.php'),
@@ -398,14 +391,14 @@ export const uploadsAPI = {
     
     // Debug logging
     if (typeof window !== 'undefined') {
-      console.log('[API] getUploadURL:', {
-        filename,
-        hostname: window.location.hostname,
-        isProd,
-        API_URL,
-        finalUrl,
-        decision: isProd ? '✅ PRODUCTION' : '🏠 LOCAL'
-      });
+      // console.log('[API] getUploadURL:', {
+      //   filename,
+      //   hostname: window.location.hostname,
+      //   isProd,
+      //   API_URL,
+      //   finalUrl,
+      //   decision: isProd ? '✅ PRODUCTION' : '🏠 LOCAL'
+      // });
     }
     
     return finalUrl;
@@ -455,6 +448,8 @@ export const API = {
   logs: logsAPI,
   external: externalAPI,
   uploads: uploadsAPI,
+  isProductionEnvironment: isProductionEnvironment,
+  API_URL: API_URL,
 };
 
 export default API;

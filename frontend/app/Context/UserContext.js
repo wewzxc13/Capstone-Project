@@ -33,7 +33,7 @@ export function UserProvider({ children }) {
   const normalizePhotoUrl = (raw) => {
     if (!raw || typeof raw !== 'string') return "";
 
-    const value = raw.trim();
+    let value = raw.trim();
     if (value.length === 0) return "";
 
     // Note: We now allow default placeholder images to be displayed
@@ -42,6 +42,14 @@ export function UserProvider({ children }) {
     // If already absolute or blob URL, keep as-is
     if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('blob:')) {
       return value;
+    }
+
+    // Clean up any double slashes or double paths first
+    value = value.replace(/\/+/g, '/'); // Replace multiple slashes with single slash
+    
+    // Handle any variations of double php/Uploads paths
+    if (value.includes('/php/Uploads/php/Uploads/')) {
+      value = value.replace(/\/php\/Uploads\/php\/Uploads\//, '/php/Uploads/');
     }
 
     // If it's a full path with backend-ville, reconstruct using API config
@@ -57,12 +65,6 @@ export function UserProvider({ children }) {
     }
     if (value.startsWith('php/Uploads/')) {
       const filename = value.replace('php/Uploads/', '');
-      return API.uploads.getUploadURL(filename);
-    }
-
-    // Some records might accidentally store with double prefix; de-dupe and use API
-    if (value.startsWith('/php/Uploads/php/Uploads/')) {
-      const filename = value.replace('/php/Uploads/php/Uploads/', '');
       return API.uploads.getUploadURL(filename);
     }
 
@@ -408,6 +410,7 @@ export function UserProvider({ children }) {
       initializeAllUsersPhotos,
       initializeAdvisoryPhotos,
       allUsersPhotos,
+      normalizePhotoUrl,
       // Unread message counts
       unreadCounts,
       updateUnreadCounts,

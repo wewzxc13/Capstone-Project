@@ -25,23 +25,13 @@ import {
 import Link from "next/link";
 import { Line } from "react-chartjs-2";
 import '../../../lib/chart-config.js';
-import { userAPI, meetingAPI } from '../../../config/api.js';
+import { API, userAPI, meetingAPI } from '../../../config/api.js';
 
 const Dashboard = () => {
   // Use centralized API configuration
   const getApiUrl = (endpoint) => {
-    // Check if we're in production (Vercel)
-    const isProduction = typeof window !== 'undefined' && 
-      (window.location.hostname.includes('vercel.app') || 
-       window.location.hostname.includes('learnersville.online'));
-    
-    if (isProduction) {
-      // For production, use the full backend URL
-      return `https://learnersville.online/backend-ville/${endpoint}`;
-    } else {
-      // For local development, use the Next.js rewrite
-      return `/php/${endpoint}`;
-    }
+    // Use the centralized API configuration
+    return API.getEndpoint(endpoint);
   };
     
   const [parentData, setParentData] = useState(null);
