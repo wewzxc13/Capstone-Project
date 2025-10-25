@@ -94,11 +94,20 @@ export default function TeacherMessagesPage() {
   // Track if effects are currently running to prevent overlapping calls
   const isRunningRef = useRef({ users: false, groups: false, recent: false, conversation: null });
   
+  // HTTP Polling for real-time message updates
+  const pollingIntervalRef = useRef(null);
+  const [isPollingEnabled, setIsPollingEnabled] = useState(true);
+  
   // Reset data loaded flags when component unmounts
   useEffect(() => {
     return () => {
       dataLoadedRef.current = { users: false, groups: false, recent: false };
       isRunningRef.current = { users: false, groups: false, recent: false, conversation: null };
+      
+      // Clear polling interval on unmount
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
     };
   }, []);
 
@@ -627,6 +636,379 @@ export default function TeacherMessagesPage() {
       setIsLoadingSpecificConversation(false);
     }
   };
+
+  // HTTP Polling function to check for new messages
+  const pollForNewMessages = async () => {
+    // Only poll if enabled and we have chats loaded
+    if (!isPollingEnabled || chats.length === 0) {
+      return;
+    }
+
+    try {
+      const uid = Number(localStorage.getItem('userId'));
+      if (!uid) return;
+
+      // Poll for the currently selected conversation
+      if (selectedChatId && selectedType === 'user') {
+        const res = await fetch(
+          `${API.communication.getConversation()}?user_id=${uid}&partner_id=${selectedChatId}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        const data = await safeJsonParse(res);
+
+        if (data?.success && data.data && data.data.length > 0) {
+          const msgs = data.data.map((m) => ({
+            id: String(m.message_id),
+            from: Number(m.sender_id) === uid ? 'self' : 'other',
+            text: m.is_unsent == 1 ? '' : m.message_text,
+            isUnsent: m.is_unsent == 1,
+            edited: m.is_edited == 1,
+            isRead: m.is_read == 1,
+            time: m.sent_at ? new Date(m.sent_at) : new Date(),
+          }));
+
+          // Check if messages have changed, read status updated, or content edited
+          setChats((prev) => {
+            const currentChat = prev.find((c) => c.id === selectedChatId);
+            if (!currentChat) return prev;
+
+            // Compare message IDs to detect new messages
+            const currentIds = new Set(currentChat.messages.map((m) => m.id));
+            const newIds = new Set(msgs.map((m) => m.id));
+            
+            // Check if any message has changed (read status, content, or edited status)
+            let messageChanged = false;
+            if (currentChat.messages.length === msgs.length) {
+              // Same number of messages, check if any message changed
+              messageChanged = currentChat.messages.some((currentMsg) => {
+                const newMsg = msgs.find((m) => m.id === currentMsg.id);
+                if (!newMsg) return false;
+                
+                // Check if read status changed
+                if (newMsg.isRead !== currentMsg.isRead) return true;
+                
+                // Check if message text changed (for edits)
+                if (newMsg.text !== currentMsg.text) return true;
+                
+                // Check if edited status changed
+                if (newMsg.edited !== currentMsg.edited) return true;
+                
+                return false;
+              });
+            }
+            
+            // Update if there are new messages OR any message changed
+            if (newIds.size > currentIds.size || messageChanged) {
+              return prev.map((c) =>
+                c.id === selectedChatId ? { ...c, messages: msgs } : c
+              );
+            }
+            return prev;
+          });
+
+          // Update recent conversations list
+          setRecent((prev) => {
+            const updated = prev.map((r) =>
+              r.id === selectedChatId ? { ...r, messages: msgs, unread: 0 } : r
+            );
+            return updated;
+          });
+
+          // Only auto-scroll if user is at or near the bottom
+          setTimeout(() => {
+            const chatContainer = messagesEndRef.current?.parentElement;
+            if (chatContainer && messagesEndRef.current) {
+              const { scrollTop, scrollHeight, clientHeight } = chatContainer;
+              const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+              
+              // If user is within 200px of bottom, auto-scroll
+              if (distanceFromBottom < 200) {
+                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+              }
+            }
+          }, 100);
+        }
+      }
+
+      // Poll for group messages if in Groups tab
+      if (selectedChatId && selectedType === 'group') {
+        const groupRes = await fetch(
+          `${API.communication.getGroupMessages()}?group_id=${selectedChatId}&user_id=${uid}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        const groupData = await safeJsonParse(groupRes);
+
+        if (groupData?.success && groupData.data && groupData.data.length > 0) {
+          const groupMsgs = groupData.data.map((m) => ({
+            id: String(m.group_message_id),
+            from: Number(m.sender_id) === uid ? 'self' : 'other',
+            senderId: String(m.sender_id),
+            senderRole: Number(m.sender_role),
+            senderName: (() => {
+              const roleId = Number(m.sender_role);
+              const role = roleId === 1 ? 'Owner' : roleId === 2 ? 'Admin' : roleId === 3 ? 'Teacher' : roleId === 4 ? 'Parent' : 'User';
+              const name = m.sender_name || 'Member';
+              return `[${role}] ${name}`;
+            })(),
+            text: m.is_unsent == 1 ? '' : m.message_text,
+            isUnsent: m.is_unsent == 1,
+            edited: m.is_edited == 1,
+            time: m.sent_at ? new Date(m.sent_at) : new Date(),
+          }));
+
+          // Check if messages have changed, content edited, or new messages added
+          setGroupChats((prev) => {
+            const currentGroup = prev.find((g) => g.id === selectedChatId);
+            if (!currentGroup) return prev;
+
+            // Compare message IDs to detect new messages
+            const currentIds = new Set(currentGroup.messages.map((m) => m.id));
+            const newIds = new Set(groupMsgs.map((m) => m.id));
+            
+            // Check if any message has changed (content or edited status)
+            let messageChanged = false;
+            if (currentGroup.messages.length === groupMsgs.length) {
+              messageChanged = currentGroup.messages.some((currentMsg) => {
+                const newMsg = groupMsgs.find((m) => m.id === currentMsg.id);
+                if (!newMsg) return false;
+                
+                // Check if message text changed (for edits)
+                if (newMsg.text !== currentMsg.text) return true;
+                
+                // Check if edited status changed
+                if (newMsg.edited !== currentMsg.edited) return true;
+                
+                return false;
+              });
+            }
+            
+            // Update if there are new messages OR any message changed
+            if (newIds.size > currentIds.size || messageChanged) {
+              return prev.map((g) =>
+                g.id === selectedChatId ? { ...g, messages: groupMsgs } : g
+              );
+            }
+            return prev;
+          });
+        }
+      }
+
+      // Also poll for recent conversations to update unread counts AND last messages
+      if (activeTab === 'Users') {
+        const recentRes = await fetch(
+          `${API.communication.getRecentConversations()}?user_id=${uid}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        const recentData = await safeJsonParse(recentRes);
+
+        if (recentData?.success && recentData.data) {
+          // Update unread counts and last messages in the left panel
+          setChats((prev) => {
+            return prev.map((c) => {
+              const recent = recentData.data.find((r) => r.user_id === Number(c.id));
+              if (recent) {
+                const newLastMessageAt = recent.last_sent_at ? new Date(recent.last_sent_at) : c.lastMessageAt;
+                
+                // Only update lastMessage and lastMessageAt if the timestamp is actually newer
+                // This prevents edited older messages from showing in the left panel
+                const shouldUpdateLastMessage = !c.lastMessageAt || 
+                  !newLastMessageAt || 
+                  newLastMessageAt.getTime() >= c.lastMessageAt.getTime();
+                
+                // Normalize the last message to prevent "You: You:" duplication
+                let rawLast = recent.last_message || "";
+                const fromSelf = Number(recent.last_sender_id || 0) === uid;
+                const isUnsentText = typeof rawLast === 'string' && (rawLast.toLowerCase().includes('unsent a message') || rawLast.toLowerCase().includes('unsent') || rawLast === '');
+                
+                // For unsent messages, always normalize to remove any "You:" prefix
+                if (isUnsentText) {
+                  // Remove any "You: " prefix regardless of how it got there
+                  rawLast = rawLast.replace(/^You:\s*/i, '').trim();
+                  // Ensure it starts with just "You unsent" (not "You: You unsent")
+                  if (fromSelf && !rawLast.toLowerCase().startsWith('you unsent')) {
+                    rawLast = 'You unsent a message';
+                  }
+                } else if (fromSelf && rawLast.startsWith('You: ')) {
+                  rawLast = rawLast.substring(5);
+                }
+                
+                let normalizedLast = c.lastMessage; // Default to keep current
+                if (shouldUpdateLastMessage) {
+                  if (isUnsentText) {
+                    // For unsent messages, don't add "You: " prefix - just use the cleaned text
+                    normalizedLast = fromSelf ? 'You unsent a message' : `${[recent.user_firstname, recent.user_middlename, recent.user_lastname].filter(Boolean).join(" ")} unsent a message`;
+                  } else if (fromSelf && rawLast) {
+                    normalizedLast = `You: ${rawLast}`;
+                  } else {
+                    normalizedLast = rawLast;
+                  }
+                }
+                
+                return { 
+                  ...c, 
+                  unread: Number(recent.unread_count || 0),
+                  lastMessage: normalizedLast,
+                  lastMessageAt: shouldUpdateLastMessage ? newLastMessageAt : c.lastMessageAt
+                };
+              }
+              return c;
+            });
+          });
+          
+          // Update recent conversations list
+          setRecent((prev) => {
+            const updatedRecent = recentData.data.map((u) => {
+              const name = [u.user_firstname, u.user_middlename, u.user_lastname].filter(Boolean).join(" ");
+              let rawLast = u.last_message || "";
+              const fromSelf = Number(u.last_sender_id || 0) === uid;
+              const isUnsentText = typeof rawLast === 'string' && (rawLast.toLowerCase().includes('unsent a message') || rawLast.toLowerCase().includes('unsent') || rawLast === '');
+              
+              // For unsent messages, always normalize to remove any "You:" prefix
+              if (isUnsentText) {
+                // Remove any "You: " prefix regardless of how it got there
+                rawLast = rawLast.replace(/^You:\s*/i, '').trim();
+                // Ensure it starts with just "You unsent" (not "You: You unsent")
+                if (fromSelf && !rawLast.toLowerCase().startsWith('you unsent')) {
+                  rawLast = 'You unsent a message';
+                }
+              } else if (fromSelf && rawLast.startsWith('You: ')) {
+                rawLast = rawLast.substring(5);
+              }
+              
+              let normalizedLast;
+              if (isUnsentText) {
+                // For unsent messages, don't add "You: " prefix - just use the cleaned text
+                normalizedLast = fromSelf ? 'You unsent a message' : `${name} unsent a message`;
+              } else if (fromSelf && rawLast) {
+                normalizedLast = `You: ${rawLast}`;
+              } else {
+                normalizedLast = rawLast;
+              }
+              
+              return {
+                id: String(u.user_id),
+                name: name,
+                color: roleColorClass(u.user_role),
+                role: Number(u.user_role),
+                unread: Number(u.unread_count || 0),
+                lastMessageAt: u.last_sent_at ? new Date(u.last_sent_at) : null,
+                lastMessage: normalizedLast,
+                messages: prev.find(r => r.id === String(u.user_id))?.messages || [],
+                photo: u.user_photo || null,
+              };
+            });
+            return updatedRecent;
+          });
+        }
+      }
+
+      // Also poll for recent group conversations to update unread counts AND last messages
+      if (activeTab === 'Groups') {
+        const recentGroupRes = await fetch(
+          `${API.communication.getGroups()}?user_id=${uid}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        const recentGroupData = await safeJsonParse(recentGroupRes);
+
+        if (recentGroupData?.success && recentGroupData.data) {
+          setGroupChats((prev) => {
+            return prev.map((g) => {
+              const recent = recentGroupData.data.find((r) => r.group_id === Number(g.id));
+              if (recent) {
+                const newLastMessageAt = recent.last_sent_at ? new Date(recent.last_sent_at) : g.lastMessageAt;
+                
+                // Only update lastMessage and lastMessageAt if the timestamp is actually newer
+                const shouldUpdateLastMessage = !g.lastMessageAt || 
+                  !newLastMessageAt || 
+                  newLastMessageAt.getTime() >= g.lastMessageAt.getTime();
+                
+                // Get the last message text
+                const rawLast = recent.last_message || "";
+                let normalizedLast = "";
+                
+                if (rawLast) {
+                  // Check if it's an unsent message
+                  const isUnsentText = typeof rawLast === 'string' && rawLast.toLowerCase().includes('unsent a message');
+                  
+                  if (isUnsentText) {
+                    // For unsent messages, use as-is (backend already formats it correctly)
+                    normalizedLast = rawLast;
+                  } else {
+                    // For regular messages, remove existing "You: " prefix if present
+                    let cleanLast = rawLast;
+                    if (cleanLast.startsWith('You: ')) {
+                      cleanLast = cleanLast.substring(5);
+                    }
+                    normalizedLast = Number(recent.last_sender_id || 0) === uid ? `You: ${cleanLast}` : cleanLast;
+                  }
+                }
+                
+                return { 
+                  ...g, 
+                  unread: Number(recent.unread_count || 0),
+                  lastMessage: shouldUpdateLastMessage ? normalizedLast : g.lastMessage,
+                  lastMessageAt: shouldUpdateLastMessage ? newLastMessageAt : g.lastMessageAt
+                };
+              }
+              return g;
+            });
+          });
+        }
+      }
+    } catch (err) {
+      // Silent fail for polling - don't spam console
+      if (err.name !== 'AbortError') {
+        console.debug('Polling error (non-critical):', err);
+      }
+    }
+  };
+
+  // Set up polling interval
+  useEffect(() => {
+    if (!isPollingEnabled) {
+      return;
+    }
+
+    // Start polling every 0.5 seconds for faster updates
+    pollingIntervalRef.current = setInterval(() => {
+      pollForNewMessages();
+    }, 500); // 0.5 seconds
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [isPollingEnabled, selectedChatId, selectedType, chats.length, activeTab]);
+
+  // Pause polling when page is hidden (tab switch, minimize, etc.)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPollingEnabled(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Fetch available groups from backend
   useEffect(() => {
@@ -1215,8 +1597,17 @@ export default function TeacherMessagesPage() {
   }, [selectedChat?.id, selectedType]);
 
   useEffect(() => {
+    // Only auto-scroll on initial chat load or when selectedChatId changes
+    // This prevents auto-scrolling on every chat update
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [selectedChatId, chats]);
+  }, [selectedChatId]);
+
+  // Auto-scroll to bottom when messages are first loaded
+  useEffect(() => {
+    if (selectedChat?.messages?.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [selectedChat?.messages?.length]);
 
   const handleSend = () => {
     const text = input.trim();
