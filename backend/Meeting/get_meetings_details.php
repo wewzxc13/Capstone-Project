@@ -15,9 +15,10 @@ if (isset($connection_error)) {
 }
 
 // Auto-update meeting_status to 'Completed' for meetings whose end time has passed
+// Exclude Cancelled meetings from automatic completion
 try {
     $now = date('Y-m-d H:i:s');
-    $updateStmt = $conn->prepare("UPDATE tbl_meetings SET meeting_status = 'Completed' WHERE meeting_end < ? AND meeting_status != 'Completed'");
+    $updateStmt = $conn->prepare("UPDATE tbl_meetings SET meeting_status = 'Completed' WHERE meeting_end < ? AND meeting_status NOT IN ('Completed', 'Cancelled')");
     $updateStmt->execute([$now]);
 } catch (PDOException $e) {
     // Optionally log error, but do not block the rest of the script
