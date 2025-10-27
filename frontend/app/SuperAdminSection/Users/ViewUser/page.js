@@ -461,6 +461,38 @@ export default function ViewUserPage() {
     setAddressData(parsed);
   }, []);
 
+  // Helper function to calculate level_id based on birthdate (same logic as AddUser)
+  const calculateLevelId = (birthdate) => {
+    if (!birthdate) return null;
+    
+    const referenceDate = new Date("2025-08-04");
+    const birthDate = new Date(birthdate);
+    
+    if (isNaN(birthDate.getTime())) {
+      return null;
+    }
+    
+    // Calculate age the same way as AddUser
+    const timeDiff = referenceDate.getTime() - birthDate.getTime();
+    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    const years = Math.floor(daysDiff / 365.25);
+    const remainingDays = daysDiff % 365.25;
+    const months = Math.floor(remainingDays / 30.44);
+    const age = years + months / 12;
+    
+    // Determine level based on age
+    let levelId = null;
+    if (age >= 1.8 && age < 3) {
+      levelId = 1; // Discoverer
+    } else if (age >= 3 && age < 4) {
+      levelId = 2; // Explorer
+    } else if (age >= 4 && age < 5) {
+      levelId = 3; // Adventurer
+    }
+    
+    return levelId;
+  };
+
   function validateField(name, value, role) {
     if (role === "Student") {
       if (["firstName", "lastName"].includes(name)) return validators.name(value);
@@ -535,6 +567,19 @@ export default function ViewUserPage() {
     // Auto-capitalize first letter for barangay
     if (name === "barangay") {
       processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+    }
+    // Auto-calculate level_id when birthdate changes for students
+    if (name === "user_birthdate" && formData && formData.role === "Student") {
+      const newLevelId = calculateLevelId(value);
+      if (newLevelId !== null) {
+        // Update both levelId and user_birthdate in formData
+        setFormData(prev => ({
+          ...prev,
+          user_birthdate: value,
+          levelId: newLevelId
+        }));
+        return; // Exit early to prevent double update
+      }
     }
     // Handle contact number input - format as +63 XXX XXX XXXX
     if (name === "contactNo") {

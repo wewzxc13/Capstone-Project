@@ -118,16 +118,21 @@ try {
                 'action' => 'Created a new student profile.'
             ];
             
-            $logResponse = file_get_contents(__DIR__ . '/../Logs/create_system_log.php', false, stream_context_create([
-                'http' => [
-                    'method' => 'POST',
-                    'header' => 'Content-Type: application/json',
-                    'content' => json_encode($logData)
-                ]
-            ]));
+            // Use cURL for proper HTTP request
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/capstone-project/backend/Logs/create_system_log.php');
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($logData));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            
+            $logResponse = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
             
             // Log the system log creation attempt for debugging
-            error_log("System log creation attempt for student creation: " . $logResponse);
+            error_log("System log creation attempt for student creation - HTTP Code: $httpCode, Response: " . $logResponse);
         }
     } catch (Exception $logError) {
         // Don't fail the main operation if logging fails

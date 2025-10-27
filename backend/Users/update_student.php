@@ -24,6 +24,37 @@ $studentId = intval($data['student_id']);
 $debugMessage = date('Y-m-d H:i:s') . " - Update request for student $studentId: " . json_encode($data) . "\n";
 file_put_contents('../SystemLogs/debug_log.txt', $debugMessage, FILE_APPEND);
 
+// Auto-calculate level_id if birthdate is being updated but level_id is not provided
+$birthdate = $data['stud_birthdate'] ?? $data['user_birthdate'] ?? null;
+if ($birthdate && !isset($data['level_id']) && !isset($data['levelId'])) {
+    try {
+        $birthDateObj = new DateTime($birthdate);
+        $referenceDate = new DateTime("2025-08-04");
+        $diff = $referenceDate->diff($birthDateObj);
+        
+        // Calculate age in years with months
+        $years = $diff->y;
+        $months = $diff->m;
+        $age = $years + ($months / 12);
+        
+        // Determine level based on age
+        $calculatedLevelId = null;
+        if ($age >= 1.8 && $age < 3) {
+            $calculatedLevelId = 1; // Discoverer
+        } else if ($age >= 3 && $age < 4) {
+            $calculatedLevelId = 2; // Explorer
+        } else if ($age >= 4 && $age < 5) {
+            $calculatedLevelId = 3; // Adventurer
+        }
+        
+        if ($calculatedLevelId !== null) {
+            $data['level_id'] = $calculatedLevelId;
+        }
+    } catch (Exception $e) {
+        error_log("Failed to auto-calculate level_id: " . $e->getMessage());
+    }
+}
+
 try {
     $conn->beginTransaction();
     
@@ -53,7 +84,8 @@ try {
         'firstName' => 'stud_firstname',
         'middleName' => 'stud_middlename', 
         'lastName' => 'stud_lastname',
-        'user_birthdate' => 'stud_birthdate'
+        'user_birthdate' => 'stud_birthdate',
+        'levelId' => 'level_id'
     ];
     
     foreach ($fieldMapping as $frontendKey => $backendCol) {
