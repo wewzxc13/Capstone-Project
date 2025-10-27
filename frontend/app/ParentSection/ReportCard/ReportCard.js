@@ -3456,10 +3456,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                       return (
                                         <td key={q.id} className="px-4 py-3 text-center">
                                           <div className="flex items-center justify-center gap-2">
-                                            <span
-                                              className="w-4 h-4 rounded-full shadow-sm"
-                                              style={{ backgroundColor: riskColor || '#f1f5fd' }}
-                                            ></span>
+                                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor }}></span>
                                             <span 
                                               style={{ color: shapeColorMap[overallProgress.visual_shape] || '#222', fontSize: '1.5em', fontWeight: 'bold' }}
                                               className="inline-block hover:scale-110 transition-transform"
@@ -3488,10 +3485,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                       <td key={q.id} className="px-4 py-3 text-center">
                                         {shape ? (
                                           <div className="flex items-center justify-center gap-2">
-                                            <span
-                                              className="w-4 h-4 rounded-full shadow-sm"
-                                              style={{ backgroundColor: riskColor || '#f1f5fd' }}
-                                            ></span>
+                                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor }}></span>
                                             <span 
                                               style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 'bold' }}
                                               className="inline-block hover:scale-110 transition-transform"
@@ -3671,8 +3665,8 @@ export default function StudentProgress({ formData: initialFormData }) {
                                 return (
                                   <div key={index} className="flex items-center gap-3">
                                     <span
-                                      className="w-4 h-4 rounded-full border-2 shadow-sm"
-                                      style={{ backgroundColor: hex, borderColor: hex }}
+                                      className="w-4 h-4 rounded-full shadow-sm"
+                                      style={{ backgroundColor: hex }}
                                     ></span>
                                     <span className="text-sm font-medium text-gray-900">{label} Risk</span>
                                   </div>

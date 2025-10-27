@@ -1477,13 +1477,13 @@ export default function StudentProgress({ formData: initialFormData }) {
         // Draw risk color dot if available
         if (riskId === 1 || riskId === '1') {
           pdf.setFillColor(34, 197, 94); // green
-          pdf.circle(x + (quarterColWidth / 2) - 6, quarterResultY + 8, 1.8, 'F');
+          pdf.circle(x + (quarterColWidth / 2) - 6, quarterResultY + 8, 2, 'F');
         } else if (riskId === 2 || riskId === '2') {
           pdf.setFillColor(251, 191, 36); // yellow
-          pdf.circle(x + (quarterColWidth / 2) - 6, quarterResultY + 8, 1.8, 'F');
+          pdf.circle(x + (quarterColWidth / 2) - 6, quarterResultY + 8, 2, 'F');
         } else if (riskId === 3 || riskId === '3') {
           pdf.setFillColor(239, 68, 68); // red
-          pdf.circle(x + (quarterColWidth / 2) - 6, quarterResultY + 8, 1.8, 'F');
+          pdf.circle(x + (quarterColWidth / 2) - 6, quarterResultY + 8, 2, 'F');
         }
         
         if (shape && typeof shape === 'string') {
@@ -3472,10 +3472,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                     return (
                                       <td key={q.id} className="px-1 sm:px-4 py-2 sm:py-3 text-center">
                                         <div className="flex items-center justify-center gap-2">
-                                          <span
-                                            className="w-4 h-4 rounded-full shadow-sm"
-                                            style={{ backgroundColor: riskColor || '#f1f5fd' }}
-                                          ></span>
+                                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor }}></span>
                                           <span 
                                             style={{ color: shapeColorMap[overallProgress.visual_shape] || '#222', fontSize: '1.5em', fontWeight: 'bold' }}
                                             className="inline-block hover:scale-110 transition-transform"
@@ -3504,10 +3501,7 @@ export default function StudentProgress({ formData: initialFormData }) {
                                     <td key={q.id} className="px-1 sm:px-4 py-2 sm:py-3 text-center">
                                       {shape ? (
                                         <div className="flex items-center justify-center gap-2">
-                                          <span
-                                            className="w-4 h-4 rounded-full shadow-sm"
-                                            style={{ backgroundColor: riskColor || '#f1f5fd' }}
-                                          ></span>
+                                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor }}></span>
                                           <span 
                                             style={{ color: shapeColorMap[shape] || '#222', fontSize: '1.5em', fontWeight: 'bold' }}
                                             className="inline-block hover:scale-110 transition-transform"
@@ -3670,10 +3664,10 @@ export default function StudentProgress({ formData: initialFormData }) {
                           riskLevels.map((risk, idx) => (
                             <div key={idx} className="flex items-center gap-3">
                               <span 
-                                className="w-4 h-4 rounded-full border-2 shadow-sm"
+                                className="w-4 h-4 rounded-full"
                                 style={{ 
                                   backgroundColor: getRiskLevelColor(risk.risk_id),
-                                  borderColor: getRiskLevelColor(risk.risk_id)
+                                  border: 'none'
                                 }}
                               ></span>
                               <span className="text-sm font-medium text-gray-900">{risk.risk_name} Risk</span>

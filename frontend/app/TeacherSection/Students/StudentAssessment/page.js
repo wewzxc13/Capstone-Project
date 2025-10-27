@@ -925,7 +925,7 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                             <div className="inline-flex items-center justify-center gap-2">
                               {riskId && (
                                 <span
-                                  className="w-2 h-2 rounded-full shadow-sm"
+                                  className="w-3 h-3 rounded-full shadow-sm"
                                   style={{ backgroundColor: riskColor }}
                                 ></span>
                               )}
