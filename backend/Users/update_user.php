@@ -218,7 +218,7 @@ try {
     $successMessage = date('Y-m-d H:i:s') . " - Successfully updated user $user_id\n";
     file_put_contents('../SystemLogs/debug_log.txt', $successMessage, FILE_APPEND);
     
-    // System logging for restore actions
+    // System logging for restore actions - use direct SQL INSERT like login does
     if (isset($data['user_status']) && $data['user_status'] === 'Active') {
         try {
             $editorId = $data['editor_id'] ?? null;
@@ -234,27 +234,19 @@ try {
                 $article = ($userRole === 2) ? 'an' : 'a'; // Admin uses 'an', others use 'a'
                 $action = "Restored $article $roleName account.";
                 
-                $logData = [
-                    'user_id' => $editorId,
-                    'target_user_id' => $user_id,
-                    'target_student_id' => null,
-                    'action' => $action
-                ];
+                // Direct SQL INSERT like login does - works in both local and Vercel
+                $logQuery = $conn->prepare("
+                    INSERT INTO tbl_system_logs (user_id, target_user_id, target_student_id, action, timestamp)
+                    VALUES (:user_id, :target_user_id, :target_student_id, :action, NOW())
+                ");
                 
-                // Use cURL for proper HTTP request
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/capstone-project/backend/Logs/create_system_log.php');
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($logData));
-                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                $logQuery->bindParam(":user_id", $editorId, PDO::PARAM_INT);
+                $logQuery->bindParam(":target_user_id", $user_id, PDO::PARAM_INT);
+                $logQuery->bindValue(":target_student_id", null, PDO::PARAM_NULL);
+                $logQuery->bindParam(":action", $action, PDO::PARAM_STR);
+                $logQuery->execute();
                 
-                $logResponse = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
-                
-                error_log("System log creation attempt for user restore - HTTP Code: $httpCode, Response: " . $logResponse);
+                error_log("System log created successfully for user restore: User ID: $editorId, Action: $action, Target User ID: $user_id");
             }
         } catch (Exception $logError) {
             error_log("Failed to create system log for user restore: " . $logError->getMessage());

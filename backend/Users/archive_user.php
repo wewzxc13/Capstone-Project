@@ -65,14 +65,19 @@ try {
     
     $conn->commit();
     
-    // System logging for user archiving
+    // System logging for user archiving - use direct SQL INSERT like login does
     try {
-        $editorId = $data['editor_id'] ?? null; // Get the ID of the super admin who archived the user
+        $editorId = $data['editor_id'] ?? null; // Get the ID of the admin who archived the user
         
         if ($editorId) {
             $action = '';
+            $targetUserId = null;
+            $targetStudentId = null;
+            
             if ($role === "Student") {
                 $action = 'Archived a student profile.';
+                $targetStudentId = $userId;
+                $targetUserId = null;
             } else {
                 // Determine the specific role for the action message
                 $roleQuery = $conn->prepare("SELECT user_role FROM tbl_users WHERE user_id = ?");
@@ -93,31 +98,35 @@ try {
                         $action = 'Archived a user account.';
                         break;
                 }
+                $targetUserId = $userId;
+                $targetStudentId = null;
             }
             
             if ($action) {
-                $logData = [
-                    'user_id' => $editorId,
-                    'target_user_id' => ($role === "Student") ? null : $userId,
-                    'target_student_id' => ($role === "Student") ? $userId : null,
-                    'action' => $action
-                ];
+                // Direct SQL INSERT like login does - works in both local and Vercel
+                $logQuery = $conn->prepare("
+                    INSERT INTO tbl_system_logs (user_id, target_user_id, target_student_id, action, timestamp)
+                    VALUES (:user_id, :target_user_id, :target_student_id, :action, NOW())
+                ");
                 
-                // Use cURL for proper HTTP request
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/capstone-project/backend/Logs/create_system_log.php');
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($logData));
-                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                // Bind values with proper null handling
+                if ($targetUserId !== null) {
+                    $logQuery->bindParam(":target_user_id", $targetUserId, PDO::PARAM_INT);
+                } else {
+                    $logQuery->bindValue(":target_user_id", null, PDO::PARAM_NULL);
+                }
                 
-                $logResponse = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
+                if ($targetStudentId !== null) {
+                    $logQuery->bindParam(":target_student_id", $targetStudentId, PDO::PARAM_INT);
+                } else {
+                    $logQuery->bindValue(":target_student_id", null, PDO::PARAM_NULL);
+                }
                 
-                // Log the system log creation attempt for debugging
-                error_log("System log creation attempt for user archiving - HTTP Code: $httpCode, Response: " . $logResponse);
+                $logQuery->bindParam(":user_id", $editorId, PDO::PARAM_INT);
+                $logQuery->bindParam(":action", $action, PDO::PARAM_STR);
+                $logQuery->execute();
+                
+                error_log("System log created successfully for user archiving: User ID: $editorId, Action: $action, Target User ID: $targetUserId, Target Student ID: $targetStudentId");
             }
         }
     } catch (Exception $logError) {

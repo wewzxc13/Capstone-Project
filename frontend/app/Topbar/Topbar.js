@@ -924,7 +924,10 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         const reschedStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()} from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         
         // Special-case minimal reminder message -> expand with meeting details
-        if (message === "[REMINDER] Upcoming meeting") {
+        // Check for one-on-one meeting reminders first
+        if (message === "[ONE ON ONE MEETING] [REMINDER] Upcoming meeting") {
+          return `[ONE ON ONE MEETING] [REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+        } else if (message === "[REMINDER] Upcoming meeting") {
           return `[REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
         }
 
@@ -1098,7 +1101,10 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         const reschedStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()} from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         
         // Minimal reminder -> expand
-        if (message === "[REMINDER] Upcoming meeting") {
+        // Check for one-on-one meeting reminders first
+        if (message === "[ONE ON ONE MEETING] [REMINDER] Upcoming meeting") {
+          return `[ONE ON ONE MEETING] [REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+        } else if (message === "[REMINDER] Upcoming meeting") {
           return `[REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
         }
 
@@ -1210,7 +1216,10 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         const reschedStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()} from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         
         // Minimal reminder -> expand
-        if (message === "[REMINDER] Upcoming meeting") {
+        // Check for one-on-one meeting reminders first
+        if (message === "[ONE ON ONE MEETING] [REMINDER] Upcoming meeting") {
+          return `[ONE ON ONE MEETING] [REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+        } else if (message === "[REMINDER] Upcoming meeting") {
           return `[REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
         }
 
@@ -1359,7 +1368,10 @@ export default function Topbar({ title = "Dashboard", notifications = null, onBa
         const reschedStr = `${start.toLocaleString('default', { month: 'long' })} ${start.getDate()} from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         
         // Minimal reminder -> expand for parent wording
-        if (message === "[REMINDER] Upcoming meeting") {
+        // Check for one-on-one meeting reminders first
+        if (message === "[ONE ON ONE MEETING] [REMINDER] Upcoming meeting") {
+          return `[ONE ON ONE MEETING] [REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+        } else if (message === "[REMINDER] Upcoming meeting") {
           return `[REMINDER] Upcoming meeting '${title}' on ${start.toLocaleString('default', { month: 'long' })} ${start.getDate()}, from ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
         }
 

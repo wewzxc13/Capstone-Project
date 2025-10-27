@@ -106,33 +106,26 @@ try {
     $studentId = $conn->lastInsertId();
     $conn->commit();
 
-    // System logging for student creation
+    // System logging for student creation - use direct SQL INSERT like login does
     try {
-        $editorId = $data['editor_id'] ?? null; // Get the ID of the super admin who created the student
+        $editorId = $data['editor_id'] ?? null; // Get the ID of the admin who created the student
         
         if ($editorId) {
-            $logData = [
-                'user_id' => $editorId,
-                'target_user_id' => null,
-                'target_student_id' => $studentId,
-                'action' => 'Created a new student profile.'
-            ];
+            $action = 'Created a new student profile.';
             
-            // Use cURL for proper HTTP request
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/capstone-project/backend/Logs/create_system_log.php');
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($logData));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            // Direct SQL INSERT like login does - works in both local and Vercel
+            $logQuery = $conn->prepare("
+                INSERT INTO tbl_system_logs (user_id, target_user_id, target_student_id, action, timestamp)
+                VALUES (:user_id, :target_user_id, :target_student_id, :action, NOW())
+            ");
             
-            $logResponse = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+            $logQuery->bindParam(":user_id", $editorId, PDO::PARAM_INT);
+            $logQuery->bindValue(":target_user_id", null, PDO::PARAM_NULL);
+            $logQuery->bindParam(":target_student_id", $studentId, PDO::PARAM_INT);
+            $logQuery->bindParam(":action", $action, PDO::PARAM_STR);
+            $logQuery->execute();
             
-            // Log the system log creation attempt for debugging
-            error_log("System log creation attempt for student creation - HTTP Code: $httpCode, Response: " . $logResponse);
+            error_log("System log created successfully for student creation: User ID: $editorId, Action: $action, Target Student ID: $studentId");
         }
     } catch (Exception $logError) {
         // Don't fail the main operation if logging fails

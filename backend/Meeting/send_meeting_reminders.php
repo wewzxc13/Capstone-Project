@@ -107,8 +107,12 @@ try {
             $dateStr = $start->format('F j');
             $timeStr = $start->format('g:i A') . ' to ' . $end->format('g:i A');
             $title = $m['meeting_title'];
+            // Check if this is a one-on-one meeting (has parent_id and advisory_id)
+            // This matches the logic used when creating the meeting - one-on-one meetings
+            // have parent_id and advisory_id set, while regular meetings have recipients array
+            $isOneOnOne = !empty($m['parent_id']) && !empty($m['advisory_id']);
             // Store a minimal, type-only message; frontend will format the full sentence
-            $message = "[REMINDER] Upcoming meeting";
+            $message = $isOneOnOne ? "[ONE ON ONE MEETING] [REMINDER] Upcoming meeting" : "[REMINDER] Upcoming meeting";
 
             // 3) Insert reminder notification
             $creatorId = $m['creator_id'] ?? 0; // 0 == system
