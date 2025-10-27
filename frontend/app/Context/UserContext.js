@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { API } from '@/config/api';
 
 const UserContext = createContext();
@@ -25,6 +25,9 @@ export function UserProvider({ children }) {
     groups: 0,
     total: 0
   });
+
+  // Ref to store the polling interval
+  const pollingIntervalRef = useRef(null);
 
   // Normalize any photo value to a usable URL
   // - Accepts plain filename (e.g., "img_xyz.png")
@@ -160,6 +163,56 @@ export function UserProvider({ children }) {
       console.error('Error initializing unread counts:', err);
     }
   }, [updateUnreadCounts]);
+
+  // Real-time polling for unread message counts
+  useEffect(() => {
+    // Only start polling if we have a valid userId
+    const uid = Number(localStorage.getItem('userId'));
+    if (!uid) return;
+    
+    const startPolling = () => {
+      // Clear any existing interval
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      
+      // Initial fetch
+      initializeUnreadCounts();
+      
+      // Set up polling every 0.5 seconds for real-time updates
+      pollingIntervalRef.current = setInterval(() => {
+        initializeUnreadCounts();
+      }, 500); // Poll every 0.5 seconds
+    };
+
+    // Pause polling when page is hidden (tab switch, minimize, etc.)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      } else {
+        // Restart polling when page becomes visible
+        startPolling();
+      }
+    };
+
+    // Start polling initially
+    startPolling();
+    
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup on unmount
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [initializeUnreadCounts]);
 
   // New function: Get photo for any user by ID
   const getUserPhoto = (userId) => {
