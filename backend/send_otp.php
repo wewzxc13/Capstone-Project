@@ -95,19 +95,10 @@ try {
             <tr>
                 <td align="center">
                     <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px;">
-                        <!-- Header with Logo -->
+                        <!-- Header -->
                         <tr>
-                            <td style="padding: 40px 30px 30px 30px; text-align: left;">
-                                <table width="100%" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td width="60" style="vertical-align: middle;">
-                                            <img src="https://learnersville.vercel.app/assets/image/villelogo.png" alt="Learners Ville Logo" width="50" height="50" style="display: block; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-                                        </td>
-                                        <td style="vertical-align: middle; padding-left: 15px;">
-                                            <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #2196F3; font-family: Arial, sans-serif;">Learners\' Ville</h1>
-                                        </td>
-                                    </tr>
-                                </table>
+                            <td style="padding: 40px 30px 30px 30px; text-align: center;">
+                                <h1 style="margin: 0; font-size: 32px; font-weight: bold; color: #2196F3; font-family: Arial, sans-serif;">Learners\' Ville</h1>
                             </td>
                         </tr>
                         
