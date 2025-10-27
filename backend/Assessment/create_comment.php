@@ -13,7 +13,6 @@ require_once __DIR__ . '/../connection.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 $comment = isset($input['comment']) ? trim($input['comment']) : null;
-$commented_at = isset($input['commented_at']) ? $input['commented_at'] : date('Y-m-d H:i:s');
 $commentor_id = isset($input['commentor_id']) ? intval($input['commentor_id']) : null;
 $student_id = isset($input['student_id']) ? intval($input['student_id']) : null;
 
@@ -23,12 +22,12 @@ if (!$comment || !$commentor_id || !$student_id) {
 }
 
 try {
-    // Find quarter_id for the given commented_at
-    $stmt = $conn->prepare('SELECT quarter_id FROM tbl_quarters WHERE start_date <= ? AND end_date >= ? LIMIT 1');
-    $stmt->execute([$commented_at, $commented_at]);
+    // Use current server datetime (MySQL NOW()) to find the current quarter
+    $stmt = $conn->prepare('SELECT quarter_id FROM tbl_quarters WHERE start_date <= NOW() AND end_date >= NOW() LIMIT 1');
+    $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row) {
-        echo json_encode(['status' => 'error', 'message' => 'No quarter found for the given date.']);
+        echo json_encode(['status' => 'error', 'message' => 'No quarter found for the current date.']);
         exit();
     }
     $quarter_id = $row['quarter_id'];
@@ -45,8 +44,8 @@ try {
         echo json_encode(['status' => 'error', 'message' => "You have already commented for $qName. Wait for the next quarter."]);
         exit();
     }
-    // Insert comment (created_at and updated_at handled by DB)
-    $stmt2 = $conn->prepare('INSERT INTO tbl_progress_comments (quarter_id, comment, commentor_id, student_id) VALUES (?, ?, ?, ?)');
+    // Insert comment with explicit timestamp using MySQL NOW() to ensure correct timezone
+    $stmt2 = $conn->prepare('INSERT INTO tbl_progress_comments (quarter_id, comment, commentor_id, student_id, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())');
     $stmt2->execute([$quarter_id, $comment, $commentor_id, $student_id]);
     $comment_id = $conn->lastInsertId();
     // Fetch created_at and updated_at

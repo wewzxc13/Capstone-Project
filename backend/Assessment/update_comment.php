@@ -21,7 +21,8 @@ if (!$comment_id || !$comment) {
 }
 
 try {
-    $stmt = $conn->prepare('UPDATE tbl_progress_comments SET comment = ? WHERE comment_id = ?');
+    // Update comment with explicit timestamp using MySQL NOW() to ensure correct timezone
+    $stmt = $conn->prepare('UPDATE tbl_progress_comments SET comment = ?, updated_at = NOW() WHERE comment_id = ?');
     $stmt->execute([$comment, $comment_id]);
     if ($stmt->rowCount() > 0) {
         $stmtMeta = $conn->prepare('SELECT created_at, updated_at FROM tbl_progress_comments WHERE comment_id = ?');

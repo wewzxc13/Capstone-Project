@@ -1143,7 +1143,8 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                               {
                                 comment_id: data.comment_id,
                                 comment: capitalizeFirstLetter(comment),
-                                commented_at: data.commented_at,
+                                created_at: data.created_at,
+                                updated_at: data.updated_at,
                                 quarter_id: data.quarter_id,
                                 quarter_name: data.quarter_name,
                                 commentor_id: data.commentor_id,
