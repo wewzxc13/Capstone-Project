@@ -47,7 +47,7 @@ try {
                 SELECT 1 
                 FROM tbl_notifications n1 
                 WHERE n1.meeting_id = m.meeting_id 
-                  AND n1.notif_message LIKE '[REMINDER]%'
+                  AND n1.notif_message LIKE '%[REMINDER]%'
           )
     ";
 

@@ -1128,7 +1128,7 @@ export default function ParentDetails() {
           {/* Profile Information */}
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="flex-shrink-0">
-              {formData.user_photo && !formData.user_photo.includes('default_') ? (
+              {formData.user_photo && typeof formData.user_photo === 'string' && formData.user_photo.trim() !== '' ? (
                 <>
                   <img
                     src={getPhotoUrl(formData.user_photo)}
@@ -1384,7 +1384,7 @@ export default function ParentDetails() {
               <div className="flex flex-col items-center gap-4">
                 {/* Current Photo Display with Circular Dashed Border */}
                 <div className="flex-shrink-0 relative">
-                  {formData.user_photo && !formData.user_photo.includes('default_') ? (
+                  {formData.user_photo && typeof formData.user_photo === 'string' && formData.user_photo.trim() !== '' ? (
                     <div className="relative">
                       <img
                         src={getPhotoUrl(formData.user_photo)}
@@ -1425,7 +1425,7 @@ export default function ParentDetails() {
                    )}
 
                   {/* Crop indicator overlay for editing mode */}
-                  {isEditing && formData.user_photo && !formData.user_photo.includes('default_') && (
+                  {isEditing && formData.user_photo && typeof formData.user_photo === 'string' && formData.user_photo.trim() !== '' && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
                       <FaCrop className="text-white text-sm" />
                     </div>
@@ -1449,7 +1449,7 @@ export default function ParentDetails() {
                       <div className="font-medium text-sm">Selected: {selectedPhoto.name}</div>
                       <div className="text-xs">Click photo to change or crop</div>
                     </div>
-                  ) : formData.user_photo && !formData.user_photo.includes('default_') ? (
+                  ) : formData.user_photo && typeof formData.user_photo === 'string' && formData.user_photo.trim() !== '' ? (
                     <div className="text-gray-600">
                       <div className="font-medium text-sm">Current photo uploaded</div>
                       <div className={`text-xs ${isEditing ? 'text-blue-600' : 'text-gray-500'}`}>
@@ -1472,7 +1472,7 @@ export default function ParentDetails() {
                     <div className="text-xs text-gray-500 mb-2">
                       Supported formats: JPG, PNG, GIF, WebP. Max size: 5MB.
                     </div>
-                    {formData.user_photo && !formData.user_photo.includes('default_') && (
+                    {formData.user_photo && typeof formData.user_photo === 'string' && formData.user_photo.trim() !== '' && (
                       <div className="text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
                         💡 <strong>Tip:</strong> Click on your current photo to crop/resize it
                       </div>
@@ -1540,7 +1540,7 @@ export default function ParentDetails() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {formData.user_photo && !formData.user_photo.includes('default_') && (
+              {formData.user_photo && typeof formData.user_photo === 'string' && formData.user_photo.trim() !== '' && (
                 <button
                   onClick={() => handlePhotoMenuSelect('crop')}
                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
