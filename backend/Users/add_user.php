@@ -145,12 +145,14 @@ try {
     }
 
     // Parent: Insert into tbl_parents_profile with address only
+    $parentProfileId = null;
     if ($role === 'parent') {
         $stmt3 = $conn->prepare("INSERT INTO tbl_parents_profile (
             user_id, barangay, city_municipality, province, country
         ) VALUES (?, ?, ?, ?, ?)");
 
         $stmt3->execute([$user_id, $barangay, $city, $province, $country]);
+        $parentProfileId = $conn->lastInsertId();
     }
 
     $conn->commit();
@@ -195,13 +197,20 @@ try {
     }
 
     // Use $user_id from the main tbl_users insert
-    echo json_encode([
+    $response = [
         'status' => 'success',
         'message' => ucfirst($role) . ' user added successfully',
         'user_id' => $user_id,
         'default_password' => $defaultPassword,
         'default_photo' => $photo
-    ]);
+    ];
+    
+    // Include parent_profile_id if parent was added
+    if ($role === 'parent' && $parentProfileId) {
+        $response['parent_profile_id'] = $parentProfileId;
+    }
+    
+    echo json_encode($response);
 
 } catch (Exception $e) {
     $conn->rollBack();

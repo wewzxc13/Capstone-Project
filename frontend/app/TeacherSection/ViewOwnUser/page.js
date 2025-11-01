@@ -33,7 +33,7 @@ const validators = {
     return { isValid: true, message: "" };
   },
   contact: (value) => {
-    if (!value) return { isValid: true, message: "" }; // Optional field
+    if (!value) return { isValid: false, message: "" };
 
     // Remove all non-digits
     const digits = value.replace(/\D/g, '');
@@ -1336,7 +1336,7 @@ export default function ViewOwnUserPage() {
               
               {/* Contact Number */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Contact Number</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Contact Number <span className="text-red-500">*</span></label>
                 {isEditing ? (
                   <input
                     name="user_contact_no"
@@ -1367,22 +1367,15 @@ export default function ViewOwnUserPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
                 {isEditing ? (
-                  <select
+                  <input
                     name="country"
-                    value={formData.country || ""}
-                    onChange={handleChange}
-                    className={getInputClassName('country', formData, validationErrors)}
-                  >
-                    <option value="">Select Country</option>
-                    {addressData.countries.map(country => (
-                      <option key={country} value={country}>{country}</option>
-                    ))}
-                  </select>
+                    type="text"
+                    value="Philippines"
+                    disabled
+                    className="w-full p-2 rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed"
+                  />
                 ) : (
                   <div className="border w-full p-2 rounded-lg bg-gray-50 text-gray-700">{formData.country || 'Not specified'}</div>
-                )}
-                {formData.country && validationErrors.country && (
-                  <div className="text-red-500 text-xs mt-1 flex items-center gap-1"><FaTimes />{validationErrors.country}</div>
                 )}
               </div>
               <div>

@@ -10,8 +10,8 @@ import fullAddress from '../../../../data/northern_mindanao_psgc.json';
 import { API } from '@/config/api';
 
 
-// Admin users can only add Teacher, Parent, and Student users (not other Admin users)
-const userTypes = ["Teacher", "Parent", "Student"];
+// Admin users can only add Teacher and Parent/Student users (not other Admin users)
+const userTypes = ["Teacher", "Parent/Student"];
 
 function capitalizeWords(str) {
   return str.replace(/\b\w+/g, (word) =>
@@ -65,7 +65,7 @@ const validators = {
 
           // Contact number validation - Philippine format (10 digits: 3-3-4)
         contact: (value) => {
-          if (!value) return { isValid: true, message: "" }; // Optional field
+          if (!value) return { isValid: false, message: "" }; // Required field
 
           // Remove all non-digits
           const digits = value.replace(/\D/g, '');
@@ -489,8 +489,18 @@ const CustomDropdown = ({
 
 export default function AddUserPage() {
   const [userType, setUserType] = useState("");
+  const [activeSection, setActiveSection] = useState("parent"); // "parent" or "student"
+  const [parentFormData, setParentFormData] = useState({ country: "Philippines" });
+  const [studentFormData, setStudentFormData] = useState({
+    enrollment_date: getTodayDateString(),
+  });
+  const [studentsList, setStudentsList] = useState([]); // Track added students
+  const [parentAdded, setParentAdded] = useState(false); // Track if parent has been added
+  const [parentUserId, setParentUserId] = useState(null); // Store parent's user_id
+  const [parentProfileId, setParentProfileId] = useState(null); // Store parent's profile_id
   const [formData, setFormData] = useState({
     enrollment_date: getTodayDateString(),
+    country: "Philippines",
   });
   const [validationErrors, setValidationErrors] = useState({});
   const [isFormValid, setIsFormValid] = useState(false);
@@ -506,7 +516,17 @@ export default function AddUserPage() {
 
   // Reset form when user type changes
   useEffect(() => {
-    setFormData({ enrollment_date: getTodayDateString() });
+    if (userType === "Parent/Student") {
+      setParentFormData({ country: "Philippines" });
+      setStudentFormData({ enrollment_date: getTodayDateString() });
+      setActiveSection("parent");
+      setStudentsList([]);
+      setParentAdded(false);
+      setParentUserId(null);
+      setParentProfileId(null);
+    } else {
+      setFormData({ enrollment_date: getTodayDateString(), country: "Philippines" });
+    }
     setValidationErrors({});
     setTouchedFields({});
   }, [userType]);
@@ -544,7 +564,15 @@ export default function AddUserPage() {
   };
 
   const handleClear = () => {
-    setFormData({ enrollment_date: getTodayDateString() });
+    if (userType === "Parent/Student") {
+      if (activeSection === "parent") {
+        setParentFormData({ country: "Philippines" });
+      } else {
+        setStudentFormData({ enrollment_date: getTodayDateString() });
+      }
+    } else {
+      setFormData({ enrollment_date: getTodayDateString(), country: "Philippines" });
+    }
     setValidationErrors({});
     setTouchedFields({});
   };
@@ -597,9 +625,38 @@ export default function AddUserPage() {
 
   const validateForm = () => {
     const errors = {};
-    const isStudent = userType === "Student";
     
-    if (isStudent) {
+    if (userType === "Parent/Student") {
+      if (activeSection === "parent") {
+        // Parent validation - use parentFormData
+        ['first_name', 'middle_name', 'last_name', 'dob', 'email', 'country', 'provinceCode', 'cityCode', 'barangay'].forEach(field => {
+          const validation = validateField(field, parentFormData[field] || formData[field]);
+          if (!validation.isValid) {
+            errors[field] = validation.message;
+          }
+        });
+        
+        // Contact validation for parent
+        const contactValidation = validateField('contact', parentFormData.contact || formData.contact);
+        if (!contactValidation.isValid) {
+          errors.contact = contactValidation.message;
+        }
+      } else {
+        // Student validation - use studentFormData
+        ['first_name', 'middle_name', 'last_name', 'gender', 'class_schedule'].forEach(field => {
+          const validation = validateField(field, studentFormData[field] || formData[field]);
+          if (!validation.isValid) {
+            errors[field] = validation.message;
+          }
+        });
+        
+        // Special validation for student date of birth (age 2-4)
+        const dobValidation = validators.studentDob(studentFormData.dob || formData.dob);
+        if (!dobValidation.isValid) {
+          errors.dob = dobValidation.message;
+        }
+      }
+    } else if (userType === "Student") {
       // Student validation - use dob field but validate with studentDob logic
       ['first_name', 'middle_name', 'last_name', 'gender', 'class_schedule'].forEach(field => {
         const validation = validateField(field, formData[field]);
@@ -614,7 +671,7 @@ export default function AddUserPage() {
         errors.dob = dobValidation.message;
       }
     } else {
-      // Teacher/Parent validation - use dob for age 18+ validation
+      // Teacher validation - use dob for age 18+ validation
       ['first_name', 'middle_name', 'last_name', 'dob', 'email', 'country', 'provinceCode', 'cityCode', 'barangay'].forEach(field => {
         const validation = validateField(field, formData[field]);
         if (!validation.isValid) {
@@ -622,7 +679,7 @@ export default function AddUserPage() {
         }
       });
       
-      // Contact validation for all non-student users (Teacher/Parent)
+      // Contact validation for all non-student users (Teacher)
       console.log('validateForm: About to validate contact field with value:', formData.contact);
       const contactValidation = validateField('contact', formData.contact);
       console.log('validateForm: Contact validation result:', contactValidation);
@@ -646,11 +703,27 @@ export default function AddUserPage() {
     setIsFormValid(Object.keys(errors).length === 0);
   };
 
+  // Sync formData with parentFormData or studentFormData when activeSection changes
   useEffect(() => {
-    console.log('useEffect triggered - formData changed:', formData);
-    console.log('useEffect - current contact value:', formData.contact);
-    validateForm();
-  }, [formData, userType]);
+    if (userType === "Parent/Student") {
+      if (activeSection === "parent") {
+        setFormData(parentFormData);
+      } else {
+        setFormData(studentFormData);
+      }
+    }
+  }, [activeSection, userType, parentFormData, studentFormData]);
+
+  useEffect(() => {
+    if (userType === "Parent/Student") {
+      console.log('useEffect triggered - Parent/Student form changed:', { parentFormData, studentFormData, activeSection });
+      validateForm();
+    } else {
+      console.log('useEffect triggered - formData changed:', formData);
+      console.log('useEffect - current contact value:', formData.contact);
+      validateForm();
+    }
+  }, [formData, userType, parentFormData, studentFormData, activeSection]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -832,21 +905,47 @@ export default function AddUserPage() {
       }, 0);
     }
 
-    // Handle cascading address fields
-    let updatedFormData = { ...formData, [name]: processedValue };
-    
-    // Reset city and barangay when province changes
-    if (name === 'provinceCode') {
-      updatedFormData.cityCode = '';
-      updatedFormData.barangay = '';
-    }
-    
-    // Reset barangay when city changes
-    if (name === 'cityCode') {
-      updatedFormData.barangay = '';
-    }
+    // Handle Parent/Student section differently
+    if (userType === "Parent/Student") {
+      if (activeSection === "parent") {
+        // Handle cascading address fields for parent
+        let updatedParentData = { ...parentFormData, [name]: processedValue };
+        
+        // Reset city and barangay when province changes
+        if (name === 'provinceCode') {
+          updatedParentData.cityCode = '';
+          updatedParentData.barangay = '';
+        }
+        
+        // Reset barangay when city changes
+        if (name === 'cityCode') {
+          updatedParentData.barangay = '';
+        }
 
-    setFormData(updatedFormData);
+        setParentFormData(updatedParentData);
+        setFormData(updatedParentData); // Also update formData for validation
+      } else {
+        // Student section
+        setStudentFormData(prev => ({ ...prev, [name]: processedValue }));
+        setFormData(prev => ({ ...prev, [name]: processedValue })); // Also update formData for validation
+      }
+    } else {
+      // Handle cascading address fields for Teacher
+      let updatedFormData = { ...formData, [name]: processedValue };
+      
+      // Reset city and barangay when province changes
+      if (name === 'provinceCode') {
+        updatedFormData.cityCode = '';
+        updatedFormData.barangay = '';
+      }
+      
+      // Reset barangay when city changes
+      if (name === 'cityCode') {
+        updatedFormData.barangay = '';
+      }
+
+      setFormData(updatedFormData);
+    }
 
     // Clear validation error for this field and dependent fields
     const fieldsToClear = [name];
@@ -867,9 +966,285 @@ export default function AddUserPage() {
     });
   };
 
+  // Handle Confirm in Parent section (just switch to student section, don't add parent yet)
+  const handleAddParent = () => {
+    if (!isFormValid) return;
+    // Just switch to student section, don't add parent yet
+    setActiveSection("student");
+  };
+
+  // Handle Add Student (when in Parent/Student tab) - saves to local list only, doesn't add to database
+  const handleAddStudent = () => {
+    if (!isFormValid) return false;
+    
+    // Calculate level based on age (same logic as backend)
+    const referenceDate = new Date("2025-08-04");
+    const birthDate = new Date(studentFormData.dob);
+    const timeDiff = referenceDate.getTime() - birthDate.getTime();
+    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    const years = Math.floor(daysDiff / 365.25);
+    const remainingDays = daysDiff % 365.25;
+    const months = Math.floor(remainingDays / 30.44);
+    const age = years + months / 12;
+    
+    let levelId = null;
+    let levelName = '';
+    if (age >= 1.8 && age < 3) {
+      levelId = 1;
+      levelName = 'Discoverer';
+    } else if (age >= 3 && age < 4) {
+      levelId = 2;
+      levelName = 'Explorer';
+    } else if (age >= 4 && age < 5) {
+      levelId = 3;
+      levelName = 'Adventurer';
+    }
+    
+    // Add student to the list (not to database yet)
+    const newStudent = {
+      ...studentFormData,
+      tempId: studentsList.length + 1, // Temporary ID for list
+      levelId: levelId,
+      level: levelName
+    };
+    
+    setStudentsList(prevList => [...prevList, newStudent]);
+    
+    // Reset student form
+    setStudentFormData({ enrollment_date: getTodayDateString() });
+    setValidationErrors({});
+    
+    toast.success(`Student saved to list! Assigned Class: ${levelName}`);
+    
+    return true;
+  };
+
+  // Handle final submit (when user clicks Confirm in student section - adds both parent and student(s))
+  const handleFinalSubmit = async () => {
+    // Validate both parent and student forms
+    const errors = {};
+    
+    // Validate parent form
+    ['first_name', 'middle_name', 'last_name', 'dob', 'email', 'country', 'provinceCode', 'cityCode', 'barangay'].forEach(field => {
+      const validation = validateField(field, parentFormData[field] || formData[field]);
+      if (!validation.isValid) {
+        errors[`parent_${field}`] = validation.message;
+      }
+    });
+    
+    const contactValidation = validateField('contact', parentFormData.contact || formData.contact);
+    if (!contactValidation.isValid) {
+      errors.parent_contact = contactValidation.message;
+    }
+    
+    // Validate student form (only if there's current student data or no students added yet)
+    const hasCurrentStudentData = studentFormData.first_name && 
+                                 studentFormData.last_name && 
+                                 studentFormData.dob && 
+                                 studentFormData.gender && 
+                                 studentFormData.class_schedule;
+    
+    let isStudentValid = true;
+    // Only validate student form if there's current student data OR no students added yet
+    if (hasCurrentStudentData || studentsList.length === 0) {
+      ['first_name', 'middle_name', 'last_name', 'gender', 'class_schedule'].forEach(field => {
+        const validation = validateField(field, studentFormData[field] || formData[field]);
+        if (!validation.isValid) {
+          errors[`student_${field}`] = validation.message;
+        }
+      });
+      
+      const dobValidation = validators.studentDob(studentFormData.dob || formData.dob);
+      if (!dobValidation.isValid) {
+        errors.student_dob = dobValidation.message;
+      }
+      
+      isStudentValid = !['first_name', 'middle_name', 'last_name', 'gender', 'class_schedule', 'dob'].some(field => errors[`student_${field}`]);
+    }
+    
+    // Check if forms are valid
+    const isParentValid = !['first_name', 'middle_name', 'last_name', 'dob', 'email', 'country', 'provinceCode', 'cityCode', 'barangay', 'contact'].some(field => errors[`parent_${field}`]);
+    
+    // Must have at least one student (either in list or in current form)
+    const hasStudents = studentsList.length > 0 || (hasCurrentStudentData && isStudentValid);
+    
+    if (!isParentValid || !isStudentValid || !hasStudents) {
+      if (!isParentValid) {
+        toast.error("Please fill in all required parent fields correctly.");
+        setActiveSection("parent");
+      } else if (!isStudentValid || !hasStudents) {
+        toast.error("Please add at least one student with all required fields filled.");
+      }
+      return;
+    }
+    
+    try {
+      // Step 1: Add parent first to get user_id and parent_profile_id (or use stored values)
+      let currentParentUserId = parentUserId;
+      let currentParentProfileId = parentProfileId;
+      
+      if (!parentAdded) {
+        const parentApiURL = API.user.addUser();
+        let parentDataToSend = {
+          ...parentFormData,
+          user_type: "parent",
+        };
+        
+        // Extract address names from codes for backend
+        const provinceOption = addressData.provinces.find(p => p.code === parentFormData.provinceCode);
+        const province = provinceOption ? provinceOption.name : parentFormData.provinceCode;
+        
+        const cityOption = addressData.cities[parentFormData.provinceCode]?.find(c => c.code === parentFormData.cityCode);
+        const city = cityOption ? cityOption.name : parentFormData.cityCode;
+        
+        parentDataToSend.country = parentFormData.country;
+        parentDataToSend.province = province;
+        parentDataToSend.city = city;
+        parentDataToSend.barangay = parentFormData.barangay;
+        
+        // Format contact number for backend
+        if (parentFormData.contact) {
+          let cleanDigits = parentFormData.contact.replace(/\D/g, '');
+          if (cleanDigits.length === 10 && cleanDigits.startsWith('9')) {
+            parentDataToSend.contact = '0' + cleanDigits;
+          } else if (cleanDigits.startsWith('09') && cleanDigits.length === 10) {
+            parentDataToSend.contact = cleanDigits;
+          } else if (cleanDigits.startsWith('009') && cleanDigits.length === 11) {
+            parentDataToSend.contact = cleanDigits.substring(1);
+          } else {
+            if (cleanDigits.length >= 10) {
+              const tenDigits = cleanDigits.substring(0, 10);
+              if (tenDigits.startsWith('9')) {
+                parentDataToSend.contact = '0' + tenDigits;
+              } else {
+                parentDataToSend.contact = '09' + tenDigits.substring(1);
+              }
+            } else {
+              parentDataToSend.contact = parentFormData.contact;
+            }
+          }
+        }
+        
+        if (city) {
+          parentDataToSend.municipality_city = city;
+        }
+        
+        parentDataToSend.editor_id = localStorage.getItem("userId");
+        
+        const parentRes = await fetch(parentApiURL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(parentDataToSend),
+        });
+        
+        const parentResult = await parentRes.json();
+        if (!parentRes.ok) {
+          toast.error("Failed to add parent: " + (parentResult.message || "Unknown error"));
+          return;
+        }
+        
+        currentParentUserId = parentResult.user_id;
+        currentParentProfileId = parentResult.parent_profile_id;
+        setParentUserId(currentParentUserId);
+        setParentProfileId(currentParentProfileId);
+        setParentAdded(true);
+      }
+      
+      // Step 2: Prepare all students for database (including current form if it has data)
+      const allStudents = [...studentsList];
+      
+      // Add current student to list if it has valid data
+      if (hasCurrentStudentData && isStudentValid) {
+        // Calculate level for current student (same logic as handleAddStudent)
+        const referenceDate = new Date("2025-08-04");
+        const birthDate = new Date(studentFormData.dob);
+        const timeDiff = referenceDate.getTime() - birthDate.getTime();
+        const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const years = Math.floor(daysDiff / 365.25);
+        const remainingDays = daysDiff % 365.25;
+        const months = Math.floor(remainingDays / 30.44);
+        const age = years + months / 12;
+        
+        let levelId = null;
+        let levelName = '';
+        if (age >= 1.8 && age < 3) {
+          levelId = 1;
+          levelName = 'Discoverer';
+        } else if (age >= 3 && age < 4) {
+          levelId = 2;
+          levelName = 'Explorer';
+        } else if (age >= 4 && age < 5) {
+          levelId = 3;
+          levelName = 'Adventurer';
+        }
+        
+        allStudents.push({
+          ...studentFormData,
+          tempId: allStudents.length + 1,
+          levelId: levelId,
+          level: levelName
+        });
+      }
+      
+      // Step 3: Check if we have at least one student
+      if (allStudents.length === 0) {
+        toast.error("Please add at least one student before confirming.");
+        return;
+      }
+      
+      // Step 4: Add all students to database with parent_id and parent_profile_id
+      const studentApiURL = API.user.addStudent();
+      const editorId = localStorage.getItem("userId");
+      
+      for (const student of allStudents) {
+        let studentDataToSend = {
+          stud_firstname: student.first_name,
+          stud_middlename: student.middle_name || '',
+          stud_lastname: student.last_name,
+          stud_birthdate: student.dob,
+          stud_enrollment_date: student.enrollment_date || getTodayDateString(),
+          stud_handedness: student.handedness && student.handedness.trim() !== '' ? student.handedness : 'Not Yet Established',
+          stud_gender: student.gender,
+          stud_schedule_class: student.class_schedule,
+          stud_school_status: "Active",
+          editor_id: editorId,
+          parent_id: currentParentUserId,          // Link to parent's user_id
+          parent_profile_id: currentParentProfileId // Link to parent's profile_id
+        };
+        
+        const studentRes = await fetch(studentApiURL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(studentDataToSend),
+        });
+        
+        const studentResult = await studentRes.json();
+        if (!studentRes.ok) {
+          toast.error(`Failed to add student ${student.first_name} ${student.last_name}: ${studentResult.message || "Unknown error"}`);
+          return;
+        }
+      }
+      
+      // Step 5: All students added successfully with parent linking
+      toast.success(`Parent and ${allStudents.length} student(s) added successfully!`);
+      setTimeout(() => router.push("/AdminSection/Users"), 2000);
+    } catch (error) {
+      toast.error("Error submitting: " + error.message);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isFormValid) return;
+  
+    // Don't handle Parent/Student here, they have their own handlers
+    if (userType === "Parent/Student") {
+      return;
+    }
   
     const isStudent = userType === "Student";
   
@@ -987,12 +1362,12 @@ export default function AddUserPage() {
 
 
 // Helper function to get input class names
-function getInputClassName(fieldName, formData, validationErrors) {
+function getInputClassName(fieldName, formData, validationErrors, userType = "", activeSection = "") {
   const baseClass = "w-full p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 border-2 bg-white caret-[#232c67]";
   
   // Special handling for date of birth validation based on user type
   if (fieldName === 'dob' && formData[fieldName]) {
-    const isStudent = userType === "Student";
+    const isStudent = userType === "Student" || (userType === "Parent/Student" && activeSection === "student");
     
     if (isStudent) {
       // Student validation - use studentDob validator
@@ -1207,7 +1582,7 @@ function getInputClassName(fieldName, formData, validationErrors) {
             type="date" 
             value={formData.dob || ""} 
             onChange={handleChange} 
-            className={getInputClassName('dob', formData, validationErrors)}
+            className={getInputClassName('dob', formData, validationErrors, userType, activeSection)}
           />
           {formData.dob && validationErrors.dob && (
             <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
@@ -1249,7 +1624,7 @@ function getInputClassName(fieldName, formData, validationErrors) {
           )}
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Contact Number</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Contact Number <span className="text-red-500">*</span></label>
                       <div className="flex">
               {/* Country Selector */}
               <div className="flex items-center px-0.5 py-2 border border-gray-300 border-r-0 rounded-l-lg bg-white min-w-[50px]">
@@ -1274,7 +1649,7 @@ function getInputClassName(fieldName, formData, validationErrors) {
                type="tel"
                value={formatPhoneForInput(formData.contact)}
                onChange={handleChange}
-               className={`flex-1 rounded-r-lg p-2 border-2 bg-white caret-[#232c67] ${getInputClassName('contact', formData, validationErrors).replace('w-full', '').replace('border-2 bg-white', '')}`}
+               className={`flex-1 rounded-r-lg p-2 caret-[#232c67] ${getInputClassName('contact', formData, validationErrors).replace('w-full', '')}`}
                placeholder="912 345 6789"
                maxLength="14"
            />
@@ -1290,24 +1665,13 @@ function getInputClassName(fieldName, formData, validationErrors) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Country <span className="text-red-500">*</span></label>
-          <CustomDropdown
+          <input
             name="country"
-            value={formData.country || ""}
-            onChange={handleChange}
-            options={[
-              { value: "", label: "Select Country" },
-              ...addressData.countries.map(country => ({ value: country, label: country }))
-            ]}
-            placeholder="Select Country"
-            error={!!validationErrors.country}
-            className={getInputClassName('country', formData, validationErrors).replace('w-full p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 border-2 bg-white', '')}
+            type="text"
+            value="Philippines"
+            disabled
+            className="w-full p-2 rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed"
           />
-          {formData.country && validationErrors.country && (
-            <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <FaExclamationCircle />
-              {validationErrors.country}
-            </div>
-          )}
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Province <span className="text-red-500">*</span></label>
@@ -1586,7 +1950,7 @@ function getInputClassName(fieldName, formData, validationErrors) {
              type="date" 
              value={formData.dob || ""} 
              onChange={handleChange} 
-             className={getInputClassName('dob', formData, validationErrors)}
+             className={getInputClassName('dob', formData, validationErrors, userType, activeSection)}
              min="2020-08-05"
              max="2023-11-04"
            />
@@ -1718,6 +2082,8 @@ function getInputClassName(fieldName, formData, validationErrors) {
                  switch (userType) {
                    case "Teacher":
                      return <FaChalkboardTeacher className="text-sm" />;
+                   case "Parent/Student":
+                     return <FaUsers className="text-sm" />;
                    case "Parent":
                      return <FaUsers className="text-sm" />;
                    case "Student":
@@ -1750,39 +2116,156 @@ function getInputClassName(fieldName, formData, validationErrors) {
         {userType && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-auto md:h-[calc(100vh-250px)] flex flex-col">
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
-              <h3 className="text-lg font-bold text-gray-900">Add {userType} Details</h3>
-              <p className="text-sm text-gray-600">Fill in the required information to create a new {userType.toLowerCase()} account</p>
+              <h3 className="text-lg font-bold text-gray-900">
+                {userType === "Parent/Student" 
+                  ? activeSection === "parent" 
+                    ? "Add Parent Details" 
+                    : "Add Student Details"
+                  : `Add ${userType} Details`}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {userType === "Parent/Student"
+                  ? activeSection === "parent"
+                    ? "Fill in the required information to create a new parent account"
+                    : "Fill in the required information to add a student"
+                  : `Fill in the required information to create a new ${userType.toLowerCase()} account`}
+              </p>
            
             </div>
             
             <form onSubmit={handleSubmit} className="p-4 space-y-6 flex-1 overflow-y-auto md:overflow-y-auto overflow-y-visible">
               {userType === "Teacher" && renderTeacherParentFields(true)}
+              {userType === "Parent/Student" && (
+                <>
+                  {activeSection === "parent" && (
+                    <>
+                      {renderTeacherParentFields(false)}
+                    </>
+                  )}
+                  {activeSection === "student" && (
+                    <>
+                      {studentsList.length > 0 && (
+                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <h4 className="font-semibold text-green-800 mb-2">Added Students ({studentsList.length}):</h4>
+                          <ul className="list-disc list-inside space-y-1">
+                            {studentsList.map((student, idx) => (
+                              <li key={idx} className="text-sm text-green-700">
+                                {student.first_name} {student.middle_name} {student.last_name} - {student.level}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {renderStudentFields()}
+                    </>
+                  )}
+                </>
+              )}
               {userType === "Parent" && renderTeacherParentFields(false)}
               {userType === "Student" && renderStudentFields()}
             </form>
             
             <div className="p-4 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
-              <button
-                onClick={handleClear}
-                type="button"
-                className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                Clear 
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!isFormValid}
-                className={`px-6 py-2 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
-                  isFormValid 
-                    ? 'bg-[#232c67] text-white hover:bg-[#1a1f4d] shadow-sm' 
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <FaClipboardCheck className="text-sm" />
-                  Add {userType}
-                </div>
-              </button>
+              {userType === "Parent/Student" ? (
+                <>
+                  {activeSection === "parent" && (
+                    <>
+                      <button
+                        onClick={handleClear}
+                        type="button"
+                        className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                      >
+                        Clear 
+                      </button>
+                      <button
+                        onClick={handleAddParent}
+                        disabled={!isFormValid}
+                        className={`px-6 py-2 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
+                          isFormValid 
+                            ? 'bg-[#232c67] text-white hover:bg-[#1a1f4d] shadow-sm' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <FaCheckCircle className="text-sm" />
+                          Confirm
+                        </div>
+                      </button>
+                    </>
+                  )}
+                  {activeSection === "student" && (
+                    <>
+                      <button
+                        onClick={() => setActiveSection("parent")}
+                        type="button"
+                        className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center gap-2"
+                      >
+                        <FaArrowLeft className="text-sm" />
+                        Back
+                      </button>
+                      <button
+                        onClick={handleClear}
+                        type="button"
+                        className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                      >
+                        Clear 
+                      </button>
+                      <button
+                        onClick={handleAddStudent}
+                        disabled={!isFormValid}
+                        className={`px-6 py-2 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
+                          isFormValid 
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <FaClipboardCheck className="text-sm" />
+                          Add Student
+                        </div>
+                      </button>
+                      <button
+                        onClick={handleFinalSubmit}
+                        disabled={!isFormValid && studentsList.length === 0}
+                        className={`px-6 py-2 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
+                          (isFormValid || studentsList.length > 0)
+                            ? 'bg-[#232c67] text-white hover:bg-[#1a1f4d] shadow-sm' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <FaCheckCircle className="text-sm" />
+                          Confirm
+                        </div>
+                      </button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleClear}
+                    type="button"
+                    className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  >
+                    Clear 
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!isFormValid}
+                    className={`px-6 py-2 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:ring-offset-2 ${
+                      isFormValid 
+                        ? 'bg-[#232c67] text-white hover:bg-[#1a1f4d] shadow-sm' 
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FaClipboardCheck className="text-sm" />
+                      Add {userType}
+                    </div>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}

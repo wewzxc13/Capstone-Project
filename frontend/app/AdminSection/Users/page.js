@@ -395,9 +395,12 @@ export default function AdminUsersPage() {
       
       Object.keys(users).forEach(role => {
         if (role === selectedCategory) {
-          let roleUsers = (users[role] || []).filter(user => 
-            user.name.toLowerCase().includes(searchTerm.toLowerCase())
-          );
+          let roleUsers = (users[role] || []).filter(user => {
+            const searchLower = searchTerm.toLowerCase();
+            const nameMatch = (user.name || '').toLowerCase().includes(searchLower);
+            const emailMatch = (user.email || '').toLowerCase().includes(searchLower);
+            return nameMatch || emailMatch;
+          });
           
           // Apply student level filter if category is Student
           if (role === "Student" && studentLevelFilter !== "All") {
@@ -778,7 +781,7 @@ export default function AdminUsersPage() {
                   <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
                   <input
                     type="text"
-                    placeholder="Search by name..."
+                    placeholder="Search by name or email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full sm:w-auto pl-12 pr-10 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#232c67] focus:border-[#232c67] transition-colors caret-[#232c67]"

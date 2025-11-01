@@ -45,7 +45,7 @@ const validators = {
     return { isValid: true, message: "" };
   },
   contact: (value) => {
-    if (!value) return { isValid: true, message: "" };
+    if (!value) return { isValid: false, message: "" };
     const digits = value.replace(/\D/g, '');
     if (digits.length === 11 && digits.startsWith('09')) {
       return { isValid: true, message: "" };
@@ -1235,7 +1235,7 @@ export default function ViewUserPage() {
                   
                   {/* Contact Number with +63 formatting */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Contact Number</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Contact Number <span className="text-red-500">*</span></label>
                     {isEditing ? (
                       <input
                         name="contactNo"
@@ -1268,26 +1268,16 @@ export default function ViewUserPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Country <span className="text-red-500">*</span></label>
                     {isEditing ? (
-                      <select 
-                        name="country" 
-                        value={formData.country || ""} 
-                        onChange={handleChange} 
-                        className={getInputClassName('country')}
-                      >
-                        <option value="">Select Country</option>
-                        {addressData.countries.map(country => (
-                          <option key={country} value={country}>{country}</option>
-                        ))}
-                      </select>
+                      <input
+                        name="country"
+                        type="text"
+                        value="Philippines"
+                        disabled
+                        className="w-full p-2 rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed"
+                      />
                     ) : (
                       <div className="border w-full p-2 rounded-lg bg-gray-50 text-gray-700">
                         {formData.country || "Not specified"}
-                      </div>
-                    )}
-                    {formData.country && validationErrors.country && (
-                      <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <FaTimes />
-                        {validationErrors.country}
                       </div>
                     )}
                   </div>

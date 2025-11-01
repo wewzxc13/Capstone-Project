@@ -166,6 +166,7 @@ export const userAPI = {
   unlinkStudentFromParent: () => getEndpoint('Users/unlink_student_from_parent.php'),
   getLinkedStudents: () => getEndpoint('Users/get_linked_students.php'),
   updateLevel: () => getEndpoint('update_lvl.php'),
+  getStudentAgeRequirements: () => getEndpoint('Users/get_student_age_requirements.php'),
 };
 
 /**
