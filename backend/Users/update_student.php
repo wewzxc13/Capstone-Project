@@ -64,7 +64,8 @@ try {
     $editable = [
         'stud_firstname', 'stud_middlename', 'stud_lastname', 'stud_birthdate',
         'stud_enrollment_date', 'stud_handedness', 'stud_gender', 'stud_schedule_class',
-        'stud_photo', 'stud_school_status', 'level_id', 'parent_id', 'parent_profile_id'
+        'stud_photo', 'stud_school_status', 'level_id', 'parent_id', 'parent_profile_id',
+        'stud_notes'
     ];
     
     foreach ($editable as $col) {

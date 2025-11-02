@@ -592,3 +592,6 @@ Plain Input Password: Marg@123
 2025-10-15 12:58:36 - Input: dichoskristopher@gmail.com
 2025-10-15 12:58:36 - Plain Input Password: Deso_1114
 2025-10-15 12:58:36 - Hashed DB Password: $2y$10$ojSwpBdI06wTC14JO9I2fegkCxMb67x28Nb5TYK9f5Kot749aResu
+2025-11-02 13:52:26 - Input: paulandrewnerona@gmail.com
+2025-11-02 13:52:26 - Plain Input Password: Andrew@123
+2025-11-02 13:52:26 - Hashed DB Password: $2y$10$28CRBvg6huS/f7bZskjIcewZt9G4lhGq18sQGt6hmBo6g.Lx9.9sS

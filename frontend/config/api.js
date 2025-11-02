@@ -158,6 +158,8 @@ export const userAPI = {
   updateUserPhoto: () => getEndpoint('Users/update_user_photo.php'),
   uploadPhoto: () => getEndpoint('Users/upload_photo.php'),
   archiveUser: () => getEndpoint('Users/archive_user.php'),
+  bulkArchiveParents: () => getEndpoint('Users/bulk_archive_parents.php'),
+  bulkRestoreParents: () => getEndpoint('Users/bulk_restore_parents.php'),
   unarchiveUser: () => getEndpoint('Users/unarchive_user.php'),
   getArchivedUsers: () => getEndpoint('Users/get_archived_users.php'),
   linkStudent: () => getEndpoint('Users/link_student.php'),
@@ -167,6 +169,7 @@ export const userAPI = {
   getLinkedStudents: () => getEndpoint('Users/get_linked_students.php'),
   updateLevel: () => getEndpoint('update_lvl.php'),
   getStudentAgeRequirements: () => getEndpoint('Users/get_student_age_requirements.php'),
+  getAvailableSlots: (levelId) => getEndpoint(`Users/get_available_slots.php${levelId ? `?level_id=${levelId}` : ''}`),
 };
 
 /**

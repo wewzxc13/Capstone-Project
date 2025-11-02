@@ -184,17 +184,23 @@ const validators = {
     }
   },
 
-  // Student date of birth validation - must match level logic in update_lvl.php
-  studentDob: (value) => {
+  // Student date of birth validation - uses dynamic age requirements
+  studentDob: (value, ageRequirements) => {
     if (!value) return { isValid: false, message: "" };
-    // Reference date for age computation (same as update_lvl.php)
-    const referenceDate = new Date("2025-08-04");
+    
+    // If age requirements not loaded yet, use fallback
+    if (!ageRequirements || !ageRequirements.levels) {
+      return { isValid: false, message: "Age requirements are loading. Please wait." };
+    }
+    
     const birthDate = new Date(value);
     if (isNaN(birthDate.getTime())) {
       return { isValid: false, message: "Invalid date format" };
     }
     
-    // Use the EXACT same age calculation as update_lvl.php
+    // Use dynamic reference date from age requirements
+    const referenceDate = new Date(ageRequirements.reference_date);
+    
     // Calculate the difference in milliseconds and convert to years/months
     const timeDiff = referenceDate.getTime() - birthDate.getTime();
     const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
@@ -206,11 +212,20 @@ const validators = {
     
     const age = years + months / 12;
     
-    // Level date ranges (same as update_lvl.php)
+    // Use dynamic level date ranges from age requirements
     const levelDateRanges = {
-      1: { start: new Date("2022-08-05"), end: new Date("2023-11-04") },
-      2: { start: new Date("2021-08-05"), end: new Date("2022-08-04") }, // Accepts 1.8 years and above
-      3: { start: new Date("2020-08-05"), end: new Date("2021-08-04") },
+      1: { 
+        start: new Date(ageRequirements.levels[1].start_date), 
+        end: new Date(ageRequirements.levels[1].end_date) 
+      },
+      2: { 
+        start: new Date(ageRequirements.levels[2].start_date), 
+        end: new Date(ageRequirements.levels[2].end_date) 
+      },
+      3: { 
+        start: new Date(ageRequirements.levels[3].start_date), 
+        end: new Date(ageRequirements.levels[3].end_date) 
+      },
     };
     
     let levelId = null;
@@ -223,13 +238,29 @@ const validators = {
     }
     
     if (!levelId) {
-      return { isValid: false, message: "Only students aged 1.8, 3, or 4 are allowed. Given age: " + Math.floor(age) };
+      // Format age to show more precision for better error messages
+      const ageYears = Math.floor(age);
+      const ageMonths = Math.floor((age - ageYears) * 12);
+      const ageDisplay = ageMonths > 0 ? `${ageYears} years, ${ageMonths} months` : `${ageYears} years`;
+      return { isValid: false, message: `Only students aged 1.8, 3, or 4 are allowed. Given age: ${ageDisplay} (${age.toFixed(1)} years)` };
     }
     
-    // Check if birthdate falls within the valid range for the level
+    // Get the date range for the determined level
     const range = levelDateRanges[levelId];
-    if (birthDate < range.start || birthDate > range.end) {
-      return { isValid: false, message: `Birthdate must be between ${range.start.toISOString().slice(0,10)} and ${range.end.toISOString().slice(0,10)} for Level ${levelId}` };
+    
+    // Check if birthdate falls within the valid range for the level
+    // Compare dates using date strings (YYYY-MM-DD) to avoid time component issues
+    // Note: The end date is inclusive (student born on end date should be accepted)
+    const birthDateStr = birthDate.toISOString().split('T')[0];
+    const rangeStartStr = range.start.toISOString().split('T')[0];
+    const rangeEndStr = range.end.toISOString().split('T')[0];
+    
+    if (birthDateStr < rangeStartStr || birthDateStr > rangeEndStr) {
+      const levelInfo = ageRequirements.levels[levelId];
+      return { 
+        isValid: false, 
+        message: `Birthdate must be between ${levelInfo.start_date_formatted} and ${levelInfo.end_date_formatted} for Level ${levelId} (${levelInfo.name})` 
+      };
     }
     
     return { isValid: true, message: "" };
@@ -494,6 +525,9 @@ export default function AddUserPage() {
   const [studentFormData, setStudentFormData] = useState({
     enrollment_date: getTodayDateString(),
   });
+  const [isManualLevel, setIsManualLevel] = useState(false); // Toggle for manual level selection
+  const [manualLevelId, setManualLevelId] = useState(null); // Manual level selection
+  const [studNotes, setStudNotes] = useState(''); // Notes for manual level selection
   const [studentsList, setStudentsList] = useState([]); // Track added students
   const [parentAdded, setParentAdded] = useState(false); // Track if parent has been added
   const [parentUserId, setParentUserId] = useState(null); // Store parent's user_id
@@ -511,8 +545,169 @@ export default function AddUserPage() {
     barangays: {}
   });
   
+  // Dynamic age requirements state
+  const [ageRequirements, setAgeRequirements] = useState(null);
+  const [loadingAgeRequirements, setLoadingAgeRequirements] = useState(true);
+  
+  // Available slots state
+  const [availableSlots, setAvailableSlots] = useState(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  
   const [touchedFields, setTouchedFields] = useState({});
   const router = useRouter();
+
+  // Fetch dynamic age requirements on component mount
+  useEffect(() => {
+    const fetchAgeRequirements = async () => {
+      try {
+        setLoadingAgeRequirements(true);
+        const response = await fetch(API.user.getStudentAgeRequirements());
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          setAgeRequirements(data);
+        } else {
+          toast.error("Failed to load age requirements. Using default values.");
+          // Fallback to default values
+          setAgeRequirements({
+            reference_date: "2025-08-04",
+            reference_date_formatted: "August 4, 2025",
+            levels: {
+              1: {
+                name: "Discoverer",
+                age_range: "1.8-3 years",
+                start_date: "2022-08-05",
+                end_date: "2023-11-04",
+                start_date_formatted: "Aug 5, 2022",
+                end_date_formatted: "Nov 4, 2023"
+              },
+              2: {
+                name: "Explorer",
+                age_range: "3-4 years",
+                start_date: "2021-08-05",
+                end_date: "2022-08-04",
+                start_date_formatted: "Aug 5, 2021",
+                end_date_formatted: "Aug 4, 2022"
+              },
+              3: {
+                name: "Adventurer",
+                age_range: "4-5 years",
+                start_date: "2020-08-05",
+                end_date: "2021-08-04",
+                start_date_formatted: "Aug 5, 2020",
+                end_date_formatted: "Aug 4, 2021"
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching age requirements:", error);
+        toast.error("Failed to load age requirements. Using default values.");
+        // Fallback to default values
+        setAgeRequirements({
+          reference_date: "2025-08-04",
+          reference_date_formatted: "August 4, 2025",
+          levels: {
+            1: {
+              name: "Discoverer",
+              age_range: "1.8-3 years",
+              start_date: "2022-08-05",
+              end_date: "2023-11-04",
+              start_date_formatted: "Aug 5, 2022",
+              end_date_formatted: "Nov 4, 2023"
+            },
+            2: {
+              name: "Explorer",
+              age_range: "3-4 years",
+              start_date: "2021-08-05",
+              end_date: "2022-08-04",
+              start_date_formatted: "Aug 5, 2021",
+              end_date_formatted: "Aug 4, 2022"
+            },
+            3: {
+              name: "Adventurer",
+              age_range: "4-5 years",
+              start_date: "2020-08-05",
+              end_date: "2021-08-04",
+              start_date_formatted: "Aug 5, 2020",
+              end_date_formatted: "Aug 4, 2021"
+            }
+          }
+        });
+      } finally {
+        setLoadingAgeRequirements(false);
+      }
+    };
+    
+    fetchAgeRequirements();
+  }, []);
+
+  // Function to determine level from birthdate or manual selection
+  const getCurrentLevel = () => {
+    if (userType === "Parent/Student") {
+      if (activeSection === "student") {
+        // Check manual level first
+        if (isManualLevel && manualLevelId) {
+          return manualLevelId;
+        }
+        // Otherwise calculate from birthdate
+        if (studentFormData.dob && ageRequirements) {
+          const referenceDate = new Date(ageRequirements.reference_date);
+          const birthDate = new Date(studentFormData.dob);
+          const timeDiff = referenceDate.getTime() - birthDate.getTime();
+          const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+          const years = Math.floor(daysDiff / 365.25);
+          const remainingDays = daysDiff % 365.25;
+          const months = Math.floor(remainingDays / 30.44);
+          const age = years + months / 12;
+          
+          if (age >= 1.8 && age < 3) return 1;
+          if (age >= 3 && age < 4) return 2;
+          if (age >= 4 && age < 5) return 3;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Fetch available slots when level is determined
+  useEffect(() => {
+    const fetchAvailableSlots = async () => {
+      const levelId = getCurrentLevel();
+      
+      // Only fetch if we have a valid level
+      if (!levelId || userType !== "Parent/Student") {
+        setAvailableSlots(null);
+        return;
+      }
+      
+      try {
+        setLoadingSlots(true);
+        const response = await fetch(API.user.getAvailableSlots(levelId));
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.slots) {
+          setAvailableSlots(data.slots);
+        } else {
+          setAvailableSlots(null);
+        }
+      } catch (error) {
+        console.error("Error fetching available slots:", error);
+        setAvailableSlots(null);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    
+    fetchAvailableSlots();
+  }, [
+    userType,
+    activeSection,
+    studentFormData.dob,
+    isManualLevel,
+    manualLevelId,
+    ageRequirements
+  ]);
 
   // Reset form when user type changes
   useEffect(() => {
@@ -524,8 +719,14 @@ export default function AddUserPage() {
       setParentAdded(false);
       setParentUserId(null);
       setParentProfileId(null);
+      setIsManualLevel(false);
+      setManualLevelId(null);
+      setStudNotes('');
     } else {
       setFormData({ enrollment_date: getTodayDateString(), country: "Philippines" });
+      setIsManualLevel(false);
+      setManualLevelId(null);
+      setStudNotes('');
     }
     setValidationErrors({});
     setTouchedFields({});
@@ -569,9 +770,15 @@ export default function AddUserPage() {
         setParentFormData({ country: "Philippines" });
       } else {
         setStudentFormData({ enrollment_date: getTodayDateString() });
+        setIsManualLevel(false);
+        setManualLevelId(null);
+        setStudNotes('');
       }
     } else {
       setFormData({ enrollment_date: getTodayDateString(), country: "Philippines" });
+      setIsManualLevel(false);
+      setManualLevelId(null);
+      setStudNotes('');
     }
     setValidationErrors({});
     setTouchedFields({});
@@ -611,7 +818,7 @@ export default function AddUserPage() {
       case 'dob':
         return validators.dob(value);
       case 'studentDob':
-        return validators.studentDob(value);
+        return validators.studentDob(value, ageRequirements);
       case 'gender':
       case 'class_schedule':
       case 'country':
@@ -650,10 +857,24 @@ export default function AddUserPage() {
           }
         });
         
-        // Special validation for student date of birth (age 2-4)
-        const dobValidation = validators.studentDob(studentFormData.dob || formData.dob);
-        if (!dobValidation.isValid) {
-          errors.dob = dobValidation.message;
+        // Special validation for student date of birth (age 2-4) - skip if manual level is selected
+        if (!isManualLevel) {
+          const dobValidation = validators.studentDob(studentFormData.dob || formData.dob, ageRequirements);
+          if (!dobValidation.isValid) {
+            errors.dob = dobValidation.message;
+          }
+        } else {
+          // When manual level is selected, still validate that DOB is provided
+          if (!studentFormData.dob && !formData.dob) {
+            errors.dob = "Date of birth is required";
+          }
+          // Validate manual level selection
+          if (!manualLevelId) {
+            errors.manualLevel = "Please select a class level";
+          }
+          if (!studNotes || studNotes.trim() === '') {
+            errors.studNotes = "Notes are required when manually assigning a class level";
+          }
         }
       }
     } else if (userType === "Student") {
@@ -665,10 +886,24 @@ export default function AddUserPage() {
         }
       });
       
-      // Special validation for student date of birth (age 2-4)
-      const dobValidation = validators.studentDob(formData.dob);
-      if (!dobValidation.isValid) {
-        errors.dob = dobValidation.message;
+      // Special validation for student date of birth (age 2-4) - skip if manual level is selected
+      if (!isManualLevel) {
+        const dobValidation = validators.studentDob(formData.dob, ageRequirements);
+        if (!dobValidation.isValid) {
+          errors.dob = dobValidation.message;
+        }
+      } else {
+        // When manual level is selected, still validate that DOB is provided
+        if (!formData.dob) {
+          errors.dob = "Date of birth is required";
+        }
+        // Validate manual level selection
+        if (!manualLevelId) {
+          errors.manualLevel = "Please select a class level";
+        }
+        if (!studNotes || studNotes.trim() === '') {
+          errors.studNotes = "Notes are required when manually assigning a class level";
+        }
       }
     } else {
       // Teacher validation - use dob for age 18+ validation
@@ -716,14 +951,14 @@ export default function AddUserPage() {
 
   useEffect(() => {
     if (userType === "Parent/Student") {
-      console.log('useEffect triggered - Parent/Student form changed:', { parentFormData, studentFormData, activeSection });
+      console.log('useEffect triggered - Parent/Student form changed:', { parentFormData, studentFormData, activeSection, isManualLevel, manualLevelId, studNotes });
       validateForm();
     } else {
       console.log('useEffect triggered - formData changed:', formData);
       console.log('useEffect - current contact value:', formData.contact);
       validateForm();
     }
-  }, [formData, userType, parentFormData, studentFormData, activeSection]);
+  }, [formData, userType, parentFormData, studentFormData, activeSection, ageRequirements, isManualLevel, manualLevelId, studNotes]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -977,27 +1212,53 @@ export default function AddUserPage() {
   const handleAddStudent = () => {
     if (!isFormValid) return false;
     
-    // Calculate level based on age (same logic as backend)
-    const referenceDate = new Date("2025-08-04");
-    const birthDate = new Date(studentFormData.dob);
-    const timeDiff = referenceDate.getTime() - birthDate.getTime();
-    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-    const years = Math.floor(daysDiff / 365.25);
-    const remainingDays = daysDiff % 365.25;
-    const months = Math.floor(remainingDays / 30.44);
-    const age = years + months / 12;
+    // Check if manual level is selected and required fields are filled
+    if (isManualLevel) {
+      if (!manualLevelId) {
+        toast.error("Please select a class level when using manual assignment.");
+        return false;
+      }
+      if (!studNotes || studNotes.trim() === '') {
+        toast.error("Please provide notes explaining why this student is manually assigned to this level.");
+        return false;
+      }
+    }
     
+    // Use manual level if selected, otherwise calculate from age
     let levelId = null;
     let levelName = '';
-    if (age >= 1.8 && age < 3) {
-      levelId = 1;
-      levelName = 'Discoverer';
-    } else if (age >= 3 && age < 4) {
-      levelId = 2;
-      levelName = 'Explorer';
-    } else if (age >= 4 && age < 5) {
-      levelId = 3;
-      levelName = 'Adventurer';
+    
+    if (isManualLevel && manualLevelId) {
+      // Use manually selected level
+      levelId = manualLevelId;
+      levelName = ageRequirements?.levels[manualLevelId]?.name || 
+        (manualLevelId === 1 ? 'Discoverer' : manualLevelId === 2 ? 'Explorer' : 'Adventurer');
+    } else {
+      // Calculate level based on age (using dynamic reference date)
+      if (!ageRequirements) {
+        toast.error("Age requirements are loading. Please wait.");
+        return false;
+      }
+      
+      const referenceDate = new Date(ageRequirements.reference_date);
+      const birthDate = new Date(studentFormData.dob);
+      const timeDiff = referenceDate.getTime() - birthDate.getTime();
+      const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const years = Math.floor(daysDiff / 365.25);
+      const remainingDays = daysDiff % 365.25;
+      const months = Math.floor(remainingDays / 30.44);
+      const age = years + months / 12;
+      
+      if (age >= 1.8 && age < 3) {
+        levelId = 1;
+        levelName = ageRequirements.levels[1].name;
+      } else if (age >= 3 && age < 4) {
+        levelId = 2;
+        levelName = ageRequirements.levels[2].name;
+      } else if (age >= 4 && age < 5) {
+        levelId = 3;
+        levelName = ageRequirements.levels[3].name;
+      }
     }
     
     // Add student to the list (not to database yet)
@@ -1005,16 +1266,24 @@ export default function AddUserPage() {
       ...studentFormData,
       tempId: studentsList.length + 1, // Temporary ID for list
       levelId: levelId,
-      level: levelName
+      level: levelName,
+      isManualLevel: isManualLevel,
+      stud_notes: isManualLevel ? studNotes : null
     };
     
     setStudentsList(prevList => [...prevList, newStudent]);
     
-    // Reset student form
-    setStudentFormData({ enrollment_date: getTodayDateString() });
-    setValidationErrors({});
+      // Reset student form and manual level selection
+      setStudentFormData({ enrollment_date: getTodayDateString() });
+      setIsManualLevel(false);
+      setManualLevelId(null);
+      setStudNotes('');
+      setValidationErrors({});
+      // Also reset formData for student section
+      setFormData({ enrollment_date: getTodayDateString() });
     
-    toast.success(`Student saved to list! Assigned Class: ${levelName}`);
+    const assignmentNote = isManualLevel ? ' (Manually Assigned)' : '';
+    toast.success(`Student saved to list! Assigned Class: ${levelName}${assignmentNote}`);
     
     return true;
   };
@@ -1054,12 +1323,28 @@ export default function AddUserPage() {
         }
       });
       
-      const dobValidation = validators.studentDob(studentFormData.dob || formData.dob);
-      if (!dobValidation.isValid) {
-        errors.student_dob = dobValidation.message;
+      // Special validation for student date of birth - skip age validation if manual level is selected
+      if (!isManualLevel) {
+        const dobValidation = validators.studentDob(studentFormData.dob || formData.dob, ageRequirements);
+        if (!dobValidation.isValid) {
+          errors.student_dob = dobValidation.message;
+        }
+      } else {
+        // When manual level is selected, still validate that DOB is provided
+        if (!studentFormData.dob && !formData.dob) {
+          errors.student_dob = "Date of birth is required";
+        }
+        // Validate manual level selection
+        if (!manualLevelId) {
+          errors.student_manualLevel = "Please select a class level";
+        }
+        if (!studNotes || studNotes.trim() === '') {
+          errors.student_studNotes = "Notes are required when manually assigning a class level";
+        }
       }
       
-      isStudentValid = !['first_name', 'middle_name', 'last_name', 'gender', 'class_schedule', 'dob'].some(field => errors[`student_${field}`]);
+      isStudentValid = !['first_name', 'middle_name', 'last_name', 'gender', 'class_schedule', 'dob'].some(field => errors[`student_${field}`]) &&
+                      !errors.student_manualLevel && !errors.student_studNotes;
     }
     
     // Check if forms are valid
@@ -1157,34 +1442,62 @@ export default function AddUserPage() {
       
       // Add current student to list if it has valid data
       if (hasCurrentStudentData && isStudentValid) {
-        // Calculate level for current student (same logic as handleAddStudent)
-        const referenceDate = new Date("2025-08-04");
-        const birthDate = new Date(studentFormData.dob);
-        const timeDiff = referenceDate.getTime() - birthDate.getTime();
-        const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-        const years = Math.floor(daysDiff / 365.25);
-        const remainingDays = daysDiff % 365.25;
-        const months = Math.floor(remainingDays / 30.44);
-        const age = years + months / 12;
+        // Validate manual level if selected
+        if (isManualLevel) {
+          if (!manualLevelId) {
+            toast.error("Please select a class level when using manual assignment.");
+            return;
+          }
+          if (!studNotes || studNotes.trim() === '') {
+            toast.error("Please provide notes explaining why this student is manually assigned to this level.");
+            return;
+          }
+        }
         
+        // Use manual level if selected, otherwise calculate from age
         let levelId = null;
         let levelName = '';
-        if (age >= 1.8 && age < 3) {
-          levelId = 1;
-          levelName = 'Discoverer';
-        } else if (age >= 3 && age < 4) {
-          levelId = 2;
-          levelName = 'Explorer';
-        } else if (age >= 4 && age < 5) {
-          levelId = 3;
-          levelName = 'Adventurer';
+        
+        if (isManualLevel && manualLevelId) {
+          // Use manually selected level
+          levelId = manualLevelId;
+          levelName = ageRequirements?.levels[manualLevelId]?.name || 
+            (manualLevelId === 1 ? 'Discoverer' : manualLevelId === 2 ? 'Explorer' : 'Adventurer');
+        } else {
+          // Calculate level based on age (using dynamic reference date)
+          if (!ageRequirements) {
+            toast.error("Age requirements are loading. Please wait.");
+            return;
+          }
+          
+          const referenceDate = new Date(ageRequirements.reference_date);
+          const birthDate = new Date(studentFormData.dob);
+          const timeDiff = referenceDate.getTime() - birthDate.getTime();
+          const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+          const years = Math.floor(daysDiff / 365.25);
+          const remainingDays = daysDiff % 365.25;
+          const months = Math.floor(remainingDays / 30.44);
+          const age = years + months / 12;
+          
+          if (age >= 1.8 && age < 3) {
+            levelId = 1;
+            levelName = ageRequirements.levels[1].name;
+          } else if (age >= 3 && age < 4) {
+            levelId = 2;
+            levelName = ageRequirements.levels[2].name;
+          } else if (age >= 4 && age < 5) {
+            levelId = 3;
+            levelName = ageRequirements.levels[3].name;
+          }
         }
         
         allStudents.push({
           ...studentFormData,
           tempId: allStudents.length + 1,
           levelId: levelId,
-          level: levelName
+          level: levelName,
+          isManualLevel: isManualLevel,
+          stud_notes: isManualLevel ? studNotes : null
         });
       }
       
@@ -1211,8 +1524,19 @@ export default function AddUserPage() {
           stud_school_status: "Active",
           editor_id: editorId,
           parent_id: currentParentUserId,          // Link to parent's user_id
-          parent_profile_id: currentParentProfileId // Link to parent's profile_id
+          parent_profile_id: currentParentProfileId, // Link to parent's profile_id
         };
+        
+        // Only send level_id if it's a manual assignment
+        // For automatic assignments, don't send level_id and let backend calculate it
+        if (student.isManualLevel && student.levelId) {
+          studentDataToSend.level_id = student.levelId;
+          studentDataToSend.stud_notes = student.stud_notes || null;
+        } else {
+          // For automatic assignments, don't send level_id - backend will calculate from age
+          // Don't send stud_notes either (it should be null/empty)
+          studentDataToSend.stud_notes = null;
+        }
         
         const studentRes = await fetch(studentApiURL, {
           method: "POST",
@@ -1310,6 +1634,42 @@ export default function AddUserPage() {
       dataToSend.editor_id = localStorage.getItem("userId");
     } else {
       // Remap for student
+      // Check if manual level is selected and required fields are filled
+      if (isManualLevel) {
+        if (!manualLevelId) {
+          toast.error("Please select a class level when using manual assignment.");
+          return;
+        }
+        if (!studNotes || studNotes.trim() === '') {
+          toast.error("Please provide notes explaining why this student is manually assigned to this level.");
+          return;
+        }
+      }
+      
+      // Calculate level if not manually selected
+      let levelId = null;
+      if (isManualLevel && manualLevelId) {
+        levelId = manualLevelId;
+      } else if (ageRequirements && formData.dob) {
+        // Calculate level based on age
+        const referenceDate = new Date(ageRequirements.reference_date);
+        const birthDate = new Date(formData.dob);
+        const timeDiff = referenceDate.getTime() - birthDate.getTime();
+        const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const years = Math.floor(daysDiff / 365.25);
+        const remainingDays = daysDiff % 365.25;
+        const months = Math.floor(remainingDays / 30.44);
+        const age = years + months / 12;
+        
+        if (age >= 1.8 && age < 3) {
+          levelId = 1;
+        } else if (age >= 3 && age < 4) {
+          levelId = 2;
+        } else if (age >= 4 && age < 5) {
+          levelId = 3;
+        }
+      }
+      
       dataToSend = {
         stud_firstname: formData.first_name,
         stud_middlename: formData.middle_name,
@@ -1321,8 +1681,18 @@ export default function AddUserPage() {
         stud_schedule_class: formData.class_schedule,
         // Photo will be automatically assigned by the backend based on gender
         stud_school_status: "Active",
-        editor_id: localStorage.getItem("userId") // Add editor_id for system logging
+        editor_id: localStorage.getItem("userId"), // Add editor_id for system logging
       };
+      
+      // Only send level_id if it's a manual assignment
+      // For automatic assignments, don't send level_id and let backend calculate it
+      if (isManualLevel && levelId) {
+        dataToSend.level_id = levelId;
+        dataToSend.stud_notes = studNotes || null;
+      } else {
+        // For automatic assignments, don't send level_id - backend will calculate from age
+        dataToSend.stud_notes = null;
+      }
     }
   
     try {
@@ -1362,7 +1732,7 @@ export default function AddUserPage() {
 
 
 // Helper function to get input class names
-function getInputClassName(fieldName, formData, validationErrors, userType = "", activeSection = "") {
+function getInputClassName(fieldName, formData, validationErrors, userType = "", activeSection = "", ageRequirements = null, isManualLevel = false) {
   const baseClass = "w-full p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 border-2 bg-white caret-[#232c67]";
   
   // Special handling for date of birth validation based on user type
@@ -1370,12 +1740,23 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
     const isStudent = userType === "Student" || (userType === "Parent/Student" && activeSection === "student");
     
     if (isStudent) {
-      // Student validation - use studentDob validator
-      const dobValidation = validators.studentDob(formData[fieldName]);
-      if (!dobValidation.isValid) {
-        return `${baseClass} border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500`;
+      // Student validation - skip age validation if manual level is enabled
+      if (isManualLevel) {
+        // In manual mode, just check if DOB is provided (required field)
+        if (!formData[fieldName]) {
+          return `${baseClass} border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500`;
+        } else {
+          // DOB is provided, show green (age doesn't matter in manual mode)
+          return `${baseClass} border-green-500 bg-green-50 focus:border-green-500 focus:ring-green-500`;
+        }
       } else {
-        return `${baseClass} border-green-500 bg-green-50 focus:border-green-500 focus:ring-green-500`;
+        // Automatic mode - validate age using studentDob validator
+        const dobValidation = validators.studentDob(formData[fieldName], ageRequirements);
+        if (!dobValidation.isValid) {
+          return `${baseClass} border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500`;
+        } else {
+          return `${baseClass} border-green-500 bg-green-50 focus:border-green-500 focus:ring-green-500`;
+        }
       }
     } else {
       // Teacher/Parent validation - use dob validator (18+ years)
@@ -1582,7 +1963,7 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
             type="date" 
             value={formData.dob || ""} 
             onChange={handleChange} 
-            className={getInputClassName('dob', formData, validationErrors, userType, activeSection)}
+            className={getInputClassName('dob', formData, validationErrors, userType, activeSection, ageRequirements, isManualLevel)}
           />
           {formData.dob && validationErrors.dob && (
             <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
@@ -1804,9 +2185,9 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
     <>
       <div className="bg-[#232c67] text-white rounded-lg px-4 py-3 mb-6 font-semibold text-lg">
         Student Details
-        {formData.dob && !validationErrors.dob && (() => {
-          // Calculate level for display in header using same method as validation
-          const referenceDate = new Date("2025-08-04");
+        {formData.dob && !validationErrors.dob && ageRequirements && !isManualLevel && (() => {
+          // Calculate level for display in header using dynamic reference date (only if not manual)
+          const referenceDate = new Date(ageRequirements.reference_date);
           const birthDate = new Date(formData.dob);
           const timeDiff = referenceDate.getTime() - birthDate.getTime();
           const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
@@ -1822,13 +2203,17 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
           } else if (age >= 4 && age < 5) {
             levelId = 3;
           }
-          const levelNames = { 1: 'Discoverer', 2: 'Explorer', 3: 'Adventurer' };
           return levelId ? (
             <span className="ml-3 text-sm font-normal bg-white bg-opacity-20 px-2 py-1 rounded">
-              Level {levelId}: {levelNames[levelId]}
+              Level {levelId}: {ageRequirements.levels[levelId].name}
             </span>
           ) : '';
         })()}
+        {isManualLevel && manualLevelId && (
+          <span className="ml-3 text-sm font-normal bg-yellow-400 bg-opacity-30 px-2 py-1 rounded">
+            Level {manualLevelId}: {ageRequirements?.levels[manualLevelId]?.name || (manualLevelId === 1 ? 'Discoverer' : manualLevelId === 2 ? 'Explorer' : 'Adventurer')} (Manual)
+          </span>
+        )}
       </div>
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <div className="flex items-start gap-3">
@@ -1839,15 +2224,28 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
           </div>
           <div className="text-sm text-blue-800">
             <p className="font-medium mb-1">Student Age Requirements</p>
-            <p className="text-blue-700">
-              Students must be between 1.8 and 5 years old as of August 4, 2025. 
-              Birthdates are automatically validated against the following ranges:
-            </p>
-                         <ul className="mt-2 text-blue-700 space-y-1">
-               <li>• <strong>Level 1 (Discoverer):</strong> Aug 5, 2022 - Nov 4, 2023 (Age 1.8-3 years)</li>
-               <li>• <strong>Level 2 (Explorer):</strong> Aug 5, 2021 - Aug 4, 2022 (Age 3-4 years)</li>
-               <li>• <strong>Level 3 (Adventurer):</strong> Aug 5, 2020 - Aug 4, 2021 (Age 4-5 years)</li>
-             </ul>
+            {loadingAgeRequirements ? (
+              <p className="text-blue-700">Loading age requirements...</p>
+            ) : ageRequirements ? (
+              <>
+                <p className="text-blue-700">
+                  Students must be between 1.8 and 5 years old as of {ageRequirements.reference_date_formatted}. 
+                  Birthdates are automatically validated against the following ranges:
+                </p>
+                <ul className="mt-2 text-blue-700 space-y-1">
+                  {Object.keys(ageRequirements.levels).map(levelKey => {
+                    const level = ageRequirements.levels[levelKey];
+                    return (
+                      <li key={levelKey}>
+                        • <strong>Level {levelKey} ({level.name}):</strong> {level.start_date_formatted} - {level.end_date_formatted} (Age {level.age_range})
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            ) : (
+              <p className="text-blue-700 text-red-600">Failed to load age requirements. Please refresh the page.</p>
+            )}
           </div>
         </div>
       </div>
@@ -1939,20 +2337,18 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
           )}
         </div>
         <div>
-                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-             Date of Birth <span className="text-red-500">*</span>
-             <span className="text-xs text-gray-500 ml-2 font-normal">
-               (Valid: Aug 5, 2020 - Nov 4, 2023)
-             </span>
-           </label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Date of Birth <span className="text-red-500">*</span>
+          </label>
            <input 
              name="dob" 
              type="date" 
              value={formData.dob || ""} 
              onChange={handleChange} 
-             className={getInputClassName('dob', formData, validationErrors, userType, activeSection)}
-             min="2020-08-05"
-             max="2023-11-04"
+             className={getInputClassName('dob', formData, validationErrors, userType, activeSection, ageRequirements, isManualLevel)}
+             min={isManualLevel ? undefined : (ageRequirements ? ageRequirements.levels[3].start_date : "2020-08-05")}
+             max={isManualLevel ? undefined : (ageRequirements ? ageRequirements.levels[1].end_date : "2023-11-04")}
+             disabled={false}
            />
           {formData.dob && validationErrors.dob && (
             <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
@@ -1960,23 +2356,34 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
               {validationErrors.dob}
             </div>
           )}
-          {formData.dob && !validationErrors.dob && (
+          {formData.dob && !validationErrors.dob && ageRequirements && !isManualLevel && (
             <div className="text-green-600 text-xs mt-1 flex items-center gap-1">
               <FaCheckCircle />
               Valid birthdate for student enrollment: 
               {(() => {
-                // Calculate level for display using same method as validation
-                const referenceDate = new Date("2025-08-04");
+                // Calculate level for display using dynamic reference date
+                const referenceDate = new Date(ageRequirements.reference_date);
                 const birthDate = new Date(formData.dob);
                 const timeDiff = referenceDate.getTime() - birthDate.getTime();
                 const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
                 const years = Math.floor(daysDiff / 365.25);
                 const remainingDays = daysDiff % 365.25;
                 const months = Math.floor(remainingDays / 30.44);
-                const age = years + months / 12;
                 
                 return ` ${years} years, ${months} months`;
               })()}
+            </div>
+          )}
+          {isManualLevel && formData.dob && (
+            <div className="text-yellow-600 text-xs mt-1 flex items-center gap-1">
+              <FaExclamationCircle />
+              Manual level assignment enabled: Age will not be used to determine class level. Please select the class level below.
+            </div>
+          )}
+          {isManualLevel && !formData.dob && (
+            <div className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+              <FaExclamationCircle />
+              Date of birth is still required for student records (even in manual mode)
             </div>
           )}
                 
@@ -2024,37 +2431,207 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Class Schedule <span className="text-red-500">*</span></label>
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="class_schedule"
-                value="Morning"
-                checked={formData.class_schedule === "Morning"}
-                onChange={handleChange}
-                className="text-[#232c67] focus:ring-[#232c67]"
-              />
-              Morning
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="class_schedule"
-                value="Afternoon"
-                checked={formData.class_schedule === "Afternoon"}
-                onChange={handleChange}
-                className="text-[#232c67] focus:ring-[#232c67]"
-              />
-              Afternoon
-            </label>
-          </div>
-          {formData.class_schedule && validationErrors.class_schedule && (
-            <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <FaExclamationCircle />
-              {validationErrors.class_schedule}
-            </div>
-          )}
+          {(() => {
+            const currentLevel = getCurrentLevel();
+            const isLevelDetermined = currentLevel !== null;
+            const isScheduleDisabled = !isLevelDetermined || 
+              (availableSlots && availableSlots.Morning?.available === 0 && availableSlots.Afternoon?.available === 0);
+            
+            return (
+              <>
+                <div className="flex gap-6">
+                  <label className={`flex items-center gap-2 text-sm ${!isLevelDetermined ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'}`}>
+                    <input
+                      type="radio"
+                      name="class_schedule"
+                      value="Morning"
+                      checked={formData.class_schedule === "Morning"}
+                      onChange={handleChange}
+                      className="text-[#232c67] focus:ring-[#232c67]"
+                      disabled={!isLevelDetermined}
+                    />
+                    <span className="flex items-center gap-2">
+                      Morning
+                      {!isLevelDetermined ? (
+                        <span className="text-xs text-gray-500">(Select birthdate or class level first)</span>
+                      ) : loadingSlots ? (
+                        <span className="text-xs text-gray-500">(Loading...)</span>
+                      ) : availableSlots && availableSlots.Morning !== undefined ? (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-700">
+                          {availableSlots.Morning.enrolled > 0
+                            ? `${availableSlots.Morning.enrolled} student${availableSlots.Morning.enrolled !== 1 ? 's' : ''} enrolled`
+                            : 'No students enrolled'
+                          }
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                  <label className={`flex items-center gap-2 text-sm ${!isLevelDetermined ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'}`}>
+                    <input
+                      type="radio"
+                      name="class_schedule"
+                      value="Afternoon"
+                      checked={formData.class_schedule === "Afternoon"}
+                      onChange={handleChange}
+                      className="text-[#232c67] focus:ring-[#232c67]"
+                      disabled={!isLevelDetermined}
+                    />
+                    <span className="flex items-center gap-2">
+                      Afternoon
+                      {!isLevelDetermined ? (
+                        <span className="text-xs text-gray-500">(Select birthdate or class level first)</span>
+                      ) : loadingSlots ? (
+                        <span className="text-xs text-gray-500">(Loading...)</span>
+                      ) : availableSlots && availableSlots.Afternoon !== undefined ? (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-700">
+                          {availableSlots.Afternoon.enrolled > 0
+                            ? `${availableSlots.Afternoon.enrolled} student${availableSlots.Afternoon.enrolled !== 1 ? 's' : ''} enrolled`
+                            : 'No students enrolled'
+                          }
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                </div>
+                {formData.class_schedule && validationErrors.class_schedule && (
+                  <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <FaExclamationCircle />
+                    {validationErrors.class_schedule}
+                  </div>
+                )}
+                {availableSlots && currentLevel && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    Showing slots for Level {currentLevel} - {ageRequirements?.levels[currentLevel]?.name || ''}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
+      </div>
+      
+      {/* Manual Level Selection Section */}
+      <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="flex items-start gap-3 mb-4">
+          <input
+            type="checkbox"
+            id="manualLevelToggle"
+            checked={isManualLevel}
+            onChange={(e) => {
+              setIsManualLevel(e.target.checked);
+              if (!e.target.checked) {
+                setManualLevelId(null);
+                setStudNotes('');
+                // Clear manual level validation errors when disabled
+                setValidationErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.manualLevel;
+                  delete newErrors.studNotes;
+                  delete newErrors.student_manualLevel;
+                  delete newErrors.student_studNotes;
+                  return newErrors;
+                });
+              }
+            }}
+            className="w-4 h-4 mt-1 text-[#232c67] border-gray-300 rounded focus:ring-[#232c67]"
+          />
+          <div className="flex-1">
+            <label htmlFor="manualLevelToggle" className="text-sm font-semibold text-gray-700 cursor-pointer block mb-1">
+              Manually Assign Class Level (Override Age-Based Assignment)
+            </label>
+            <p className="text-xs text-gray-600">
+              When enabled, you can select the class level regardless of the student's age. 
+              Date of birth is still required for records, but age will not determine the level assignment.
+            </p>
+          </div>
+        </div>
+        
+        {isManualLevel && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Class Level <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={manualLevelId || ''}
+                onChange={(e) => {
+                  setManualLevelId(e.target.value ? parseInt(e.target.value) : null);
+                  // Clear validation errors when level is selected
+                  setValidationErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.manualLevel;
+                    delete newErrors.student_manualLevel;
+                    return newErrors;
+                  });
+                }}
+                className={`w-full p-2 rounded-lg border-2 bg-white focus:outline-none focus:ring-2 caret-[#232c67] ${
+                  validationErrors.manualLevel || validationErrors.student_manualLevel
+                    ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500'
+                    : manualLevelId
+                      ? 'border-green-500 bg-green-50 focus:border-green-500 focus:ring-green-500'
+                      : 'border-gray-300 focus:border-[#232c67] focus:ring-[#232c67]'
+                }`}
+              >
+                <option value="">Select Class Level</option>
+                <option value="1">Level 1 - Discoverer</option>
+                <option value="2">Level 2 - Explorer</option>
+                <option value="3">Level 3 - Adventurer</option>
+              </select>
+              <p className="text-xs text-gray-600 mt-1">
+                Use this option when the student needs a different level due to medical conditions, learning difficulties, or advanced abilities.
+              </p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Notes/Reason for Manual Assignment <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={studNotes}
+                onChange={(e) => {
+                  let value = e.target.value;
+                  // Auto-capitalize first letter if input is not empty
+                  if (value.length > 0) {
+                    value = value.charAt(0).toUpperCase() + value.slice(1);
+                  }
+                  setStudNotes(value);
+                  // Clear validation errors when notes are entered
+                  setValidationErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.studNotes;
+                    delete newErrors.student_studNotes;
+                    return newErrors;
+                  });
+                }}
+                placeholder="Explain why this student is assigned to this level (e.g., medical condition, learning difficulty, advanced learning ability, etc.)"
+                rows={3}
+                className={`w-full p-2 rounded-lg border-2 bg-white focus:outline-none focus:ring-2 caret-[#232c67] resize-y ${
+                  validationErrors.studNotes || validationErrors.student_studNotes
+                    ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500'
+                    : studNotes && studNotes.trim()
+                      ? 'border-green-500 bg-green-50 focus:border-green-500 focus:ring-green-500'
+                      : 'border-gray-300 focus:border-[#232c67] focus:ring-[#232c67]'
+                }`}
+                maxLength={60}
+              />
+              <p className="text-xs text-gray-600 mt-1">
+                {studNotes.length}/60 characters
+              </p>
+              {!studNotes && isManualLevel && manualLevelId && (
+                <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <FaExclamationCircle />
+                  Notes are required when manually selecting a class level
+                </div>
+              )}
+              {(validationErrors.studNotes || validationErrors.manualLevel || validationErrors.student_studNotes || validationErrors.student_manualLevel) && (
+                <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <FaExclamationCircle />
+                  {validationErrors.studNotes || validationErrors.manualLevel || validationErrors.student_studNotes || validationErrors.student_manualLevel}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
@@ -2147,10 +2724,23 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
                       {studentsList.length > 0 && (
                         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                           <h4 className="font-semibold text-green-800 mb-2">Added Students ({studentsList.length}):</h4>
-                          <ul className="list-disc list-inside space-y-1">
+                          <ul className="list-disc list-inside space-y-2">
                             {studentsList.map((student, idx) => (
                               <li key={idx} className="text-sm text-green-700">
-                                {student.first_name} {student.middle_name} {student.last_name} - {student.level}
+                                <span className="font-medium">
+                                  {student.first_name} {student.middle_name ? student.middle_name + ' ' : ''}{student.last_name}
+                                </span>
+                                {' - '}
+                                <span className="font-semibold">{student.level}</span>
+                                {student.isManualLevel ? (
+                                  <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-200 text-yellow-800 font-semibold rounded">
+                                    (Manual)
+                                  </span>
+                                ) : (
+                                  <span className="ml-2 px-2 py-0.5 text-xs bg-blue-200 text-blue-800 font-semibold rounded">
+                                    (Auto)
+                                  </span>
+                                )}
                               </li>
                             ))}
                           </ul>

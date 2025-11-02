@@ -551,6 +551,10 @@ export default function AddUserPage() {
   const [ageRequirements, setAgeRequirements] = useState(null);
   const [loadingAgeRequirements, setLoadingAgeRequirements] = useState(true);
   
+  // Available slots state
+  const [availableSlots, setAvailableSlots] = useState(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  
   const [touchedFields, setTouchedFields] = useState({});
   const router = useRouter();
 
@@ -639,6 +643,94 @@ export default function AddUserPage() {
     
     fetchAgeRequirements();
   }, []);
+
+  // Function to determine level from birthdate or manual selection
+  const getCurrentLevel = () => {
+    if (userType === "Parent/Student") {
+      if (activeSection === "student") {
+        // Check manual level first
+        if (isManualLevel && manualLevelId) {
+          return manualLevelId;
+        }
+        // Otherwise calculate from birthdate
+        if (studentFormData.dob && ageRequirements) {
+          const referenceDate = new Date(ageRequirements.reference_date);
+          const birthDate = new Date(studentFormData.dob);
+          const timeDiff = referenceDate.getTime() - birthDate.getTime();
+          const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+          const years = Math.floor(daysDiff / 365.25);
+          const remainingDays = daysDiff % 365.25;
+          const months = Math.floor(remainingDays / 30.44);
+          const age = years + months / 12;
+          
+          if (age >= 1.8 && age < 3) return 1;
+          if (age >= 3 && age < 4) return 2;
+          if (age >= 4 && age < 5) return 3;
+        }
+      }
+    } else if (userType === "Student") {
+      // Check manual level first
+      if (isManualLevel && manualLevelId) {
+        return manualLevelId;
+      }
+      // Otherwise calculate from birthdate
+      if (formData.dob && ageRequirements) {
+        const referenceDate = new Date(ageRequirements.reference_date);
+        const birthDate = new Date(formData.dob);
+        const timeDiff = referenceDate.getTime() - birthDate.getTime();
+        const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const years = Math.floor(daysDiff / 365.25);
+        const remainingDays = daysDiff % 365.25;
+        const months = Math.floor(remainingDays / 30.44);
+        const age = years + months / 12;
+        
+        if (age >= 1.8 && age < 3) return 1;
+        if (age >= 3 && age < 4) return 2;
+        if (age >= 4 && age < 5) return 3;
+      }
+    }
+    return null;
+  };
+
+  // Fetch available slots when level is determined
+  useEffect(() => {
+    const fetchAvailableSlots = async () => {
+      const levelId = getCurrentLevel();
+      
+      // Only fetch if we have a valid level
+      if (!levelId || (userType !== "Parent/Student" && userType !== "Student")) {
+        setAvailableSlots(null);
+        return;
+      }
+      
+      try {
+        setLoadingSlots(true);
+        const response = await fetch(API.user.getAvailableSlots(levelId));
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.slots) {
+          setAvailableSlots(data.slots);
+        } else {
+          setAvailableSlots(null);
+        }
+      } catch (error) {
+        console.error("Error fetching available slots:", error);
+        setAvailableSlots(null);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    
+    fetchAvailableSlots();
+  }, [
+    userType,
+    activeSection,
+    studentFormData.dob,
+    formData.dob,
+    isManualLevel,
+    manualLevelId,
+    ageRequirements
+  ]);
 
   // Reset form when user type changes
   useEffect(() => {
@@ -2361,36 +2453,82 @@ export default function AddUserPage() {
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Class Schedule <span className="text-red-500">*</span></label>
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="class_schedule"
-                value="Morning"
-                checked={formData.class_schedule === "Morning"}
-                onChange={handleChange}
-                className="text-[#232c67] focus:ring-[#232c67]"
-              />
-              Morning
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="class_schedule"
-                value="Afternoon"
-                checked={formData.class_schedule === "Afternoon"}
-                onChange={handleChange}
-                className="text-[#232c67] focus:ring-[#232c67]"
-              />
-              Afternoon
-            </label>
-          </div>
-          {formData.class_schedule && validationErrors.class_schedule && (
-            <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <FaExclamationCircle />
-              {validationErrors.class_schedule}
-            </div>
-          )}
+          {(() => {
+            const currentLevel = getCurrentLevel();
+            const isLevelDetermined = currentLevel !== null;
+            const isScheduleDisabled = !isLevelDetermined || 
+              (availableSlots && availableSlots.Morning?.available === 0 && availableSlots.Afternoon?.available === 0);
+            
+            return (
+              <>
+                <div className="flex gap-6">
+                  <label className={`flex items-center gap-2 text-sm ${!isLevelDetermined ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'}`}>
+                    <input
+                      type="radio"
+                      name="class_schedule"
+                      value="Morning"
+                      checked={formData.class_schedule === "Morning"}
+                      onChange={handleChange}
+                      className="text-[#232c67] focus:ring-[#232c67]"
+                      disabled={!isLevelDetermined}
+                    />
+                    <span className="flex items-center gap-2">
+                      Morning
+                      {!isLevelDetermined ? (
+                        <span className="text-xs text-gray-500">(Select birthdate or class level first)</span>
+                      ) : loadingSlots ? (
+                        <span className="text-xs text-gray-500">(Loading...)</span>
+                      ) : availableSlots && availableSlots.Morning !== undefined ? (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-700">
+                          {availableSlots.Morning.enrolled > 0
+                            ? `${availableSlots.Morning.enrolled} student${availableSlots.Morning.enrolled !== 1 ? 's' : ''} enrolled`
+                            : 'No students enrolled'
+                          }
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                  <label className={`flex items-center gap-2 text-sm ${!isLevelDetermined ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'}`}>
+                    <input
+                      type="radio"
+                      name="class_schedule"
+                      value="Afternoon"
+                      checked={formData.class_schedule === "Afternoon"}
+                      onChange={handleChange}
+                      className="text-[#232c67] focus:ring-[#232c67]"
+                      disabled={!isLevelDetermined}
+                    />
+                    <span className="flex items-center gap-2">
+                      Afternoon
+                      {!isLevelDetermined ? (
+                        <span className="text-xs text-gray-500">(Select birthdate or class level first)</span>
+                      ) : loadingSlots ? (
+                        <span className="text-xs text-gray-500">(Loading...)</span>
+                      ) : availableSlots && availableSlots.Afternoon !== undefined ? (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-700">
+                          {availableSlots.Afternoon.enrolled > 0
+                            ? `${availableSlots.Afternoon.enrolled} student${availableSlots.Afternoon.enrolled !== 1 ? 's' : ''} enrolled`
+                            : 'No students enrolled'
+                          }
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                </div>
+                {formData.class_schedule && validationErrors.class_schedule && (
+                  <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <FaExclamationCircle />
+                    {validationErrors.class_schedule}
+                  </div>
+                )}
+                {availableSlots && currentLevel && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    Showing slots for Level {currentLevel} - {ageRequirements?.levels[currentLevel]?.name || ''}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
       
@@ -2473,7 +2611,12 @@ export default function AddUserPage() {
               <textarea
                 value={studNotes}
                 onChange={(e) => {
-                  setStudNotes(e.target.value);
+                  let value = e.target.value;
+                  // Auto-capitalize first letter if input is not empty
+                  if (value.length > 0) {
+                    value = value.charAt(0).toUpperCase() + value.slice(1);
+                  }
+                  setStudNotes(value);
                   // Clear validation errors when notes are entered
                   setValidationErrors(prev => {
                     const newErrors = { ...prev };
@@ -2491,10 +2634,10 @@ export default function AddUserPage() {
                       ? 'border-green-500 bg-green-50 focus:border-green-500 focus:ring-green-500'
                       : 'border-gray-300 focus:border-[#232c67] focus:ring-[#232c67]'
                 }`}
-                maxLength={500}
+                maxLength={60}
               />
               <p className="text-xs text-gray-600 mt-1">
-                {studNotes.length}/500 characters
+                {studNotes.length}/60 characters
               </p>
               {!studNotes && isManualLevel && manualLevelId && (
                 <div className="text-red-500 text-xs mt-1 flex items-center gap-1">

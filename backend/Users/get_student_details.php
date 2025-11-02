@@ -36,7 +36,8 @@ try {
             s.level_id,
             s.parent_id,
             s.parent_profile_id,
-            s.stud_enrollment_date
+            s.stud_enrollment_date,
+            s.stud_notes
         FROM tbl_students s
         WHERE s.student_id = ?
     ");
@@ -67,6 +68,7 @@ try {
                 'parentId' => $student['parent_id'],
                 'parentProfileId' => $student['parent_profile_id'],
                 'enrollmentDate' => $student['stud_enrollment_date'],
+                'stud_notes' => $student['stud_notes'],
                 'role' => 'Student',
             ]
         ];

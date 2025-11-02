@@ -192,8 +192,34 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
       return fullName.trim();
     }
     
-    const nameParts = fullName.trim().split(' ');
-    if (nameParts.length < 2) return fullName;
+    // Remove commas and clean up the name
+    let cleanedName = fullName.trim().replace(/,/g, '').replace(/\s+/g, ' ');
+    
+    // If the original name had commas, it might be in "Lastname, Firstname, Middlename" format
+    const commaParts = fullName.trim().split(',').map(part => part.trim()).filter(part => part);
+    
+    if (commaParts.length >= 2) {
+      // Name has commas - treat first part as lastname, rest as firstname+middlename
+      const lastName = commaParts[0];
+      const restOfName = commaParts.slice(1).join(' ').trim();
+      
+      if (restOfName) {
+        const restParts = restOfName.split(' ').filter(part => part);
+        if (restParts.length > 1) {
+          const firstName = restParts[0];
+          const middleName = restParts.slice(1).join(' ');
+          return `${lastName}, ${firstName} ${middleName}`;
+        } else {
+          return `${lastName}, ${restOfName}`;
+        }
+      } else {
+        return lastName;
+      }
+    }
+    
+    // No commas - treat as "Firstname Middlename Lastname"
+    const nameParts = cleanedName.split(' ').filter(part => part);
+    if (nameParts.length < 2) return fullName.trim();
     
     const lastName = nameParts[nameParts.length - 1];
     const firstName = nameParts[0];
@@ -229,9 +255,20 @@ export default function StudentStatus({ student, renderChart, onBack, triggerExp
     const first = profile[`${prefix}_firstname`] || profile[`${prefix}_first_name`] || profile[`${prefix}_first`] || profile[`${prefix}_fname`] || profile[`${prefix}FirstName`];
     const middle = profile[`${prefix}_middlename`] || profile[`${prefix}_middle_name`] || profile[`${prefix}_mname`] || profile[`${prefix}MiddleName`];
     const last = profile[`${prefix}_lastname`] || profile[`${prefix}_last_name`] || profile[`${prefix}_lname`] || profile[`${prefix}LastName`];
-    if (direct && String(direct).trim()) return String(direct).trim();
+    // If direct name exists, format it using formatName function
+    if (direct && String(direct).trim()) {
+      return formatName(String(direct).trim());
+    }
+    // Build name from parts and format as "Lastname, Firstname Middlename"
     const parts = [first, middle, last].filter(Boolean).map(v => String(v).trim());
-    return parts.join(' ');
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0];
+    if (parts.length === 2) return `${parts[1]}, ${parts[0]}`;
+    // parts.length >= 3
+    const lastName = parts[parts.length - 1];
+    const firstName = parts[0];
+    const middleName = parts.slice(1, -1).join(' ');
+    return `${lastName}, ${firstName} ${middleName}`;
   }
 
   function getParentAge(profile, prefix) {

@@ -561,6 +561,7 @@ const StudentDetails = () => {
         stud_photo: uploadedPhotoUrl !== undefined
           ? uploadedPhotoUrl
           : (typeof editStudentData.stud_photo === 'string' ? editStudentData.stud_photo : undefined),
+        stud_notes: editStudentData.stud_notes,
       };
       Object.keys(studentPayload).forEach(key => studentPayload[key] === undefined && delete studentPayload[key]);
       const studentRes = await fetch(API.user.updateStudent(), {
@@ -1508,7 +1509,37 @@ const StudentDetails = () => {
             </div>
           </div>
 
-
+          {/* Section 2: Notes - Only shows if student has notes */}
+          {studentData?.stud_notes && studentData.stud_notes.trim() !== "" && (
+            <div className="mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-[#2c2f6f] mb-1">Notes</label>
+                {editing ? (
+                  <>
+                    <textarea
+                      name="stud_notes"
+                      value={editStudentData?.stud_notes || ""}
+                      onChange={handleStudentChange}
+                      rows={3}
+                      className={`${getInputClassName('stud_notes', validationErrors, editStudentData?.stud_notes, editing)} caret-[#1E2A79]`}
+                      placeholder="Enter notes about this student"
+                      maxLength={60}
+                    />
+                    <p className="text-xs text-gray-600 mt-1">
+                      {(editStudentData?.stud_notes || "").length}/60 characters
+                    </p>
+                  </>
+                ) : (
+                  <div className="border w-full p-2 rounded bg-gray-50 text-gray-700 whitespace-pre-wrap">
+                    {studentData?.stud_notes}
+                  </div>
+                )}
+                {validationErrors.stud_notes && (
+                  <div className="text-red-500 text-xs mt-1">{validationErrors.stud_notes}</div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Section 3: Parent Details - Requires Scrolling */}
           <div className="mb-6">

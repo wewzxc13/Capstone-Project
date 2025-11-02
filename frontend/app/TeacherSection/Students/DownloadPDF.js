@@ -46,7 +46,34 @@ export async function generateAssessmentPDF({
     if (!fullName) return '—';
     const special = ['Not assigned','Not Assigned','not assigned','N/A','n/a','None','none','TBD','tbd'];
     if (special.includes(String(fullName).trim())) return String(fullName).trim();
-    const parts = String(fullName).trim().split(' ');
+    
+    // Remove commas and clean up the name
+    let cleanedName = String(fullName).trim().replace(/,/g, '').replace(/\s+/g, ' ');
+    
+    // If the original name had commas, it might be in "Lastname, Firstname, Middlename" format
+    const commaParts = String(fullName).trim().split(',').map(part => part.trim()).filter(part => part);
+    
+    if (commaParts.length >= 2) {
+      // Name has commas - treat first part as lastname, rest as firstname+middlename
+      const last = commaParts[0];
+      const restOfName = commaParts.slice(1).join(' ').trim();
+      
+      if (restOfName) {
+        const restParts = restOfName.split(' ').filter(part => part);
+        if (restParts.length > 1) {
+          const first = restParts[0];
+          const middle = restParts.slice(1).join(' ');
+          return `${last}, ${first} ${middle}`;
+        } else {
+          return `${last}, ${restOfName}`;
+        }
+      } else {
+        return last;
+      }
+    }
+    
+    // No commas - treat as "Firstname Middlename Lastname"
+    const parts = cleanedName.split(' ').filter(part => part);
     if (parts.length < 2) return String(fullName);
     const last = parts[parts.length - 1];
     const first = parts[0];
@@ -552,8 +579,34 @@ const SharedExport = ({
       return fullName.trim();
     }
     
-    const nameParts = fullName.trim().split(' ');
-    if (nameParts.length < 2) return fullName;
+    // Remove commas and clean up the name
+    let cleanedName = fullName.trim().replace(/,/g, '').replace(/\s+/g, ' ');
+    
+    // If the original name had commas, it might be in "Lastname, Firstname, Middlename" format
+    const commaParts = fullName.trim().split(',').map(part => part.trim()).filter(part => part);
+    
+    if (commaParts.length >= 2) {
+      // Name has commas - treat first part as lastname, rest as firstname+middlename
+      const lastName = commaParts[0];
+      const restOfName = commaParts.slice(1).join(' ').trim();
+      
+      if (restOfName) {
+        const restParts = restOfName.split(' ').filter(part => part);
+        if (restParts.length > 1) {
+          const firstName = restParts[0];
+          const middleName = restParts.slice(1).join(' ');
+          return `${lastName}, ${firstName} ${middleName}`;
+        } else {
+          return `${lastName}, ${restOfName}`;
+        }
+      } else {
+        return lastName;
+      }
+    }
+    
+    // No commas - treat as "Firstname Middlename Lastname"
+    const nameParts = cleanedName.split(' ').filter(part => part);
+    if (nameParts.length < 2) return fullName.trim();
     
     const lastName = nameParts[nameParts.length - 1];
     const firstName = nameParts[0];
@@ -585,13 +638,34 @@ const SharedExport = ({
 
   function buildParentName(profile, prefix) {
     if (!profile) return '';
-    const direct = profile[`${prefix}_name`] || profile[`${prefix}Name`];
-    const first = profile[`${prefix}_firstname`] || profile[`${prefix}_first_name`] || profile[`${prefix}_first`] || profile[`${prefix}_fname`] || profile[`${prefix}FirstName`];
-    const middle = profile[`${prefix}_middlename`] || profile[`${prefix}_middle_name`] || profile[`${prefix}_mname`] || profile[`${prefix}MiddleName`];
-    const last = profile[`${prefix}_lastname`] || profile[`${prefix}_last_name`] || profile[`${prefix}_lname`] || profile[`${prefix}LastName`];
-    if (direct && String(direct).trim()) return String(direct).trim();
-    const parts = [first, middle, last].filter(Boolean).map(v => String(v).trim());
-    return parts.join(' ');
+    
+    // Get individual name parts first (normalize to handle undefined/null/empty)
+    const getField = (field) => {
+      const val = profile[field];
+      return (val && String(val).trim()) || null;
+    };
+    
+    const first = getField(`${prefix}_firstname`) || getField(`${prefix}_first_name`) || getField(`${prefix}_first`) || getField(`${prefix}_fname`) || getField(`${prefix}FirstName`);
+    const middle = getField(`${prefix}_middlename`) || getField(`${prefix}_middle_name`) || getField(`${prefix}_mname`) || getField(`${prefix}MiddleName`);
+    const last = getField(`${prefix}_lastname`) || getField(`${prefix}_last_name`) || getField(`${prefix}_lname`) || getField(`${prefix}LastName`);
+    
+    // Check if we have individual parts (preferred method)
+    const parts = [first, middle, last].filter(p => p !== null && p !== undefined && String(p).trim() !== '').map(v => String(v).trim());
+    
+    if (parts.length > 0) {
+      // Build the full name from parts and format it using formatName for consistency
+      // Parts are in order: [firstname, middlename, lastname]
+      const fullNameFromParts = parts.join(' ');
+      return formatName(fullNameFromParts);
+    }
+    
+    // Fallback: check for direct name field and format it
+    const direct = getField(`${prefix}_name`) || getField(`${prefix}Name`);
+    if (direct) {
+      return formatName(direct);
+    }
+    
+    return '';
   }
 
   function getParentAge(profile, prefix) {

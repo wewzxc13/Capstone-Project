@@ -67,6 +67,7 @@ export default function AssignedClassPage() {
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(false);
   const [assistantDropdownOpen, setAssistantDropdownOpen] = useState(false);
   const [studentSessionDropdownOpen, setStudentSessionDropdownOpen] = useState(false);
+  const [slots, setSlots] = useState({ Morning: { enrolled: 0 }, Afternoon: { enrolled: 0 } });
   const router = useRouter();
   const { 
     updateAnyUserPhoto, 
@@ -207,11 +208,31 @@ export default function AssignedClassPage() {
             
             // Initialize UserContext with advisory photos for real-time updates (including teacher photos)
             initializeAdvisoryPhotos(fetchedStudents, fetchedParents, data.advisory);
+            
+            // Fetch slot information for this level
+            fetch(API.user.getAvailableSlots(selectedClass.level_id))
+              .then(res => {
+                if (!res.ok) {
+                  throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+              })
+              .then(slotsData => {
+                if (slotsData.status === 'success' && slotsData.slots) {
+                  setSlots(slotsData.slots);
+                }
+              })
+              .catch(error => {
+                console.error("Error fetching slots:", error);
+                // Keep default slots on error
+              });
         } else {
           // No advisory found for this level - this is normal for empty classes
           setAdvisory(null);
           setStudents([]);
           setParents([]);
+          // Reset slots when no advisory
+          setSlots({ Morning: { enrolled: 0 }, Afternoon: { enrolled: 0 } });
         }
         setLoading(false);
       })
@@ -462,6 +483,22 @@ export default function AssignedClassPage() {
       const data = await res.json();
       if (data.status === "success") {
         toast.success("Schedule updated successfully!");
+        // Refresh slots after schedule change
+        fetch(API.user.getAvailableSlots(selectedClass.level_id))
+          .then(res => {
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+          })
+          .then(slotsData => {
+            if (slotsData.status === 'success' && slotsData.slots) {
+              setSlots(slotsData.slots);
+            }
+          })
+          .catch(error => {
+            console.error("Error refreshing slots:", error);
+          });
       } else {
         toast.error(data.message || "Failed to update schedule");
         // Revert local state on error
@@ -676,18 +713,30 @@ export default function AssignedClassPage() {
             
                          <div className="space-y-3">
                <h4 className="text-sm font-semibold text-gray-700 mb-3">Student Statistics</h4>
-               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                 <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-blue-50 rounded-full">
-                   <FaMars className="text-blue-600 text-xs sm:text-sm" />
-                   <span className="text-xs sm:text-sm font-medium text-blue-900">Male: {advisory?.total_male ?? 0}</span>
+               <div className="flex flex-col gap-2 sm:gap-3">
+                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                   <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-blue-50 rounded-full">
+                     <FaMars className="text-blue-600 text-xs sm:text-sm" />
+                     <span className="text-xs sm:text-sm font-medium text-blue-900">Male: {advisory?.total_male ?? 0}</span>
+                   </div>
+                   <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-pink-50 rounded-full">
+                     <FaVenus className="text-pink-600 text-xs sm:text-sm" />
+                     <span className="text-xs sm:text-sm font-medium text-pink-900">Female: {advisory?.total_female ?? 0}</span>
+                   </div>
+                   <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-green-50 rounded-full">
+                     <FaUsers className="text-green-600 text-xs sm:text-sm" />
+                     <span className="text-xs sm:text-sm font-medium text-green-700">Total: {advisory?.total_students ?? 0}</span>
+                   </div>
                  </div>
-                 <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-pink-50 rounded-full">
-                   <FaVenus className="text-pink-600 text-xs sm:text-sm" />
-                   <span className="text-xs sm:text-sm font-medium text-pink-900">Female: {advisory?.total_female ?? 0}</span>
-                 </div>
-                 <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-green-50 rounded-full">
-                   <FaUsers className="text-green-600 text-xs sm:text-sm" />
-                   <span className="text-xs sm:text-sm font-medium text-green-700">Total: {advisory?.total_students ?? 0}</span>
+                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                   <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-yellow-50 rounded-full">
+                     <FaUsers className="text-yellow-600 text-xs sm:text-sm" />
+                     <span className="text-xs sm:text-sm font-medium text-yellow-900">Morning: {slots.Morning?.enrolled ?? 0}</span>
+                   </div>
+                   <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:py-0.5 bg-orange-50 rounded-full">
+                     <FaUsers className="text-orange-600 text-xs sm:text-sm" />
+                     <span className="text-xs sm:text-sm font-medium text-orange-900">Afternoon: {slots.Afternoon?.enrolled ?? 0}</span>
+                   </div>
                  </div>
                </div>
              </div>

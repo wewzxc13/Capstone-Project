@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { FaArrowLeft, FaUser, FaSave, FaEdit, FaTrash, FaCheckCircle, FaRegClock, FaPlusCircle, FaExclamationTriangle, FaChartBar, FaTable, FaComments, FaPrint, FaDownload } from "react-icons/fa";
+import { FaArrowLeft, FaUser, FaSave, FaEdit, FaTrash, FaCheckCircle, FaRegClock, FaPlusCircle, FaExclamationTriangle, FaChartBar, FaTable, FaComments, FaPrint, FaDownload, FaChevronDown } from "react-icons/fa";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from 'next/navigation';
@@ -94,11 +94,14 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
   const printRef = useRef(null);
   const [progressCards, setProgressCards] = useState([]);
   const [quartersData, setQuartersData] = useState([]);
-  const [currentQuarter, setCurrentQuarter] = useState(null);
   const [canComment, setCanComment] = useState(false);
   const [commentMessage, setCommentMessage] = useState("");
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingValue, setEditingValue] = useState("");
+  const [selectedQuarterId, setSelectedQuarterId] = useState(null);
+  const [availableQuarters, setAvailableQuarters] = useState([]);
+  const [allQuartersCommented, setAllQuartersCommented] = useState(false);
+  const [isQuarterDropdownOpen, setIsQuarterDropdownOpen] = useState(false);
   const [finalSubjectProgress, setFinalSubjectProgress] = useState([]);
   const [overallProgress, setOverallProgress] = useState(null);
   const [overallProgressLoading, setOverallProgressLoading] = useState(false);
@@ -124,8 +127,34 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
       return fullName.trim();
     }
     
-    const nameParts = fullName.trim().split(' ');
-    if (nameParts.length < 2) return fullName;
+    // Remove commas and clean up the name
+    let cleanedName = fullName.trim().replace(/,/g, '').replace(/\s+/g, ' ');
+    
+    // If the original name had commas, it might be in "Lastname, Firstname, Middlename" format
+    const commaParts = fullName.trim().split(',').map(part => part.trim()).filter(part => part);
+    
+    if (commaParts.length >= 2) {
+      // Name has commas - treat first part as lastname, rest as firstname+middlename
+      const lastName = commaParts[0];
+      const restOfName = commaParts.slice(1).join(' ').trim();
+      
+      if (restOfName) {
+        const restParts = restOfName.split(' ').filter(part => part);
+        if (restParts.length > 1) {
+          const firstName = restParts[0];
+          const middleName = restParts.slice(1).join(' ');
+          return `${lastName}, ${firstName} ${middleName}`;
+        } else {
+          return `${lastName}, ${restOfName}`;
+        }
+      } else {
+        return lastName;
+      }
+    }
+    
+    // No commas - treat as "Firstname Middlename Lastname"
+    const nameParts = cleanedName.split(' ').filter(part => part);
+    if (nameParts.length < 2) return fullName.trim();
     
     const lastName = nameParts[nameParts.length - 1];
     const firstName = nameParts[0];
@@ -161,9 +190,20 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
     const first = profile[`${prefix}_firstname`] || profile[`${prefix}_first_name`] || profile[`${prefix}_first`] || profile[`${prefix}_fname`] || profile[`${prefix}FirstName`];
     const middle = profile[`${prefix}_middlename`] || profile[`${prefix}_middle_name`] || profile[`${prefix}_mname`] || profile[`${prefix}MiddleName`];
     const last = profile[`${prefix}_lastname`] || profile[`${prefix}_last_name`] || profile[`${prefix}_lname`] || profile[`${prefix}LastName`];
-    if (direct && String(direct).trim()) return String(direct).trim();
+    // If direct name exists, format it using formatName function
+    if (direct && String(direct).trim()) {
+      return formatName(String(direct).trim());
+    }
+    // Build name from parts and format as "Lastname, Firstname Middlename"
     const parts = [first, middle, last].filter(Boolean).map(v => String(v).trim());
-    return parts.join(' ');
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0];
+    if (parts.length === 2) return `${parts[1]}, ${parts[0]}`;
+    // parts.length >= 3
+    const lastName = parts[parts.length - 1];
+    const firstName = parts[0];
+    const middleName = parts.slice(1, -1).join(' ');
+    return `${lastName}, ${firstName} ${middleName}`;
   }
 
   function getParentAge(profile, prefix) {
@@ -365,43 +405,99 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
     fetchAllData();
   }, [student]);
 
-  // Determine current quarter and comment eligibility
+  // Determine available quarters based on finalized progress cards
   useEffect(() => {
-    if (!quartersData.length) return;
-    const today = new Date();
-    let foundQuarter = null;
-    for (const q of quartersData) {
-      const start = new Date(q.start_date);
-      const end = new Date(q.end_date);
-      if (today >= start && today <= end) {
-        foundQuarter = q;
-        break;
-      }
-    }
-    setCurrentQuarter(foundQuarter);
-    if (!foundQuarter) {
+    if (!quartersData.length || !Object.keys(finalizedQuarters).length) {
+      setAvailableQuarters([]);
+      setSelectedQuarterId(null);
       setCanComment(false);
-      const lastQuarter = quartersData[quartersData.length - 1];
-      if (lastQuarter && today > new Date(lastQuarter.end_date)) {
-        setCommentMessage('Commenting is not available at this time. You have commented on all 4 quarters.');
-      } else {
-        setCommentMessage('Commenting is not available at this time. Wait for the next quarter.');
+      setCommentMessage('Commenting is not available at this time. No quarters have been finalized yet.');
+      return;
+    }
+
+    // Get quarters that have been finalized (have progress cards)
+    const finalizedQuarterIds = Object.keys(finalizedQuarters)
+      .map(id => parseInt(id))
+      .filter(id => finalizedQuarters[id])
+      .sort((a, b) => a - b);
+
+    if (finalizedQuarterIds.length === 0) {
+      setAvailableQuarters([]);
+      setSelectedQuarterId(null);
+      setCanComment(false);
+      setCommentMessage('Commenting is not available at this time. No quarters have been finalized yet.');
+      return;
+    }
+
+    // Build available quarters list from quartersData
+    const available = quartersData
+      .filter(q => finalizedQuarterIds.includes(q.quarter_id))
+      .map(q => ({
+        quarter_id: q.quarter_id,
+        quarter_name: q.quarter_name
+      }));
+
+    setAvailableQuarters(available);
+
+    // Set default selected quarter to the first available (lowest quarter number)
+    if (available.length > 0 && !selectedQuarterId) {
+      setSelectedQuarterId(available[0].quarter_id);
+    }
+  }, [quartersData, finalizedQuarters]);
+
+  // Update comment eligibility based on selected quarter
+  useEffect(() => {
+    if (!selectedQuarterId || availableQuarters.length === 0) {
+      setCanComment(false);
+      setAllQuartersCommented(false);
+      if (availableQuarters.length === 0) {
+        setCommentMessage('Commenting is not available at this time. No quarters have been finalized yet.');
       }
       return;
     }
-    const alreadyCommented = comments.some(c => String(c.quarter_id) === String(foundQuarter.quarter_id) && String(c.commentor_id) === String(localStorage.getItem('userId')));
+
+    const user_id = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+    if (!user_id) {
+      setCanComment(false);
+      setAllQuartersCommented(false);
+      setCommentMessage('Please log in to add comments.');
+      return;
+    }
+
+    // Check which quarters this user has already commented on
+    const commentedQuarterIds = comments
+      .filter(c => String(c.commentor_id) === String(user_id))
+      .map(c => parseInt(c.quarter_id));
+
+    // Check if ALL available quarters have been commented on by this user
+    const allCommented = availableQuarters.every(q => 
+      commentedQuarterIds.includes(q.quarter_id)
+    );
+
+    if (allCommented) {
+      setAllQuartersCommented(true);
+      setCanComment(false);
+      setCommentMessage('You have commented on all available quarters.');
+      return;
+    }
+
+    setAllQuartersCommented(false);
+
+    // Check if this user has already commented for the selected quarter
+    const alreadyCommented = comments.some(
+      c => String(c.quarter_id) === String(selectedQuarterId) && 
+           String(c.commentor_id) === String(user_id)
+    );
+
     if (alreadyCommented) {
       setCanComment(false);
-      if (foundQuarter.quarter_id === 4) {
-        setCommentMessage('Commenting is not available at this time. You have commented on all 4 quarters.');
-      } else {
-        setCommentMessage('Commenting is not available at this time. Wait for the next quarter.');
-      }
+      const quarter = availableQuarters.find(q => q.quarter_id === selectedQuarterId);
+      setCommentMessage(`You have already commented for ${quarter?.quarter_name || 'this quarter'}. Please select another quarter.`);
     } else {
       setCanComment(true);
       setCommentMessage('');
     }
-  }, [quartersData, comments]);
+  }, [selectedQuarterId, availableQuarters, comments]);
 
   function getAttendanceSummary() {
     if (!attendanceData) return null;
@@ -1103,6 +1199,48 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
             <div className="bg-white rounded-lg p-4 border border-gray-200">
               {/* Comment Input */}
               <div className="space-y-3 sm:space-y-4">
+                {/* Quarter Selector */}
+                {availableQuarters.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Quarter
+                    </label>
+                    <div className="relative">
+                      <select
+                        className={`w-full border rounded-lg p-2.5 pr-10 text-sm focus:outline-none focus:ring-2 transition-colors appearance-none ${
+                          allQuartersCommented
+                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'border-gray-300 bg-white focus:ring-blue-500 focus:border-blue-500'
+                        }`}
+                        value={selectedQuarterId || ''}
+                        onChange={e => {
+                          if (allQuartersCommented) return;
+                          const quarterId = parseInt(e.target.value);
+                          setSelectedQuarterId(quarterId);
+                          setComment(""); // Clear comment when changing quarter
+                        }}
+                        onFocus={() => setIsQuarterDropdownOpen(true)}
+                        onBlur={() => setIsQuarterDropdownOpen(false)}
+                        disabled={allQuartersCommented}
+                      >
+                        {availableQuarters.map(q => (
+                          <option key={q.quarter_id} value={q.quarter_id}>
+                            {q.quarter_name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <FaChevronDown 
+                          className={`text-gray-400 transition-transform duration-200 ${
+                            isQuarterDropdownOpen ? 'rotate-180' : 'rotate-0'
+                          }`}
+                          size={14}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex items-center gap-2">
                   <textarea
                     maxLength={60}
@@ -1130,12 +1268,20 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
                           toast.error('Missing user or student info.');
                           return;
                         }
-                        if (!canComment) return;
+                        if (!canComment || !selectedQuarterId) {
+                          toast.error('Please select an available quarter.');
+                          return;
+                        }
                         try {
                           const res = await fetch(API.assessment.createComment(), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ comment: comment, commentor_id: commentor_id, student_id: student.student_id })
+                            body: JSON.stringify({ 
+                              comment: comment, 
+                              commentor_id: commentor_id, 
+                              student_id: student.student_id,
+                              quarter_id: selectedQuarterId
+                            })
                           });
                           const data = await res.json();
                           if (data.status === 'success') {

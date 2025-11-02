@@ -143,39 +143,31 @@ try {
         $stmt->execute([$student['student_id']]);
         $advisoryAssignment = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Determine class name based on parent_id and advisory assignment or level_id
-        $className = "Not Assigned Yet";
-        
-        // Only set class name if student has a parent linked
+        // Determine actual level_id to use (advisory-assigned level takes priority, otherwise use student's level_id)
+        $actualLevelId = null;
         if ($student['parent_id']) {
             if ($advisoryAssignment && $advisoryAssignment['level_id']) {
-                switch ($advisoryAssignment['level_id']) {
-                    case 1:
-                        $className = "Discoverer";
-                        break;
-                    case 2:
-                        $className = "Explorer";
-                        break;
-                    case 3:
-                        $className = "Adventurer";
-                        break;
-                    default:
-                        $className = "Not assigned yet";
-                }
-            } else {
-                switch ($student['level_id']) {
-                    case 1:
-                        $className = "Discoverer";
-                        break;
-                    case 2:
-                        $className = "Explorer";
-                        break;
-                    case 3:
-                        $className = "Adventurer";
-                        break;
-                    default:
-                        $className = "Not assigned yet";
-                }
+                $actualLevelId = $advisoryAssignment['level_id'];
+            } else if ($student['level_id']) {
+                $actualLevelId = $student['level_id'];
+            }
+        }
+
+        // Determine class name based on actual level_id
+        $className = "Not Assigned Yet";
+        if ($actualLevelId) {
+            switch ($actualLevelId) {
+                case 1:
+                    $className = "Discoverer";
+                    break;
+                case 2:
+                    $className = "Explorer";
+                    break;
+                case 3:
+                    $className = "Adventurer";
+                    break;
+                default:
+                    $className = "Not assigned yet";
             }
         }
 
@@ -189,7 +181,8 @@ try {
             'gender' => $student['stud_gender'],
             'scheduleClass' => $student['stud_schedule_class'],
             'schoolStatus' => $student['stud_school_status'],
-            'levelId' => $student['level_id'],
+            'levelId' => $actualLevelId, // Return the actual level_id to use (advisory priority)
+            'level_id' => $student['level_id'], // Also keep the original level_id from student table
             'levelName' => $className,
             'role' => 'Student',
             'parent_id' => $student['parent_id'] ?? null,

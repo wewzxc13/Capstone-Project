@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaSearch, FaEye, FaUsers, FaArchive, FaFilter, FaSort, FaSortUp, FaSortDown, FaChild, FaUserTie, FaUser } from "react-icons/fa";
+import { FaSearch, FaEye, FaUsers, FaArchive, FaFilter, FaSort, FaSortUp, FaSortDown, FaChild, FaUserTie, FaUser, FaCheckSquare, FaSquare } from "react-icons/fa";
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "../../Context/UserContext";
 import { API } from '@/config/api';
+import { toast } from 'react-toastify';
 
 export default function SuperAdminArchivePage() {
   const [archivedUsers, setArchivedUsers] = useState({
@@ -22,7 +23,16 @@ export default function SuperAdminArchivePage() {
   const [sortField, setSortField] = useState("name");
   const [sortDirection, setSortDirection] = useState("asc");
   const searchParams = useSearchParams();
-  const { getUserPhoto, getStudentPhoto, initializeAllUsersPhotos } = useUser();
+  const { getUserPhoto, getStudentPhoto, initializeAllUsersPhotos, normalizePhotoUrl, updateAnyUserPhoto } = useUser();
+  const [showBulkArchiveModal, setShowBulkArchiveModal] = useState(false);
+  const [bulkStatusMode, setBulkStatusMode] = useState("Archive"); // "Archive" or "Restore"
+  const [selectedParents, setSelectedParents] = useState([]);
+  const [bulkArchiving, setBulkArchiving] = useState(false);
+  const [activeParentsForBulkArchive, setActiveParentsForBulkArchive] = useState([]);
+  const [archivedParentsForRestore, setArchivedParentsForRestore] = useState([]);
+  const [loadingActiveParents, setLoadingActiveParents] = useState(false);
+  const [selectedClassLevel, setSelectedClassLevel] = useState("All");
+  const [filteredParentsForBulkArchive, setFilteredParentsForBulkArchive] = useState([]);
 
  
   // Format phone number for display: +63 918 123 4567 (3-3-4)
@@ -243,6 +253,410 @@ export default function SuperAdminArchivePage() {
   const paginatedParents = sortedParentUsers;
   const paginatedStudents = sortedStudentUsers;
 
+  // Bulk Archive Handlers
+  const handleToggleParentSelection = (parentId) => {
+    setSelectedParents(prev => {
+      if (prev.includes(parentId)) {
+        return prev.filter(id => id !== parentId);
+      } else {
+        return [...prev, parentId];
+      }
+    });
+  };
+
+  const handleSelectAllParents = () => {
+    // Always use filteredParentsForBulkArchive since that's what's displayed
+    const parentsToSelect = filteredParentsForBulkArchive;
+    
+    if (parentsToSelect.length === 0) return;
+    
+    // Check if all displayed parents are already selected
+    const allDisplayedSelected = parentsToSelect.every(p => selectedParents.includes(p.id));
+    
+    if (allDisplayedSelected) {
+      // Deselect all displayed parents (but keep any that aren't displayed)
+      const displayedIds = parentsToSelect.map(p => p.id);
+      setSelectedParents(prev => prev.filter(id => !displayedIds.includes(id)));
+    } else {
+      // Select all displayed parents
+      const displayedIds = parentsToSelect.map(p => p.id);
+      setSelectedParents(prev => {
+        const newSelection = [...prev];
+        displayedIds.forEach(id => {
+          if (!newSelection.includes(id)) {
+            newSelection.push(id);
+          }
+        });
+        return newSelection;
+      });
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    // Only use selected parents that are in the filtered list
+    const parentsToArchive = selectedParents.filter(id => 
+      filteredParentsForBulkArchive.some(p => p.id === id)
+    );
+    
+    if (parentsToArchive.length === 0) {
+      toast.error("Please select at least one parent to archive.");
+      return;
+    }
+
+    setBulkArchiving(true);
+    
+    try {
+      const editorId = localStorage.getItem("userId");
+      const response = await fetch(API.user.bulkArchiveParents(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          parent_ids: parentsToArchive,
+          editor_id: editorId
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        toast.success(data.message || "Parents archived successfully!");
+        setShowBulkArchiveModal(false);
+        setSelectedParents([]);
+        // Refresh the archived users list
+        fetchArchivedUsers();
+      } else {
+        toast.error(data.message || "Failed to archive parents");
+      }
+    } catch (err) {
+      console.error('Bulk archive error:', err);
+      toast.error("Failed to archive parents. Please try again.");
+    } finally {
+      setBulkArchiving(false);
+    }
+  };
+
+  const handleBulkRestore = async () => {
+    // Only use selected parents that are in the filtered list
+    const parentsToRestore = selectedParents.filter(id => 
+      filteredParentsForBulkArchive.some(p => p.id === id)
+    );
+    
+    if (parentsToRestore.length === 0) {
+      toast.error("Please select at least one parent to restore.");
+      return;
+    }
+
+    setBulkArchiving(true);
+    
+    try {
+      const editorId = localStorage.getItem("userId");
+      const response = await fetch(API.user.bulkRestoreParents(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          parent_ids: parentsToRestore,
+          editor_id: editorId
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        toast.success(data.message || "Parents restored successfully!");
+        setShowBulkArchiveModal(false);
+        setSelectedParents([]);
+        // Refresh the archived users list
+        fetchArchivedUsers();
+      } else {
+        toast.error(data.message || "Failed to restore parents");
+      }
+    } catch (err) {
+      console.error('Bulk restore error:', err);
+      toast.error("Failed to restore parents. Please try again.");
+    } finally {
+      setBulkArchiving(false);
+    }
+  };
+
+  const handleCloseBulkArchiveModal = () => {
+    setShowBulkArchiveModal(false);
+    setSelectedParents([]);
+    setActiveParentsForBulkArchive([]);
+    setArchivedParentsForRestore([]);
+    setBulkStatusMode("Archive");
+    setSelectedClassLevel("All");
+  };
+
+  // Fetch parents when bulk status modal opens (based on mode)
+  useEffect(() => {
+    if (showBulkArchiveModal) {
+      if (bulkStatusMode === "Archive") {
+        fetchActiveParents();
+      } else if (bulkStatusMode === "Restore") {
+        fetchArchivedParentsForRestore();
+      }
+    }
+  }, [showBulkArchiveModal, bulkStatusMode]);
+
+  const fetchArchivedParentsForRestore = async () => {
+    setLoadingActiveParents(true);
+    try {
+      // Fetch archived parents from archived users
+      const response = await fetch(API.user.getArchivedUsers(), {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === "success" && data.users && data.users.Parent) {
+        const archivedParents = data.users.Parent || [];
+        
+        // Get all archived students to determine class levels
+        const archivedStudents = data.users.Student || [];
+        
+        // Map students by parent_id to get class levels for each parent
+        const studentsByParent = {};
+        archivedStudents.forEach(student => {
+          const parentId = student.parent_id || student.parentId;
+          if (parentId) {
+            if (!studentsByParent[parentId]) {
+              studentsByParent[parentId] = [];
+            }
+            studentsByParent[parentId].push(student);
+          }
+        });
+        
+        // Enrich archived parents with their students' class levels
+        const parentsWithLevels = archivedParents.map(parent => {
+          const parentStudents = studentsByParent[parent.id] || [];
+          
+          const levelIds = [...new Set(
+            parentStudents
+              .map(s => s.levelId || s.level_id)
+              .filter(id => id !== null && id !== undefined && id !== '')
+          )];
+          
+          const levelNames = levelIds.map(levelId => {
+            const numLevelId = parseInt(levelId);
+            switch(numLevelId) {
+              case 1: return 'Discoverer';
+              case 2: return 'Explorer';
+              case 3: return 'Adventurer';
+              default: return `Level ${numLevelId}`;
+            }
+          });
+          
+          return {
+            ...parent,
+            studentLevelIds: levelIds.map(id => parseInt(id)),
+            studentLevelNames: levelNames,
+            hasStudents: parentStudents.length > 0,
+            studentCount: parentStudents.length
+          };
+        });
+        
+        // Initialize UserContext with archived parents' photos
+        if (parentsWithLevels.length > 0) {
+          parentsWithLevels.forEach(parent => {
+            if (parent.photo && normalizePhotoUrl && updateAnyUserPhoto) {
+              const photoUrl = normalizePhotoUrl(parent.photo);
+              if (photoUrl) {
+                updateAnyUserPhoto(parent.id, photoUrl);
+              }
+            }
+          });
+        }
+        
+        setArchivedParentsForRestore(parentsWithLevels);
+        setSelectedParents([]);
+        setSelectedClassLevel("All");
+      } else {
+        setArchivedParentsForRestore([]);
+        setFilteredParentsForBulkArchive([]);
+      }
+    } catch (err) {
+      console.error('Error fetching archived parents:', err);
+      setArchivedParentsForRestore([]);
+      setFilteredParentsForBulkArchive([]);
+    } finally {
+      setLoadingActiveParents(false);
+    }
+  };
+
+  const fetchActiveParents = async () => {
+    setLoadingActiveParents(true);
+    try {
+      // Fetch active parents and students
+      const response = await fetch(API.user.getAllUsers(), {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === "success" && data.users) {
+        const parents = data.users.Parent || [];
+        const students = data.users.Student || [];
+        
+        console.log('Fetched parents:', parents.length);
+        console.log('Fetched students:', students.length);
+        console.log('Sample student:', students[0]);
+        
+        // Map students by parent_id to get class levels for each parent
+        // Handle both parent_id (snake_case) and parentId (camelCase) formats
+        const studentsByParent = {};
+        students.forEach(student => {
+          // Try both formats
+          const parentId = student.parent_id || student.parentId;
+          if (parentId) {
+            if (!studentsByParent[parentId]) {
+              studentsByParent[parentId] = [];
+            }
+            studentsByParent[parentId].push(student);
+          }
+        });
+        
+        console.log('Students grouped by parent:', Object.keys(studentsByParent).length, 'parents with students');
+        
+        // Enrich parents with their students' class levels
+        // Students have levelId (from advisory assignment priority) or level_id (from student table)
+        const parentsWithLevels = parents.map(parent => {
+          const parentStudents = studentsByParent[parent.id] || [];
+          
+          // Get level IDs from students
+          // The backend returns levelId which is the student's level_id
+          // We need to check the advisory-assigned level if available, or use level_id
+          const levelIds = [...new Set(
+            parentStudents
+              .map(s => {
+                // Check if student has levelId (from backend)
+                let levelId = s.levelId;
+                
+                // If levelId exists, use it (backend already handles advisory priority)
+                // Convert to number to ensure proper comparison
+                if (levelId !== null && levelId !== undefined && levelId !== '') {
+                  return parseInt(levelId);
+                }
+                
+                // Fallback to level_id if available
+                if (s.level_id !== null && s.level_id !== undefined && s.level_id !== '') {
+                  return parseInt(s.level_id);
+                }
+                
+                return null;
+              })
+              .filter(id => id !== null)
+          )];
+          
+          console.log(`Parent ${parent.id} (${parent.name || 'Unknown'}) has ${parentStudents.length} students with levels:`, levelIds, 'Students:', parentStudents.map(s => ({ id: s.id, levelId: s.levelId, level_id: s.level_id, levelName: s.levelName })));
+          
+          // Map level_id to level names
+          const levelNames = levelIds.map(levelId => {
+            const numLevelId = parseInt(levelId);
+            switch(numLevelId) {
+              case 1: return 'Discoverer';
+              case 2: return 'Explorer';
+              case 3: return 'Adventurer';
+              default: return `Level ${numLevelId}`;
+            }
+          });
+          
+          return {
+            ...parent,
+            studentLevelIds: levelIds.map(id => parseInt(id)),
+            studentLevelNames: levelNames,
+            hasStudents: parentStudents.length > 0,
+            studentCount: parentStudents.length
+          };
+        });
+        
+        console.log('Parents with levels:', parentsWithLevels.filter(p => p.studentLevelIds.length > 0).length);
+        
+        // Initialize UserContext with active parents' photos (merge with existing photos)
+        // Don't replace all photos, just add/update active parents' photos
+        if (parentsWithLevels.length > 0) {
+          // Get current archived users from state to preserve their photos
+          const allArchivedUsers = {
+            Admin: archivedUsers.Admin || [],
+            Teacher: archivedUsers.Teacher || [],
+            Parent: archivedUsers.Parent || [],
+            Student: archivedUsers.Student || []
+          };
+          
+          // Merge active parents into archived users structure
+          const mergedUsers = {
+            ...allArchivedUsers,
+            // Add active parents for bulk archive (temporary, doesn't overwrite archived)
+            // We'll only update photos for active parents without affecting archived ones
+          };
+          
+          // Add active parents' photos individually to avoid overwriting archived users' photos
+          parentsWithLevels.forEach(parent => {
+            if (parent.photo && normalizePhotoUrl && updateAnyUserPhoto) {
+              const photoUrl = normalizePhotoUrl(parent.photo);
+              if (photoUrl) {
+                // Update photo in context (this will merge, not replace)
+                updateAnyUserPhoto(parent.id, photoUrl);
+              }
+            }
+          });
+        }
+        
+        setActiveParentsForBulkArchive(parentsWithLevels);
+        setSelectedParents([]);
+        setSelectedClassLevel("All");
+      } else {
+        setActiveParentsForBulkArchive([]);
+        setFilteredParentsForBulkArchive([]);
+        toast.error("Failed to fetch active parents");
+      }
+    } catch (err) {
+      console.error('Error fetching active parents:', err);
+      setActiveParentsForBulkArchive([]);
+      setFilteredParentsForBulkArchive([]);
+      toast.error("Failed to fetch active parents");
+    } finally {
+      setLoadingActiveParents(false);
+    }
+  };
+
+  // Filter parents based on selected class level and mode
+  useEffect(() => {
+    const parentsToFilter = bulkStatusMode === "Archive" 
+      ? activeParentsForBulkArchive 
+      : archivedParentsForRestore;
+    
+    if (!parentsToFilter || parentsToFilter.length === 0) {
+      setFilteredParentsForBulkArchive([]);
+      return;
+    }
+    
+    if (selectedClassLevel === "All") {
+      setFilteredParentsForBulkArchive(parentsToFilter);
+    } else {
+      // Map level name to level_id
+      const levelIdMap = {
+        "Discoverer": 1,
+        "Explorer": 2,
+        "Adventurer": 3
+      };
+      const targetLevelId = levelIdMap[selectedClassLevel];
+      
+      if (!targetLevelId) {
+        setFilteredParentsForBulkArchive(parentsToFilter);
+        return;
+      }
+      
+      const filtered = parentsToFilter.filter(parent => {
+        return parent.studentLevelIds && parent.studentLevelIds.includes(targetLevelId);
+      });
+      setFilteredParentsForBulkArchive(filtered);
+    }
+    // Reset selection when filter changes
+    setSelectedParents([]);
+  }, [selectedClassLevel, activeParentsForBulkArchive, archivedParentsForRestore, bulkStatusMode]);
+
   if (loading) {
     return (
       <ProtectedRoute role="Super Admin">
@@ -336,6 +750,18 @@ export default function SuperAdminArchivePage() {
                     Total Archived: {staffOnlyUsers.length + parentOnlyUsers.length + archivedUsers.Student.length}
                   </span>
                 </div>
+                {activeTab === 'Parent' && (
+                  <button
+                    onClick={() => {
+                      setBulkStatusMode("Archive");
+                      setShowBulkArchiveModal(true);
+                    }}
+                    className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+                  >
+                    <FaArchive className="text-sm" />
+                    Bulk Parent Status
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -800,6 +1226,240 @@ export default function SuperAdminArchivePage() {
           )}
         </div>
       </div>
+
+      {/* Bulk Parent Status Modal */}
+      {showBulkArchiveModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 min-w-[600px] max-w-[90vw] w-[700px] h-[85vh] flex flex-col border border-gray-100">
+            <div className="mb-4 flex-shrink-0">
+              <h3 className="text-xl font-bold text-gray-800 mb-1">Bulk Parent Status</h3>
+              <p className="text-gray-600 text-sm">
+                {bulkStatusMode === "Archive" 
+                  ? "Select active parents to archive. Their linked students will be automatically archived"
+                  : "Select archived parents to restore. Their linked students will be automatically restored"}
+              </p>
+              
+              {/* Mode Selection Tabs */}
+              <div className="mt-4 flex gap-2 border-b border-gray-200">
+                <button
+                  onClick={() => {
+                    setBulkStatusMode("Archive");
+                    setSelectedClassLevel("All");
+                    setSelectedParents([]);
+                  }}
+                  className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                    bulkStatusMode === "Archive"
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Archive
+                </button>
+                <button
+                  onClick={() => {
+                    setBulkStatusMode("Restore");
+                    setSelectedClassLevel("All");
+                    setSelectedParents([]);
+                  }}
+                  className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                    bulkStatusMode === "Restore"
+                      ? 'border-green-600 text-green-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Restore
+                </button>
+              </div>
+              
+              {/* Class Level Filter */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Class Level:
+                </label>
+                <select
+                  value={selectedClassLevel}
+                  onChange={(e) => setSelectedClassLevel(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="All">All Levels</option>
+                  <option value="Discoverer">Discoverer</option>
+                  <option value="Explorer">Explorer</option>
+                  <option value="Adventurer">Adventurer</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-hidden mb-4">
+              {loadingActiveParents ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                  <p className="text-gray-600 text-sm">
+                    {bulkStatusMode === "Archive" 
+                      ? "Loading active parents..." 
+                      : "Loading archived parents..."}
+                  </p>
+                </div>
+              ) : filteredParentsForBulkArchive.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <FaUsers className="text-4xl text-gray-400 mb-4" />
+                  <p className="text-gray-600 text-sm font-medium">
+                    {bulkStatusMode === "Archive" 
+                      ? (selectedClassLevel === "All" 
+                          ? "No active parents available" 
+                          : `No parents found for ${selectedClassLevel} level`)
+                      : (selectedClassLevel === "All" 
+                          ? "No archived parents available" 
+                          : `No archived parents found for ${selectedClassLevel} level`)}
+                  </p>
+                  <p className="text-gray-500 text-xs mt-1">
+                    {selectedClassLevel === "All" 
+                      ? (bulkStatusMode === "Archive" 
+                          ? "All parents are already archived" 
+                          : "All parents are already active")
+                      : "Try selecting a different class level"}
+                  </p>
+                </div>
+              ) : (
+                <div className="border border-gray-200 rounded-lg h-full flex flex-col overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
+                    <button
+                      onClick={handleSelectAllParents}
+                      className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                    >
+                      {selectedParents.length === filteredParentsForBulkArchive.length && 
+                       filteredParentsForBulkArchive.every(p => selectedParents.includes(p.id)) ? (
+                        <FaCheckSquare className={bulkStatusMode === "Archive" ? "text-blue-600" : "text-green-600"} />
+                      ) : (
+                        <FaSquare className="text-gray-400" />
+                      )}
+                      <span>
+                        {selectedParents.length === filteredParentsForBulkArchive.length && 
+                         filteredParentsForBulkArchive.every(p => selectedParents.includes(p.id))
+                          ? 'Deselect All' 
+                          : 'Select All'}
+                      </span>
+                      <span className="text-gray-500">
+                        ({selectedParents.filter(id => filteredParentsForBulkArchive.some(p => p.id === id)).length} of {filteredParentsForBulkArchive.length} selected)
+                      </span>
+                    </button>
+                  </div>
+                  
+                  <div className="divide-y divide-gray-200 flex-1 overflow-y-auto custom-thin-scroll">
+                    {filteredParentsForBulkArchive.map((parent) => {
+                    const isSelected = selectedParents.includes(parent.id);
+                    return (
+                      <div
+                        key={`parent-${parent.id}`}
+                        className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => handleToggleParentSelection(parent.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          {isSelected ? (
+                            <FaCheckSquare className={`${bulkStatusMode === "Archive" ? "text-blue-600" : "text-green-600"} flex-shrink-0`} />
+                          ) : (
+                            <FaSquare className="text-gray-400 flex-shrink-0" />
+                          )}
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            {(() => {
+                              const realTimePhoto = getUserPhoto(parent.id) || parent.photo;
+                              return realTimePhoto ? (
+                                <>
+                                  <img
+                                    src={realTimePhoto}
+                                    alt="Profile"
+                                    className="w-10 h-10 rounded-full object-cover shadow-sm flex-shrink-0"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      if (e.target.nextSibling) {
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center hidden flex-shrink-0">
+                                    <FaUser className="text-green-600 text-sm" />
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <FaUser className="text-green-600 text-sm" />
+                                </div>
+                              );
+                            })()}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 text-sm">
+                                {parent.lastName && parent.firstName 
+                                  ? `${parent.lastName}, ${parent.firstName}${parent.middleName ? ` ${parent.middleName}` : ''}`
+                                  : parent.name || 'Not specified'}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {parent.email || "No email"}
+                              </div>
+                              {parent.studentLevelNames && parent.studentLevelNames.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {parent.studentLevelNames.map((levelName, idx) => (
+                                    <span 
+                                      key={idx}
+                                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                        levelName === 'Discoverer' 
+                                          ? 'bg-blue-100 text-blue-800'
+                                          : levelName === 'Explorer'
+                                          ? 'bg-yellow-100 text-yellow-800'
+                                          : levelName === 'Adventurer'
+                                          ? 'bg-red-100 text-red-800'
+                                          : 'bg-gray-100 text-gray-800'
+                                      }`}
+                                    >
+                                      {levelName}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 flex-shrink-0">
+              <button
+                onClick={handleCloseBulkArchiveModal}
+                disabled={bulkArchiving}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={bulkStatusMode === "Archive" ? handleBulkArchive : handleBulkRestore}
+                disabled={bulkArchiving || selectedParents.length === 0}
+                className={`px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
+                  bulkStatusMode === "Archive"
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {bulkArchiving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    {bulkStatusMode === "Archive" ? 'Archiving...' : 'Restoring...'}
+                  </>
+                ) : (
+                  <>
+                    <FaArchive className="text-sm" />
+                    {bulkStatusMode === "Archive" 
+                      ? `Archive Selected (${selectedParents.filter(id => filteredParentsForBulkArchive.some(p => p.id === id)).length})`
+                      : `Restore Selected (${selectedParents.filter(id => filteredParentsForBulkArchive.some(p => p.id === id)).length})`}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 }
