@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaSearch, FaEye, FaUsers, FaArchive, FaFilter, FaSort, FaSortUp, FaSortDown, FaChild, FaUserTie, FaUser, FaCheckSquare, FaSquare } from "react-icons/fa";
+import { FaSearch, FaEye, FaUsers, FaArchive, FaFilter, FaSort, FaSortUp, FaSortDown, FaChild, FaUserTie, FaUser, FaCheckSquare, FaSquare, FaChevronDown } from "react-icons/fa";
 import ProtectedRoute from "../../Context/ProtectedRoute";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "../../Context/UserContext";
@@ -33,6 +33,7 @@ export default function SuperAdminArchivePage() {
   const [loadingActiveParents, setLoadingActiveParents] = useState(false);
   const [selectedClassLevel, setSelectedClassLevel] = useState("All");
   const [filteredParentsForBulkArchive, setFilteredParentsForBulkArchive] = useState([]);
+  const [isClassLevelOpen, setIsClassLevelOpen] = useState(false);
 
  
   // Format phone number for display: +63 918 123 4567 (3-3-4)
@@ -1229,8 +1230,8 @@ export default function SuperAdminArchivePage() {
 
       {/* Bulk Parent Status Modal */}
       {showBulkArchiveModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 min-w-[600px] max-w-[90vw] w-[700px] h-[85vh] flex flex-col border border-gray-100">
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl p-4 sm:p-6 w-full sm:w-[700px] sm:max-w-[90vw] h-[92vh] sm:h-[85vh] flex flex-col border border-gray-100">
             <div className="mb-4 flex-shrink-0">
               <h3 className="text-xl font-bold text-gray-800 mb-1">Bulk Parent Status</h3>
               <p className="text-gray-600 text-sm">
@@ -1276,16 +1277,21 @@ export default function SuperAdminArchivePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Filter by Class Level:
                 </label>
-                <select
-                  value={selectedClassLevel}
-                  onChange={(e) => setSelectedClassLevel(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="All">All Levels</option>
-                  <option value="Discoverer">Discoverer</option>
-                  <option value="Explorer">Explorer</option>
-                  <option value="Adventurer">Adventurer</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={selectedClassLevel}
+                    onChange={(e) => setSelectedClassLevel(e.target.value)}
+                    onFocus={() => setIsClassLevelOpen(true)}
+                    onBlur={() => setIsClassLevelOpen(false)}
+                    className="w-full pr-10 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                  >
+                    <option value="All">All Levels</option>
+                    <option value="Discoverer">Discoverer</option>
+                    <option value="Explorer">Explorer</option>
+                    <option value="Adventurer">Adventurer</option>
+                  </select>
+                  <FaChevronDown className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-transform duration-200 ${isClassLevelOpen ? 'rotate-180' : 'rotate-0'}`} />
+                </div>
               </div>
             </div>
 
@@ -1425,18 +1431,18 @@ export default function SuperAdminArchivePage() {
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 flex-shrink-0">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-gray-200 flex-shrink-0">
               <button
                 onClick={handleCloseBulkArchiveModal}
                 disabled={bulkArchiving}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 onClick={bulkStatusMode === "Archive" ? handleBulkArchive : handleBulkRestore}
                 disabled={bulkArchiving || selectedParents.length === 0}
-                className={`px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
+                className={`w-full sm:w-auto px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
                   bulkStatusMode === "Archive"
                     ? 'bg-blue-600 hover:bg-blue-700'
                     : 'bg-green-600 hover:bg-green-700'

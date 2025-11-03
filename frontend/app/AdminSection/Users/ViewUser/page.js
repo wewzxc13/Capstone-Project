@@ -38,9 +38,9 @@ const validators = {
   },
   email: (value) => {
     if (!value) return { isValid: false, message: "" };
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value)) {
-      return { isValid: false, message: "Email must be a valid Gmail address (@gmail.com)" };
+      return { isValid: false, message: "Email must be a valid email address" };
     }
     return { isValid: true, message: "" };
   },

@@ -53,12 +53,12 @@ const validators = {
     return { isValid: true, message: "" };
   },
 
-  // Email validation - must end with @gmail.com
+  // Email validation - general email format
   email: (value) => {
     if (!value) return { isValid: false, message: "" };
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value)) {
-      return { isValid: false, message: "Email must be a valid Gmail address (@gmail.com)" };
+      return { isValid: false, message: "Email must be a valid email address" };
     }
     return { isValid: true, message: "" };
   },
@@ -1995,7 +1995,7 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
             value={formData.email || ""} 
             onChange={handleChange} 
             className={getInputClassName('email', formData, validationErrors)}
-            placeholder="example@gmail.com"
+            placeholder="name@example.com"
           />
           {formData.email && validationErrors.email && (
             <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
