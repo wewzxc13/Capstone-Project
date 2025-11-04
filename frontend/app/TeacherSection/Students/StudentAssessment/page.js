@@ -108,6 +108,18 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
   const [milestoneSummary, setMilestoneSummary] = useState(null);
   const [milestoneOverallSummary, setMilestoneOverallSummary] = useState(null);
 
+  // Helper: get numeric quarter (1-4) from a comment object
+  function getQuarterNumberFromComment(c) {
+    const id = parseInt(c?.quarter_id);
+    if (!isNaN(id)) return id;
+    const name = (c?.quarter_name || '').toString().toLowerCase();
+    if (name.startsWith('1st')) return 1;
+    if (name.startsWith('2nd')) return 2;
+    if (name.startsWith('3rd')) return 3;
+    if (name.startsWith('4th')) return 4;
+    return 999; // unknown goes to the end
+  }
+
   // Helper to get display name for sorting
   const getDisplayName = (key) => {
     if (key === "Socio") return "Socio Emotional";
@@ -439,11 +451,17 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
 
     setAvailableQuarters(available);
 
-    // Set default selected quarter to the first available (lowest quarter number)
+    // Default to the first quarter that doesn't have ANY comment yet (lead or assistant)
     if (available.length > 0 && !selectedQuarterId) {
-      setSelectedQuarterId(available[0].quarter_id);
+      const commentedQuarterIds = new Set(
+        (comments || [])
+          .map(c => parseInt(c.quarter_id))
+          .filter(id => !isNaN(id))
+      );
+      const firstUncommented = available.find(q => !commentedQuarterIds.has(q.quarter_id));
+      setSelectedQuarterId(firstUncommented ? firstUncommented.quarter_id : null);
     }
-  }, [quartersData, finalizedQuarters]);
+  }, [quartersData, finalizedQuarters, comments]);
 
   // Update comment eligibility based on selected quarter
   useEffect(() => {
@@ -456,43 +474,29 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
       return;
     }
 
-    const user_id = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
-    if (!user_id) {
-      setCanComment(false);
-      setAllQuartersCommented(false);
-      setCommentMessage('Please log in to add comments.');
-      return;
-    }
-
-    // Check which quarters this user has already commented on
-    const commentedQuarterIds = comments
-      .filter(c => String(c.commentor_id) === String(user_id))
-      .map(c => parseInt(c.quarter_id));
-
-    // Check if ALL available quarters have been commented on by this user
-    const allCommented = availableQuarters.every(q => 
-      commentedQuarterIds.includes(q.quarter_id)
+    // Build a set of quarters that already have at least ONE comment from any teacher
+    const commentedQuarterIds = new Set(
+      (comments || [])
+        .map(c => parseInt(c.quarter_id))
+        .filter(id => !isNaN(id))
     );
 
+    // If all available quarters already have a comment, disable commenting entirely
+    const allCommented = availableQuarters.every(q => commentedQuarterIds.has(q.quarter_id));
     if (allCommented) {
       setAllQuartersCommented(true);
       setCanComment(false);
-      setCommentMessage('You have commented on all available quarters.');
+      setCommentMessage('All available quarters already have a comment from a teacher.');
       return;
     }
 
     setAllQuartersCommented(false);
 
-    // Check if this user has already commented for the selected quarter
-    const alreadyCommented = comments.some(
-      c => String(c.quarter_id) === String(selectedQuarterId) && 
-           String(c.commentor_id) === String(user_id)
-    );
-
-    if (alreadyCommented) {
+    // If the currently selected quarter already has any comment, disable commenting
+    if (commentedQuarterIds.has(parseInt(selectedQuarterId))) {
       setCanComment(false);
       const quarter = availableQuarters.find(q => q.quarter_id === selectedQuarterId);
-      setCommentMessage(`You have already commented for ${quarter?.quarter_name || 'this quarter'}. Please select another quarter.`);
+      setCommentMessage(`A teacher has already commented for ${quarter?.quarter_name || 'this quarter'}. Only one comment per quarter is allowed.`);
     } else {
       setCanComment(true);
       setCommentMessage('');
@@ -1326,7 +1330,16 @@ export default function StudentAssessment({ student, onBack, onRiskUpdate, trigg
               {comments.length > 0 && (
                 <div className="mt-6 space-y-4">
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">Previous Comments</h4>
-                  {comments.map((c, idx) => {
+                  {([...comments]
+                    .sort((a, b) => {
+                      const qa = getQuarterNumberFromComment(a);
+                      const qb = getQuarterNumberFromComment(b);
+                      if (qa !== qb) return qa - qb; // 1 -> 4
+                      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+                      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+                      return ta - tb; // older first within quarter
+                    }))
+                    .map((c, idx) => {
                     const isOwn = String(c.commentor_id) === String(typeof window !== 'undefined' ? localStorage.getItem('userId') : '');
                     const isEditing = editingCommentId === c.comment_id;
                     return (

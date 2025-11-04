@@ -2453,7 +2453,7 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
                     <span className="flex items-center gap-2">
                       Morning
                       {!isLevelDetermined ? (
-                        <span className="text-xs text-gray-500">(Select birthdate or class level first)</span>
+                        <span className="text-xs text-gray-500">(Select birthdate and class level first)</span>
                       ) : loadingSlots ? (
                         <span className="text-xs text-gray-500">(Loading...)</span>
                       ) : availableSlots && availableSlots.Morning !== undefined ? (
@@ -2479,7 +2479,7 @@ function getInputClassName(fieldName, formData, validationErrors, userType = "",
                     <span className="flex items-center gap-2">
                       Afternoon
                       {!isLevelDetermined ? (
-                        <span className="text-xs text-gray-500">(Select birthdate or class level first)</span>
+                        <span className="text-xs text-gray-500">(Select birthdate and class level first)</span>
                       ) : loadingSlots ? (
                         <span className="text-xs text-gray-500">(Loading...)</span>
                       ) : availableSlots && availableSlots.Afternoon !== undefined ? (
